@@ -44,10 +44,3 @@ pkg_t *proj_add_pkg(proj_t *proj)
 
 	return pkg_init(pkg);
 }
-
-int proj_gen(const proj_t *proj, gen_t gen)
-{
-	(void)proj;
-	(void)gen;
-	return 0;
-}

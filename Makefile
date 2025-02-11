@@ -30,19 +30,24 @@ EXESDIR := $(OUTDIR)/exes
 PKGDIR = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 PKGSRCDIR = $(PKGDIR)src/
 PKGINCDIR = $(PKGDIR)include/
+PKGDRVDIR = $(PKGDIR)drivers/
 PKGTESTDIR = $(PKGDIR)test/
 
 PKGSRC_C = $(shell find $(PKGSRCDIR) -type f -name '*.c')
 PKGSRC_H = $(shell find $(PKGSRCDIR) -type f -name '*.h')
+PKGDRV_C = $(shell find $(PKGDRVDIR) -type f -name '*.c')
 PKGTEST_C = $(shell find $(PKGTESTDIR) -type f -name '*.c')
 PKGTEST_H = $(shell find $(PKGTESTDIR) -type f -name '*.h')
 PKGINC_H = $(shell find $(PKGINCDIR) -type f -name '*.h')
 
 INTSRCDIR = $(INTDIR)/$(PKGNAME)/src/
+INTDRVDIR = $(INTDIR)/$(PKGNAME)/drivers/
 INTTESTDIR = $(INTDIR)/$(PKGNAME)/test/
 
 PKGSRC_OBJ = $(patsubst $(PKGSRCDIR)%.c,$(INTSRCDIR)%.o,$(PKGSRC_C))
 PKGSRC_GCDA = $(patsubst %.o,%.gcda,$(PKGSRC_OBJ))
+PKGDRV_OBJ = $(patsubst $(PKGDRVDIR)%.c,$(INTDRVDIR)%.o,$(PKGDRV_C))
+PKGDRV_GCDA = $(patsubst %.o,%.gcda,$(PKGDRV_OBJ))
 PKGTEST_OBJ = $(patsubst $(PKGTESTDIR)%.c,$(INTTESTDIR)%.o,$(PKGTEST_C))
 PKGTEST_GCDA = $(patsubst %.o,%.gcda,$(PKGTEST_OBJ))
 

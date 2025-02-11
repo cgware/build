@@ -19,20 +19,34 @@ int main(int argc, const char **argv)
 	log_set(&log);
 	log_add_callback(log_std_cb, PRINT_DST_FILE(stderr), LOG_INFO, 1, 1);
 
-	gen_init();
-
 	const char *source = ".";
 	const char *build  = "./bin";
-	gen_t gen	   = GEN_MAKE;
 
-	const opt_enum_val_t gens[] = {
-		[GEN_MAKE] = {"M", "Make"},
-	};
+	int gen = 0;
+
+	int gen_drivers_cnt = 0;
+
+	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
+		if (i->type == GEN_DRIVER_TYPE) {
+			gen_drivers_cnt++;
+		}
+	}
+
+	opt_enum_val_t *gens = mem_alloc(gen_drivers_cnt * sizeof(opt_enum_val_t));
+	gen_drivers_cnt	     = 0;
+
+	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
+		if (i->type == GEN_DRIVER_TYPE) {
+			gen_driver_t *drv     = i->data;
+			gens[gen_drivers_cnt] = (opt_enum_val_t){drv->param, drv->desc, drv};
+			gen_drivers_cnt++;
+		}
+	}
 
 	const opt_enum_t gens_desc = {
 		.name	   = "Generators",
 		.vals	   = gens,
-		.vals_size = sizeof(gens),
+		.vals_size = gen_drivers_cnt * sizeof(opt_enum_val_t),
 	};
 
 	opt_t opts[] = {
@@ -54,9 +68,12 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	proj_gen(&proj, gen);
+	gen_driver_t *gen_driver = gens[gen].priv;
+	gen_driver->gen(&proj);
 
 	proj_free(&proj);
+
+	mem_free(gens, gen_drivers_cnt * sizeof(opt_enum_val_t));
 
 	mem_print(PRINT_DST_STD());
 

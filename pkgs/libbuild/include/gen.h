@@ -10,8 +10,6 @@ typedef struct gen_driver_s {
 	int (*gen)(const proj_t *proj);
 } gen_driver_t;
 
-int gen_init();
-
 #define GEN_DRIVER_TYPE 1
 
 #define GEN_DRIVER(_name, _data) DRIVER(_name, GEN_DRIVER_TYPE, _data)

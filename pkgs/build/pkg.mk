@@ -13,9 +13,9 @@ BUILD := $(PKGEXE)
 .PHONY: build
 build: $(BUILD)
 
-$(BUILD): $(BUILD_OBJ) $(BUILD_LIBS)
+$(BUILD): $(LIBBUILD_DRIVERS) $(BUILD_OBJ) $(BUILD_LIBS)
 	@mkdir -p $(@D)
-	$(TCC) -m$(BITS) $(LDFLAGS) -o $@ $(BUILD_OBJ) -L$(LIBSDIR) $(patsubst %,-l:%,$(notdir $(BUILD_LIBS)))
+	$(TCC) -m$(BITS) $(LDFLAGS) -o $@ $(BUILD_OBJ) $(LIBBUILD_DRIVERS) -L$(LIBSDIR) $(patsubst %,-l:%,$(notdir $(BUILD_LIBS)))
 
 $(BUILD_INTDIR)%.o: $(BUILD_SRC)%.c $(BUILD_H) $(BUILD_HEADERS)
 	@mkdir -p $(@D)

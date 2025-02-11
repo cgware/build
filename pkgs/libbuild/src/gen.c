@@ -2,13 +2,12 @@
 
 #include <stdio.h>
 
-int gen_init()
+int gen_proj(const proj_t *proj)
 {
 	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
 		if (i->type == GEN_DRIVER_TYPE) {
 			gen_driver_t *drv = i->data;
-			printf("%s = %s\n", drv->param, drv->desc);
-			drv->gen(NULL);
+			drv->gen(proj);
 		}
 	}
 
