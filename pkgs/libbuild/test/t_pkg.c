@@ -29,7 +29,7 @@ TEST(pkg_set_source)
 	log_set_quiet(0, 0);
 
 	EXPECT_EQ(pkg_set_source(NULL, STRV_NULL), 1);
-	EXPECT_EQ(pkg_set_source(&pkg, STRV("tests/no_folders")), 0);
+	EXPECT_EQ(pkg_set_source(&pkg, STRV("tests/min")), 0);
 
 	EXPECT_EQ(pkg.src.len, 0);
 	EXPECT_EQ(pkg.include.len, 0);

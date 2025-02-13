@@ -51,7 +51,8 @@ TEST(proj_print)
 	proj_init(&proj, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	proj_add_pkg(&proj);
+	pkg_t *pkg = proj_add_pkg(&proj);
+	pkg_set_source(pkg, STRV("tests/min"));
 
 	char buf[256] = {0};
 	EXPECT_EQ(proj_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
