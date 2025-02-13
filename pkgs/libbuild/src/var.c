@@ -15,6 +15,10 @@ int var_replace(str_t *str, const strv_t *values)
 		return 1;
 	}
 
+	if (str->len < MIN_VAR_NAME_LEN + 3) {
+		return 0;
+	}
+
 	for (size_t s = 0; s <= str->len - MIN_VAR_NAME_LEN - 3; s++) {
 		if (str->data[s] != '$' || str->data[s + 1] != '{') {
 			continue;
