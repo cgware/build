@@ -20,7 +20,7 @@ int main(int argc, const char **argv)
 	log_add_callback(log_std_cb, PRINT_DST_FILE(stderr), LOG_INFO, 1, 1);
 
 	const char *source = ".";
-	const char *build  = "./bin";
+	const char *build  = ".";
 
 	int gen = 0;
 
@@ -61,12 +61,16 @@ int main(int argc, const char **argv)
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
+	path_init(&proj.builddir, STRVN(build, strlen(build)));
+	path_init(&proj.outdir, STRV("bin" SEP "${ARCH}-${CONFIG}"));
 
 	pkg_t *pkg = proj_add_pkg(&proj);
 
 	if (pkg_set_source(pkg, STRVN(source, strlen(source)))) {
 		return 1;
 	}
+
+	proj_print(&proj, PRINT_DST_STD());
 
 	gen_driver_t *gen_driver = gens[gen].priv;
 	gen_driver->gen(&proj);

@@ -5,12 +5,14 @@
 
 STEST(pkg);
 STEST(proj);
+STEST(var);
 
 TEST(cutils)
 {
 	SSTART;
 	RUN(pkg);
 	RUN(proj);
+	RUN(var);
 	SEND;
 }
 

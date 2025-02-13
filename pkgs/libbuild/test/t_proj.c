@@ -42,12 +42,42 @@ TEST(proj_add_pkg)
 	END;
 }
 
+TEST(proj_print)
+{
+	START;
+
+	proj_t proj = {0};
+	log_set_quiet(0, 1);
+	proj_init(&proj, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	proj_add_pkg(&proj);
+
+	char buf[256] = {0};
+	EXPECT_EQ(proj_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
+	proj_print(&proj, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	EXPECT_STR(buf,
+		   "[project]\n"
+		   "BUILDDIR: \n"
+		   "OUTDIR: \n"
+		   "\n"
+		   "[project.package]\n"
+		   "SRC: \n"
+		   "INCLUDE: \n"
+		   "\n");
+
+	proj_free(&proj);
+
+	END;
+}
+
 STEST(proj)
 {
 	SSTART;
 
 	RUN(proj_init_free);
 	RUN(proj_add_pkg);
+	RUN(proj_print);
 
 	SEND;
 }

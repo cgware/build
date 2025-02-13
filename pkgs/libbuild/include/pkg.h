@@ -14,4 +14,6 @@ void pkg_free(pkg_t *pkg);
 
 int pkg_set_source(pkg_t *pkg, strv_t source);
 
+int pkg_print(const pkg_t *pkg, print_dst_t dst);
+
 #endif

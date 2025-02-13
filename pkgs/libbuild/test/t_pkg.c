@@ -39,12 +39,35 @@ TEST(pkg_set_source)
 	END;
 }
 
+TEST(pkg_print)
+{
+	START;
+
+	pkg_t pkg = {0};
+	log_set_quiet(0, 1);
+	pkg_init(&pkg);
+	log_set_quiet(0, 0);
+
+	char buf[256] = {0};
+	pkg_print(&pkg, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	EXPECT_STR(buf,
+		   "[project.package]\n"
+		   "SRC: \n"
+		   "INCLUDE: \n"
+		   "\n");
+
+	pkg_free(&pkg);
+
+	END;
+}
+
 STEST(pkg)
 {
 	SSTART;
 
 	RUN(pkg_init_free);
 	RUN(pkg_set_source);
+	RUN(pkg_print);
 
 	SEND;
 }

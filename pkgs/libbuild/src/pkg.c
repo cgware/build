@@ -42,3 +42,20 @@ int pkg_set_source(pkg_t *pkg, strv_t source)
 
 	return 0;
 }
+
+int pkg_print(const pkg_t *pkg, print_dst_t dst)
+{
+	int off = dst.off;
+
+	dst.off += c_dprintf(dst,
+			     "[project.package]\n"
+			     "SRC: %.*s\n"
+			     "INCLUDE: %.*s\n"
+			     "\n",
+			     pkg->src.len,
+			     pkg->src.data,
+			     pkg->include.len,
+			     pkg->include.data);
+
+	return dst.off - off;
+}
