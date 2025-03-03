@@ -31,6 +31,17 @@ void proj_free(proj_t *proj)
 	arr_free(&proj->pkgs);
 }
 
+pkg_t *proj_set_pkg(proj_t *proj)
+{
+	if (proj == NULL) {
+		return NULL;
+	}
+
+	proj->is_pkg = 1;
+
+	return pkg_init(&proj->pkg);
+}
+
 pkg_t *proj_add_pkg(proj_t *proj)
 {
 	if (proj == NULL) {
@@ -55,18 +66,22 @@ int proj_print(const proj_t *proj, print_dst_t dst)
 
 	dst.off += c_dprintf(dst,
 			     "[project]\n"
-			     "BUILDDIR: %.*s\n"
+			     "DIR: %.*s\n"
 			     "OUTDIR: %.*s\n"
 			     "\n",
-			     proj->builddir.len,
-			     proj->builddir.data,
+			     proj->dir.len,
+			     proj->dir.data,
 			     proj->outdir.len,
 			     proj->outdir.data);
 
-	const pkg_t *pkg;
-	arr_foreach(&proj->pkgs, pkg)
-	{
-		dst.off += pkg_print(pkg, dst);
+	if (proj->is_pkg) {
+		dst.off += pkg_print(&proj->pkg, dst);
+	} else {
+		const pkg_t *pkg;
+		arr_foreach(&proj->pkgs, pkg)
+		{
+			dst.off += pkg_print(pkg, dst);
+		}
 	}
 
 	return dst.off - off;

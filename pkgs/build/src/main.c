@@ -20,7 +20,6 @@ int main(int argc, const char **argv)
 	log_add_callback(log_std_cb, PRINT_DST_FILE(stderr), LOG_INFO, 1, 1);
 
 	const char *source = ".";
-	const char *build  = ".";
 
 	int gen = 0;
 
@@ -51,7 +50,6 @@ int main(int argc, const char **argv)
 
 	opt_t opts[] = {
 		OPT('s', "source", OPT_STR, "<path>", "Specify source directory", &source, {0}, OPT_OPT),
-		OPT('b', "build", OPT_STR, "<path>", "Specify build directory", &build, {0}, OPT_OPT),
 		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
 	};
 
@@ -61,13 +59,36 @@ int main(int argc, const char **argv)
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
-	path_init(&proj.builddir, STRVN(build, strlen(build)));
-	path_init(&proj.outdir, STRV("bin" SEP "${ARCH}-${CONFIG}"));
+	path_init(&proj.dir, STRVN(source, strlen(source)));
+	path_init(&proj.outdir, STRV("bin" SEP "${ARCH}-${CONFIG}/"));
 
-	pkg_t *pkg = proj_add_pkg(&proj);
+	path_t tmp = {0};
+	path_init(&tmp, STRVN(source, strlen(source)));
+	path_child(&tmp, STRV("src"));
+	int is_src = path_is_dir(&tmp);
 
-	if (pkg_set_source(pkg, STRVN(source, strlen(source)))) {
+	path_init(&tmp, STRVN(source, strlen(source)));
+	path_child(&tmp, STRV("pkgs"));
+	int is_pkgs = path_is_dir(&tmp);
+
+	if (!is_src && !is_pkgs) {
+		log_error("build", "main", NULL, "No 'src' or 'pkgs' folder found: %s\n", source);
 		return 1;
+	} else if (is_src && is_pkgs) {
+		log_error("build", "main", NULL, "Only one of 'src' or 'pkgs' folder expected: %s\n", source);
+		return 1;
+	}
+
+	if (is_src) {
+		pkg_t *pkg = proj_set_pkg(&proj);
+
+		if (pkg_set_source(pkg, STRVN(source, strlen(source)))) {
+			return 1;
+		}
+	}
+
+	if (is_pkgs) {
+		// TODO
 	}
 
 	proj_print(&proj, PRINT_DST_STD());

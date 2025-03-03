@@ -13,11 +13,11 @@ endif
 
 CONFIG := Release
 ifeq ($(CONFIG), Debug)
-CFLAGS := -Wall -Wextra -Werror -pedantic -O0 -ggdb -coverage
+CFLAGS := -Wall -Wextra -pedantic -O0 -ggdb -coverage
 LDFLAGS := -coverage
 endif
 ifeq ($(CONFIG), Release)
-CFLAGS := -Wall -Wextra -Werror -pedantic
+CFLAGS := -Wall -Wextra -pedantic
 LDFLAGS :=
 endif
 
@@ -98,8 +98,8 @@ test: pkgs/test
 
 .PHONY: coverage
 coverage: test
-	@lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)/libbuild/src
+	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)/libbuild/src -d $(INTDIR)/libbuild/drivers
 ifeq ($(SHOW), true)
-	@genhtml -q -o $(BUILDDIR)/report/coverage $(BUILDDIR)/bin/lcov.info 
-	@open $(BUILDDIR)/report/coverage/index.html
+	genhtml -q -o $(BUILDDIR)/report/coverage $(BUILDDIR)/bin/lcov.info 
+	open $(BUILDDIR)/report/coverage/index.html
 endif

@@ -15,11 +15,7 @@ int var_replace(str_t *str, const strv_t *values)
 		return 1;
 	}
 
-	if (str->len < MIN_VAR_NAME_LEN + 3) {
-		return 0;
-	}
-
-	for (size_t s = 0; s <= str->len - MIN_VAR_NAME_LEN - 3; s++) {
+	for (size_t s = 0; str->len >= MIN_VAR_NAME_LEN + 3 && s <= str->len - MIN_VAR_NAME_LEN - 3; s++) {
 		if (str->data[s] != '$' || str->data[s + 1] != '{') {
 			continue;
 		}
@@ -34,7 +30,8 @@ int var_replace(str_t *str, const strv_t *values)
 		}
 
 		strv_t name = STRVN(&str->data[s + 2], e - (s + 2));
-		size_t v    = 0;
+
+		size_t v = 0;
 		while (v < __VAR_CNT && !strv_eq(name, var_names[v])) {
 			v++;
 		}

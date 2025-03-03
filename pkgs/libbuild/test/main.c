@@ -3,6 +3,7 @@
 #include "mem.h"
 #include "test.h"
 
+STEST(gen_make);
 STEST(pkg);
 STEST(proj);
 STEST(var);
@@ -10,6 +11,7 @@ STEST(var);
 TEST(cutils)
 {
 	SSTART;
+	RUN(gen_make);
 	RUN(pkg);
 	RUN(proj);
 	RUN(var);

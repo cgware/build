@@ -59,7 +59,7 @@ TEST(proj_print)
 	proj_print(&proj, PRINT_DST_BUF(buf, sizeof(buf), 0));
 	EXPECT_STR(buf,
 		   "[project]\n"
-		   "BUILDDIR: \n"
+		   "DIR: \n"
 		   "OUTDIR: \n"
 		   "\n"
 		   "[project.package]\n"
