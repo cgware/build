@@ -52,14 +52,14 @@ TEST(proj_print)
 	log_set_quiet(0, 0);
 
 	pkg_t *pkg = proj_add_pkg(&proj);
-	pkg_set_source(pkg, STRV("tests/min"));
+	pkg_set_dir(pkg, STRV("tests/min"));
 
 	char buf[256] = {0};
 	EXPECT_EQ(proj_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
 	proj_print(&proj, PRINT_DST_BUF(buf, sizeof(buf), 0));
 	EXPECT_STR(buf,
 		   "[project]\n"
-		   "BUILDDIR: \n"
+		   "DIR: \n"
 		   "OUTDIR: \n"
 		   "\n"
 		   "[project.package]\n"
