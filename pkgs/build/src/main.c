@@ -1,12 +1,9 @@
 #include "args.h"
-#include "file.h"
 #include "gen.h"
 #include "log.h"
 #include "mem.h"
 #include "path.h"
 #include "proj.h"
-
-#include <string.h>
 
 int main(int argc, const char **argv)
 {
@@ -19,8 +16,7 @@ int main(int argc, const char **argv)
 	log_set(&log);
 	log_add_callback(log_std_cb, PRINT_DST_FILE(stderr), LOG_INFO, 1, 1);
 
-	const char *source = ".";
-	const char *build  = ".";
+	strv_t source = STRV(".");
 
 	int gen = 0;
 
@@ -50,8 +46,7 @@ int main(int argc, const char **argv)
 	};
 
 	opt_t opts[] = {
-		OPT('s', "source", OPT_STR, "<path>", "Specify source directory", &source, {0}, OPT_OPT),
-		OPT('b', "build", OPT_STR, "<path>", "Specify build directory", &build, {0}, OPT_OPT),
+		OPT('s', "source", OPT_STR, "<path>", "Specify source directory", &source.data, {0}, OPT_OPT),
 		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
 	};
 
@@ -59,21 +54,27 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
+	source.len = strv_len(source);
+
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
-	path_init(&proj.builddir, STRVN(build, strlen(build)));
-	path_init(&proj.outdir, STRV("bin" SEP "${ARCH}-${CONFIG}"));
 
-	pkg_t *pkg = proj_add_pkg(&proj);
+	path_t dir = {0};
+	if (path_get_cwd(&dir) == NULL) {
+		return 1;
+	}
+	path_merge(&dir, source);
 
-	if (pkg_set_source(pkg, STRVN(source, strlen(source)))) {
+	if (proj_set_dir(&proj, STRVN(dir.data, dir.len))) {
 		return 1;
 	}
 
 	proj_print(&proj, PRINT_DST_STD());
 
-	gen_driver_t *gen_driver = gens[gen].priv;
-	gen_driver->gen(&proj);
+	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
+
+	gen_driver.dst = PRINT_DST_FILE_EX();
+	gen_driver.gen(&gen_driver, &proj);
 
 	proj_free(&proj);
 

@@ -55,43 +55,7 @@ PKGEXE = $(EXESDIR)/$(PKGNAME)
 PKGLIB = $(LIBSDIR)/$(PKGNAME).a
 PKGTEST = $(TESTSDIR)/$(PKGNAME)
 
-$(SRCDIR)deps/cbase/cbase.mk:
-ifeq ($(DEV), true)
-	git clone git@github.com:cgware/cbase.git $(SRCDIR)deps/cbase
-else
-	git clone https://github.com/cgware/cbase.git $(SRCDIR)deps/cbase
-endif
-
-include $(SRCDIR)deps/cbase/cbase.mk
-
-$(SRCDIR)deps/ctest/ctest.mk:
-ifeq ($(DEV), true)
-	git clone git@github.com:cgware/ctest.git $(SRCDIR)deps/ctest
-else
-	git clone https://github.com/cgware/ctest.git $(SRCDIR)deps/ctest
-endif
-
-include $(SRCDIR)deps/ctest/ctest.mk
-
-$(SRCDIR)deps/cutils/cutils.mk:
-ifeq ($(DEV), true)
-	git clone git@github.com:cgware/cutils.git $(SRCDIR)deps/cutils
-else
-	git clone https://github.com/cgware/cutils.git $(SRCDIR)deps/cutils
-endif
-
-include $(SRCDIR)deps/cutils/cutils.mk
-
-$(SRCDIR)deps/cparse/cparse.mk:
-ifeq ($(DEV), true)
-	git clone git@github.com:cgware/cparse.git $(SRCDIR)deps/cparse
-else
-	git clone https://github.com/cgware/cparse.git $(SRCDIR)deps/cparse
-endif
-
-include $(SRCDIR)deps/cparse/cparse.mk
-
-include $(SRCDIR)pkgs/pkgs.mk
+include $(SRCDIR)package/pkg.mk
 
 .PHONY: test
 test: pkgs/test
