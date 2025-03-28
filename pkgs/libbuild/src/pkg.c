@@ -18,26 +18,30 @@ void pkg_free(pkg_t *pkg)
 	}
 }
 
-int pkg_set_source(pkg_t *pkg, strv_t source)
+int pkg_set_dir(pkg_t *pkg, strv_t dir)
 {
 	if (pkg == NULL) {
 		return 1;
 	}
 
-	path_init(&pkg->src, source);
+	path_init(&pkg->dir, dir);
+
+	path_init(&pkg->src, dir);
 	path_child(&pkg->src, STRV("src"));
 
 	if (!path_is_dir(&pkg->src)) {
-		log_info("build", "pkg", NULL, "src folder not found at path: %.*s", source.len, source.data);
 		pkg->src.len = 0;
+	} else {
+		pkg->type = PKG_TYPE_EXE;
 	}
 
-	path_init(&pkg->include, source);
+	path_init(&pkg->include, dir);
 	path_child(&pkg->include, STRV("include"));
 
 	if (!path_is_dir(&pkg->include)) {
-		log_info("build", "pkg", NULL, "include folder not found at path: %.*s", source.len, source.data);
 		pkg->include.len = 0;
+	} else {
+		pkg->type = PKG_TYPE_LIB;
 	}
 
 	return 0;

@@ -21,11 +21,11 @@ TEST(var_replace)
 	}
 
 	{
-		char buf[16] = "${a";
-		str_t str    = strb(buf, sizeof(buf), 3);
+		char buf[16] = "${aaaaa";
+		str_t str    = strb(buf, sizeof(buf), 7);
 
 		EXPECT_EQ(var_replace(&str, values), 0);
-		EXPECT_STRN(str.data, "${a", str.len);
+		EXPECT_STRN(str.data, "${aaaaa", str.len);
 	}
 
 	{

@@ -16,7 +16,7 @@ set_target_properties(libbuild PROPERTIES
 	PREFIX ""
 )
 
-file(GLOB_RECURSE libbuild_test_src test/*.h test/*.c)
+file(GLOB_RECURSE libbuild_test_src test/*.h test/*.c drivers/*.c)
 add_executable(libbuild_test ${libbuild_test_src})
 target_link_libraries(libbuild_test libbuild ctest)
 if(NOT MSVC)
@@ -33,4 +33,7 @@ set_target_properties(libbuild_test PROPERTIES
 )
 add_test(libbuild_build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --config ${CMAKE_BUILD_TYPE} --target libbuild_test)
 add_test(libbuild ${CMAKE_SOURCE_DIR}/bin/libbuild_test/${ARCH}-${CMAKE_BUILD_TYPE}/libbuild_test)
-set_tests_properties(libbuild PROPERTIES DEPENDS libbuild_build)
+set_tests_properties(libbuild PROPERTIES
+	DEPENDS libbuild_build
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)

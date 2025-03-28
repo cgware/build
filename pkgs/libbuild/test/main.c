@@ -3,13 +3,15 @@
 #include "mem.h"
 #include "test.h"
 
+STEST(gen_make);
 STEST(pkg);
 STEST(proj);
 STEST(var);
 
-TEST(cutils)
+TEST(libbuild)
 {
 	SSTART;
+	RUN(gen_make);
 	RUN(pkg);
 	RUN(proj);
 	RUN(var);
@@ -26,7 +28,7 @@ int main()
 
 	t_init();
 
-	t_run(test_cutils, 1);
+	t_run(test_libbuild, 1);
 
 	int ret = t_finish();
 

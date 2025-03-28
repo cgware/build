@@ -19,7 +19,7 @@ TEST(pkg_init_free)
 	END;
 }
 
-TEST(pkg_set_source)
+TEST(pkg_set_dir_empty)
 {
 	START;
 
@@ -28,11 +28,49 @@ TEST(pkg_set_source)
 	pkg_init(&pkg);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(pkg_set_source(NULL, STRV_NULL), 1);
-	EXPECT_EQ(pkg_set_source(&pkg, STRV("tests/min")), 0);
+	EXPECT_EQ(pkg_set_dir(NULL, STRV_NULL), 1);
+	EXPECT_EQ(pkg_set_dir(&pkg, STRV("test/empty")), 0);
 
 	EXPECT_EQ(pkg.src.len, 0);
 	EXPECT_EQ(pkg.include.len, 0);
+
+	pkg_free(&pkg);
+
+	END;
+}
+
+TEST(pkg_set_dir_exe)
+{
+	START;
+
+	pkg_t pkg = {0};
+	log_set_quiet(0, 1);
+	pkg_init(&pkg);
+	log_set_quiet(0, 0);
+
+	EXPECT_EQ(pkg_set_dir(NULL, STRV_NULL), 1);
+	EXPECT_EQ(pkg_set_dir(&pkg, STRV("test/exe")), 0);
+
+	EXPECT_EQ(pkg.type, PKG_TYPE_EXE);
+
+	pkg_free(&pkg);
+
+	END;
+}
+
+TEST(pkg_set_dir_lib)
+{
+	START;
+
+	pkg_t pkg = {0};
+	log_set_quiet(0, 1);
+	pkg_init(&pkg);
+	log_set_quiet(0, 0);
+
+	EXPECT_EQ(pkg_set_dir(NULL, STRV_NULL), 1);
+	EXPECT_EQ(pkg_set_dir(&pkg, STRV("test/lib")), 0);
+
+	EXPECT_EQ(pkg.type, PKG_TYPE_LIB);
 
 	pkg_free(&pkg);
 
@@ -66,7 +104,9 @@ STEST(pkg)
 	SSTART;
 
 	RUN(pkg_init_free);
-	RUN(pkg_set_source);
+	RUN(pkg_set_dir_empty);
+	RUN(pkg_set_dir_exe);
+	RUN(pkg_set_dir_lib);
 	RUN(pkg_print);
 
 	SEND;

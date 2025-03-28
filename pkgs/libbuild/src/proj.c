@@ -22,13 +22,71 @@ void proj_free(proj_t *proj)
 		return;
 	}
 
-	pkg_t *pkg;
-	arr_foreach(&proj->pkgs, pkg)
-	{
-		pkg_free(pkg);
+	if (proj->is_pkg) {
+		pkg_free(&proj->pkg);
+	} else {
+		pkg_t *pkg;
+		arr_foreach(&proj->pkgs, pkg)
+		{
+			pkg_free(pkg);
+		}
 	}
 
 	arr_free(&proj->pkgs);
+}
+
+int proj_set_dir(proj_t *proj, strv_t dir)
+{
+	if (proj == NULL) {
+		return 1;
+	}
+
+	path_init(&proj->dir, dir);
+	path_init(&proj->outdir, STRV("bin" SEP "${ARCH}-${CONFIG}/"));
+
+	path_t tmp = {0};
+	path_init(&tmp, dir);
+	path_child(&tmp, STRV("src"));
+	int is_src = path_is_dir(&tmp);
+
+	path_init(&tmp, dir);
+	path_child(&tmp, STRV("pkgs"));
+	int is_pkgs = path_is_dir(&tmp);
+
+	if (!is_src && !is_pkgs) {
+		log_error("build", "proj", NULL, "No 'src' or 'pkgs' folder found: %.*s\n", dir.len, dir.data);
+		return 1;
+	} else if (is_src && is_pkgs) {
+		log_error("build", "proj", NULL, "Only one of 'src' or 'pkgs' folder expected: %.*s\n", dir.len, dir.data);
+		return 1;
+	}
+
+	if (is_src) {
+		pkg_t *pkg = proj_set_pkg(proj);
+
+		if (pkg_set_dir(pkg, dir)) {
+			//return 1;
+		}
+
+		pathv_get_dir(STRVN(proj->dir.data, proj->dir.len), &pkg->name);
+	}
+
+	if (is_pkgs) {
+		// TODO
+	}
+
+	return 0;
+}
+
+pkg_t *proj_set_pkg(proj_t *proj)
+{
+	if (proj == NULL) {
+		return NULL;
+	}
+
+	proj->is_pkg = 1;
+
+	return pkg_init(&proj->pkg);
 }
 
 pkg_t *proj_add_pkg(proj_t *proj)
@@ -55,18 +113,22 @@ int proj_print(const proj_t *proj, print_dst_t dst)
 
 	dst.off += c_dprintf(dst,
 			     "[project]\n"
-			     "BUILDDIR: %.*s\n"
+			     "DIR: %.*s\n"
 			     "OUTDIR: %.*s\n"
 			     "\n",
-			     proj->builddir.len,
-			     proj->builddir.data,
+			     proj->dir.len,
+			     proj->dir.data,
 			     proj->outdir.len,
 			     proj->outdir.data);
 
-	const pkg_t *pkg;
-	arr_foreach(&proj->pkgs, pkg)
-	{
-		dst.off += pkg_print(pkg, dst);
+	if (proj->is_pkg) {
+		dst.off += pkg_print(&proj->pkg, dst);
+	} else {
+		const pkg_t *pkg;
+		arr_foreach(&proj->pkgs, pkg)
+		{
+			dst.off += pkg_print(pkg, dst);
+		}
 	}
 
 	return dst.off - off;
