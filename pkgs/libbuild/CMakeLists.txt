@@ -24,7 +24,7 @@ if(NOT MSVC)
 		target_compile_options(libbuild_test PRIVATE -Wall -Wextra -Werror -pedantic -coverage -O0 -ggdb)
 		target_link_options(libbuild_test PRIVATE -coverage)
 	else()
-		target_compile_options(libbuild_test PRIVATE -Wall -Wextra -Werror -pedantic)
+		target_compile_options(libbuild_test PRIVATE -Wall -Wextra -Werror -pedantic -O0)
 	endif()
 endif()
 set_target_properties(libbuild_test PROPERTIES
