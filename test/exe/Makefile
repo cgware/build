@@ -70,12 +70,12 @@ $(INTDIR_SRC)%.o: $(PKGDIR_SRC)%.c $(PKGSRC_H) $($(PKG)_HEADERS)
 
 endef
 
-include $(SRCDIR)pkg.mk
-
 .PHONY: test coverage
 
 test: exe/test
 
 coverage: test
-	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)/libbuild/src -d $(INTDIR)/libbuild/drivers
+	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)
+
+include $(SRCDIR)pkg.mk
 

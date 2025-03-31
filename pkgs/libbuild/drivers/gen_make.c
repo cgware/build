@@ -269,37 +269,72 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		[PKG_TYPE_LIB] = {STRVS("pkg/lib")},
 	};
 
-	make_def_t def_exe = defines[PKG_TYPE_EXE].def = make_add_act(&make, make_create_def(&make, STRV("pkg/exe")));
+	{
+		make_def_t def = defines[PKG_TYPE_EXE].def = make_add_act(&make, make_create_def(&make, STRV("pkg/exe")));
 
-	make_rule_t def_exe_phony = make_def_add_act(&make, def_exe, make_create_phony(&make));
+		make_rule_t def_phony = make_def_add_act(&make, def, make_create_phony(&make));
 
-	make_rule_add_depend(&make, def_exe_phony, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
-	make_rule_t def_exe_compile =
-		make_def_add_act(&make, def_exe, make_create_rule(&make, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")), 1));
-	make_rule_add_depend(&make, def_exe_compile, MRULE(MVAR(targets[PKGEXE].var)));
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
+		make_rule_t def_compile =
+			make_def_add_act(&make, def, make_create_rule(&make, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")), 1));
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(targets[PKGEXE].var)));
 
-	make_rule_t def_exe_rule_target = make_def_add_act(&make, def_exe, make_create_rule(&make, MRULE(MVAR(targets[PKGEXE].var)), 1));
-	make_rule_add_depend(&make, def_exe_rule_target, MRULE(MSTR(STRV("$($(PKG)_DRIVERS)"))));
-	make_rule_add_depend(&make, def_exe_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
-	make_rule_add_depend(&make, def_exe_rule_target, MRULE(MSTR(STRV("$($(PKG)_LIBS)"))));
+		make_rule_t def_rule_target = make_def_add_act(&make, def, make_create_rule(&make, MRULE(MVAR(targets[PKGEXE].var)), 1));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PKG)_DRIVERS)"))));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PKG)_LIBS)"))));
 
-	make_rule_add_act(&make, def_exe_rule_target, make_create_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)"))));
-	make_rule_add_act(&make,
-			  def_exe_rule_target,
-			  make_create_cmd(&make,
-					  MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) "
-						    "$$($$(notdir $($(PKG)_LIBS)):%=-l:%)"))));
+		make_rule_add_act(&make, def_rule_target, make_create_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)"))));
+		make_rule_add_act(
+			&make,
+			def_rule_target,
+			make_create_cmd(&make,
+					MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) "
+						  "$$($$(notdir $($(PKG)_LIBS)):%=-l:%)"))));
 
-	make_rule_t def_exe_rule_obj = make_def_add_act(&make, def_exe, make_create_rule(&make, MRULE(MSTR(STRV("$(INTDIR_SRC)%.o"))), 1));
-	make_rule_add_depend(&make, def_exe_rule_obj, MRULE(MSTR(STRV("$(PKGDIR_SRC)%.c"))));
-	make_rule_add_depend(&make, def_exe_rule_obj, MRULE(MVAR(pkgfiles[PKGSRC_H].var)));
-	make_rule_add_depend(&make, def_exe_rule_obj, MRULE(MSTR(STRV("$($(PKG)_HEADERS)"))));
-	make_rule_add_act(&make, def_exe_rule_obj, make_create_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)"))));
-	make_rule_add_act(
-		&make,
-		def_exe_rule_obj,
-		make_create_cmd(&make,
+		make_rule_t def_rule_obj = make_def_add_act(&make, def, make_create_rule(&make, MRULE(MSTR(STRV("$(INTDIR_SRC)%.o"))), 1));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(PKGDIR_SRC)%.c"))));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MVAR(pkgfiles[PKGSRC_H].var)));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PKG)_HEADERS)"))));
+		make_rule_add_act(&make, def_rule_obj, make_create_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)"))));
+		make_rule_add_act(
+			&make,
+			def_rule_obj,
+			make_create_cmd(
+				&make,
 				MCMD(STRV("$(TCC) -m$(BITS) -c $(PKGDIR_SRC:%=-I%) $($(PKG)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<"))));
+	}
+
+	make_add_act(&make, make_create_empty(&make));
+
+	{
+		make_def_t def = defines[PKG_TYPE_LIB].def = make_add_act(&make, make_create_def(&make, STRV("pkg/lib")));
+
+		make_rule_t def_phony = make_def_add_act(&make, def, make_create_phony(&make));
+
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
+		make_rule_t def_compile =
+			make_def_add_act(&make, def, make_create_rule(&make, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")), 1));
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(targets[PKGLIB].var)));
+
+		make_rule_t def_rule_target = make_def_add_act(&make, def, make_create_rule(&make, MRULE(MVAR(targets[PKGLIB].var)), 1));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
+
+		make_rule_add_act(&make, def_rule_target, make_create_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)"))));
+		make_rule_add_act(&make, def_rule_target, make_create_cmd(&make, MCMD(STRV("ar rcs $$@ $(PKGSRC_OBJ)"))));
+
+		make_rule_t def_rule_obj = make_def_add_act(&make, def, make_create_rule(&make, MRULE(MSTR(STRV("$(INTDIR_SRC)%.o"))), 1));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(PKGDIR_SRC)%.c"))));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MVAR(pkgfiles[PKGSRC_H].var)));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PKG)_HEADERS)"))));
+		make_rule_add_act(&make, def_rule_obj, make_create_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)"))));
+		make_rule_add_act(
+			&make,
+			def_rule_obj,
+			make_create_cmd(
+				&make,
+				MCMD(STRV("$(TCC) -m$(BITS) -c $(PKGDIR_SRC:%=-I%) $($(PKG)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<"))));
+	}
 
 	make_add_act(&make, make_create_empty(&make));
 

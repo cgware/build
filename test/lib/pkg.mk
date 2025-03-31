@@ -1,6 +1,6 @@
-PKGNAME := exe
-exe_HEADERS :=
-exe_INCLUDES :=
-exe_LIBS :=
-exe_DRIVERS :=
-$(eval $(call pkg/exe,exe))
+PKG := lib
+$(PKG)_HEADERS :=
+$(PKG)_INCLUDES :=
+$(PKG)_LIBS :=
+$(PKG)_DRIVERS :=
+$(eval $(call pkg/lib))
