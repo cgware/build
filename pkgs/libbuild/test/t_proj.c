@@ -199,7 +199,7 @@ TEST(proj_print_exe)
 		   "OUTDIR: \n"
 		   "\n"
 		   "[project.package]\n"
-		   "SRC: test/exe/src\n"
+		   "SRC: test/exe" SEP "src\n"
 		   "INCLUDE: \n"
 		   "\n");
 

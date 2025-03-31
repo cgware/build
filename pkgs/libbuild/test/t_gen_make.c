@@ -58,7 +58,7 @@ int test_empty_close(print_dst_ex_t dst)
 			    "LDFLAGS := \n"
 			    "endif\n"
 			    "\n"
-			    "OUTDIR := $(BUILDDIR)bin/$(ARCH)-$(CONFIG)/\n"
+			    "OUTDIR := $(BUILDDIR)bin" SEP "$(ARCH)-$(CONFIG)/\n"
 			    "INTDIR := $(OUTDIR)int\n"
 			    "LIBDIR := $(OUTDIR)lib\n"
 			    "BINDIR := $(OUTDIR)bin\n"

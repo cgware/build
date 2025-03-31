@@ -24,12 +24,13 @@ if(NOT MSVC)
 		target_compile_options(libbuild_test PRIVATE -Wall -Wextra -Werror -pedantic -coverage -O0 -ggdb)
 		target_link_options(libbuild_test PRIVATE -coverage)
 	else()
-		target_compile_options(libbuild_test PRIVATE -Wall -Wextra -Werror -pedantic -O0)
+		target_compile_options(libbuild_test PRIVATE -Wall -Wextra -Werror -pedantic)
 	endif()
 endif()
 set_target_properties(libbuild_test PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/bin/libbuild_test/${ARCH}-Debug/
 	RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/bin/libbuild_test/${ARCH}-Release/
+	VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 add_test(libbuild_build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --config ${CMAKE_BUILD_TYPE} --target libbuild_test)
 add_test(libbuild ${CMAKE_SOURCE_DIR}/bin/libbuild_test/${ARCH}-${CMAKE_BUILD_TYPE}/libbuild_test)

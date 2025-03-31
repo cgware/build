@@ -1,4 +1,4 @@
-file(GLOB_RECURSE build_src test/*.h test/*.c)
+file(GLOB_RECURSE build_src src/*.h src/*.c ${CMAKE_SOURCE_DIR}/pkgs/libbuild/drivers/*.c)
 add_executable(build ${build_src})
 target_link_libraries(build libbuild)
 if(NOT MSVC)
