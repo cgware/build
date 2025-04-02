@@ -56,13 +56,32 @@ PKGLIB = $(LIBDIR)/$(PKG).a
 PKGTST = $(TSTDIR)/$(PKG)
 
 define pkg/exe
+$(PKG) := $(PKGEXE)
+
 .PHONY: $(PKG)/compile
 
 $(PKG)/compile: $(PKGEXE)
 
 $(PKGEXE): $($(PKG)_DRIVERS) $(PKGSRC_OBJ) $($(PKG)_LIBS)
 	@mkdir -pv $$(@D)
-	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) $$($$(notdir $($(PKG)_LIBS)):%=-l:%)
+	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) $(patsubst %,-l:%,$(notdir $($(PKG)_LIBS)))
+
+$(INTDIR_SRC)%.o: $(PKGDIR_SRC)%.c $(PKGSRC_H) $($(PKG)_HEADERS)
+	@mkdir -pv $$(@D)
+	$(TCC) -m$(BITS) -c $(PKGDIR_SRC:%=-I%) $($(PKG)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<
+
+endef
+
+define pkg/lib
+$(PKG) := $(PKGLIB)
+
+.PHONY: $(PKG)/compile
+
+$(PKG)/compile: $(PKGLIB)
+
+$(PKGLIB): $(PKGSRC_OBJ)
+	@mkdir -pv $$(@D)
+	ar rcs $$@ $(PKGSRC_OBJ)
 
 $(INTDIR_SRC)%.o: $(PKGDIR_SRC)%.c $(PKGSRC_H) $($(PKG)_HEADERS)
 	@mkdir -pv $$(@D)

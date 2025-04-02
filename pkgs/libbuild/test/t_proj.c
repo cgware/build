@@ -75,6 +75,25 @@ TEST(proj_set_dir_exe)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	EXPECT_EQ(proj_set_dir(&proj, STRV("test/exe")), 0);
+	EXPECT_EQ(proj.pkgs.pkgs.cnt, 1);
+
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_set_dir_exe_oom)
+{
+	START;
+
+	proj_t proj = {0};
+	log_set_quiet(0, 1);
+	proj_init(&proj, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	mem_oom(1);
+	EXPECT_EQ(proj_set_dir(&proj, STRV("test/exe")), 1);
+	mem_oom(0);
 
 	proj_free(&proj);
 
@@ -89,6 +108,7 @@ TEST(proj_set_dir_lib)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	EXPECT_EQ(proj_set_dir(&proj, STRV("test/lib")), 0);
+	EXPECT_EQ(proj.pkgs.pkgs.cnt, 1);
 
 	proj_free(&proj);
 
@@ -111,6 +131,21 @@ TEST(proj_set_dir_pkgs_src)
 	END;
 }
 
+TEST(proj_set_dir_exe_dep_lib)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, ALLOC_STD);
+
+	EXPECT_EQ(proj_set_dir(&proj, STRV("test/exe_dep_lib")), 0);
+	EXPECT_EQ(proj.pkgs.pkgs.cnt, 2);
+
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_set_pkg)
 {
 	START;
@@ -120,8 +155,8 @@ TEST(proj_set_pkg)
 	proj_init(&proj, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(proj_set_pkg(NULL), NULL);
-	EXPECT_NE(proj_set_pkg(&proj), NULL);
+	EXPECT_EQ(proj_set_pkg(NULL, STRV_NULL, NULL), NULL);
+	EXPECT_NE(proj_set_pkg(&proj, STRV_NULL, NULL), NULL);
 
 	proj_free(&proj);
 
@@ -138,10 +173,10 @@ TEST(proj_add_pkg)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(proj_add_pkg(&proj), NULL);
+	EXPECT_EQ(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
 	mem_oom(0);
-	EXPECT_EQ(proj_add_pkg(NULL), NULL);
-	EXPECT_NE(proj_add_pkg(&proj), NULL);
+	EXPECT_EQ(proj_add_pkg(NULL, STRV_NULL, NULL), NULL);
+	EXPECT_NE(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
 
 	proj_free(&proj);
 
@@ -157,50 +192,13 @@ TEST(proj_print)
 	proj_init(&proj, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	pkg_t *pkg = proj_add_pkg(&proj);
-	pkg_set_dir(pkg, STRV("test/empty"));
-
 	char buf[256] = {0};
 	EXPECT_EQ(proj_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
-	proj_print(&proj, PRINT_DST_BUF(buf, sizeof(buf), 0));
+	EXPECT_EQ(proj_print(&proj, PRINT_DST_BUF(buf, sizeof(buf), 0)), 26);
 	EXPECT_STR(buf,
 		   "[project]\n"
 		   "DIR: \n"
 		   "OUTDIR: \n"
-		   "\n"
-		   "[project.package]\n"
-		   "SRC: \n"
-		   "INCLUDE: \n"
-		   "\n");
-
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_print_exe)
-{
-	START;
-
-	proj_t proj = {0};
-	log_set_quiet(0, 1);
-	proj_init(&proj, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	pkg_t *pkg = proj_set_pkg(&proj);
-	pkg_set_dir(pkg, STRV("test/exe"));
-
-	char buf[256] = {0};
-	EXPECT_EQ(proj_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
-	proj_print(&proj, PRINT_DST_BUF(buf, sizeof(buf), 0));
-	EXPECT_STR(buf,
-		   "[project]\n"
-		   "DIR: \n"
-		   "OUTDIR: \n"
-		   "\n"
-		   "[project.package]\n"
-		   "SRC: test/exe" SEP "src\n"
-		   "INCLUDE: \n"
 		   "\n");
 
 	proj_free(&proj);
@@ -217,12 +215,13 @@ STEST(proj)
 	RUN(proj_set_dir);
 	RUN(proj_set_dir_empty);
 	RUN(proj_set_dir_exe);
+	RUN(proj_set_dir_exe_oom);
 	RUN(proj_set_dir_lib);
 	RUN(proj_set_dir_pkgs_src);
+	RUN(proj_set_dir_exe_dep_lib);
 	RUN(proj_set_pkg);
 	RUN(proj_add_pkg);
 	RUN(proj_print);
-	RUN(proj_print_exe);
 
 	SEND;
 }

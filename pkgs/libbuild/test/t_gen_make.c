@@ -93,14 +93,16 @@ int test_empty_close(print_dst_ex_t dst)
 			   "PKGTST = $(TSTDIR)/$(PKG)\n"
 			   "\n"
 			   "define pkg/exe\n"
+			   "$(PKG) := $(PKGEXE)\n"
+			   "\n"
 			   ".PHONY: $(PKG)/compile\n"
 			   "\n"
 			   "$(PKG)/compile: $(PKGEXE)\n"
 			   "\n"
 			   "$(PKGEXE): $($(PKG)_DRIVERS) $(PKGSRC_OBJ) $($(PKG)_LIBS)\n"
 			   "	@mkdir -pv $$(@D)\n"
-			   "	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) $$($$(notdir "
-			   "$($(PKG)_LIBS)):%=-l:%)\n"
+			   "	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) $(patsubst "
+			   "%,-l:%,$(notdir $($(PKG)_LIBS)))\n"
 			   "\n"
 			   "$(INTDIR_SRC)%.o: $(PKGDIR_SRC)%.c $(PKGSRC_H) $($(PKG)_HEADERS)\n"
 			   "	@mkdir -pv $$(@D)\n"
@@ -109,6 +111,8 @@ int test_empty_close(print_dst_ex_t dst)
 			   "endef\n"
 			   "\n"
 			   "define pkg/lib\n"
+			   "$(PKG) := $(PKGLIB)\n"
+			   "\n"
 			   ".PHONY: $(PKG)/compile\n"
 			   "\n"
 			   "$(PKG)/compile: $(PKGLIB)\n"
@@ -169,6 +173,7 @@ TEST(gen_make_empty)
 	char buf[4096] = {0};
 
 	gen_driver_t drv = *drvi;
+
 	drv.dst = ((print_dst_ex_t){.dst = PRINT_DST_BUF(buf, sizeof(buf), 0), .open = test_empty_open, .close = test_empty_close});
 
 	file = 0;
@@ -209,14 +214,13 @@ int test_exe_close(print_dst_ex_t dst)
 
 	switch (file) {
 	case 0:
-		EXPECT_STRN(dst.dst.dst,
-			    "PKG := exe\n"
-			    "$(PKG)_HEADERS :=\n"
-			    "$(PKG)_INCLUDES :=\n"
-			    "$(PKG)_LIBS :=\n"
-			    "$(PKG)_DRIVERS :=\n"
-			    "$(eval $(call pkg/exe))\n",
-			    105);
+		EXPECT_STR(dst.dst.dst,
+			   "PKG := exe\n"
+			   "$(PKG)_HEADERS :=\n"
+			   "$(PKG)_INCLUDES :=\n"
+			   "$(PKG)_LIBS :=\n"
+			   "$(PKG)_DRIVERS :=\n"
+			   "$(eval $(call pkg/exe))\n");
 		break;
 	case 1:
 		break;
@@ -256,7 +260,8 @@ TEST(gen_make_exe)
 	char buf[4096] = {0};
 
 	gen_driver_t drv = *drvi;
-	drv.dst		 = ((print_dst_ex_t){.dst = PRINT_DST_BUF(buf, sizeof(buf), 0), .open = test_exe_open, .close = test_exe_close});
+
+	drv.dst = ((print_dst_ex_t){.dst = PRINT_DST_BUF(buf, sizeof(buf), 0), .open = test_exe_open, .close = test_exe_close});
 
 	file = 0;
 
@@ -296,14 +301,13 @@ int test_lib_close(print_dst_ex_t dst)
 
 	switch (file) {
 	case 0:
-		EXPECT_STRN(dst.dst.dst,
-			    "PKG := lib\n"
-			    "$(PKG)_HEADERS :=\n"
-			    "$(PKG)_INCLUDES :=\n"
-			    "$(PKG)_LIBS :=\n"
-			    "$(PKG)_DRIVERS :=\n"
-			    "$(eval $(call pkg/lib))\n",
-			    105);
+		EXPECT_STR(dst.dst.dst,
+			   "PKG := lib\n"
+			   "$(PKG)_HEADERS :=\n"
+			   "$(PKG)_INCLUDES :=\n"
+			   "$(PKG)_LIBS :=\n"
+			   "$(PKG)_DRIVERS :=\n"
+			   "$(eval $(call pkg/lib))\n");
 		break;
 	case 1:
 		break;
@@ -343,7 +347,109 @@ TEST(gen_make_lib)
 	char buf[4096] = {0};
 
 	gen_driver_t drv = *drvi;
-	drv.dst		 = ((print_dst_ex_t){.dst = PRINT_DST_BUF(buf, sizeof(buf), 0), .open = test_lib_open, .close = test_lib_close});
+
+	drv.dst = ((print_dst_ex_t){.dst = PRINT_DST_BUF(buf, sizeof(buf), 0), .open = test_lib_open, .close = test_lib_close});
+
+	file = 0;
+
+	EXPECT_EQ(drv.gen(&drv, &proj), 0);
+
+	proj_free(&proj);
+
+	END;
+}
+
+void *test_exe_dep_lib_open(print_dst_ex_t dst, const char *path, const char *mode)
+{
+	CSTART;
+
+	(void)mode;
+
+	switch (file) {
+	case 0:
+		EXPECT_STR(path, "./test/exe_dep_lib/pkgs/lib/pkg.mk");
+		break;
+	case 1:
+		EXPECT_STR(path, "./test/exe_dep_lib/pkgs/exe/pkg.mk");
+		break;
+	case 2:
+		EXPECT_STR(path, "./test/exe_dep_lib/Makefile");
+		break;
+	default:
+		EXPECT_FAIL("Unexpected file: %s\n", path);
+		break;
+	}
+
+	CEND;
+
+	return dst.dst.dst;
+}
+
+int test_exe_dep_lib_close(print_dst_ex_t dst)
+{
+	CSTART;
+
+	switch (file) {
+	case 0:
+		EXPECT_STR(dst.dst.dst,
+			   "PKG := lib\n"
+			   "$(PKG)_HEADERS :=\n"
+			   "$(PKG)_INCLUDES :=\n"
+			   "$(PKG)_LIBS :=\n"
+			   "$(PKG)_DRIVERS :=\n"
+			   "$(eval $(call pkg/lib))\n");
+
+		break;
+	case 1:
+		EXPECT_STR(dst.dst.dst,
+			   "PKG := exe\n"
+			   "$(PKG)_HEADERS :=\n"
+			   "$(PKG)_INCLUDES :=\n"
+			   "$(PKG)_LIBS := $(lib)\n"
+			   "$(PKG)_DRIVERS :=\n"
+			   "$(eval $(call pkg/exe))\n");
+		break;
+	case 2:
+		break;
+	default:
+		EXPECT_FAIL("%s", "Unexpected file");
+		break;
+	}
+
+	file++;
+
+	CEND;
+
+	return 0;
+}
+
+TEST(gen_make_exe_dep_lib)
+{
+	START;
+
+	strv_t dir = STRV("./test/exe_dep_lib/");
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, ALLOC_STD);
+	proj_set_dir(&proj, dir);
+
+	gen_driver_t *drvi = NULL;
+
+	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
+		if (i->type == GEN_DRIVER_TYPE) {
+			drvi = i->data;
+			if (strv_eq(STRV(drvi->param), STRV("M"))) {
+				break;
+			}
+		}
+	}
+
+	char buf[4096] = {0};
+
+	gen_driver_t drv = *drvi;
+
+	drv.dst = ((print_dst_ex_t){
+		.dst = PRINT_DST_BUF(buf, sizeof(buf), 0), .open = test_exe_dep_lib_open, .close = test_exe_dep_lib_close});
 
 	file = 0;
 
@@ -361,6 +467,7 @@ STEST(gen_make)
 	RUN(gen_make_empty);
 	RUN(gen_make_exe);
 	RUN(gen_make_lib);
+	RUN(gen_make_exe_dep_lib);
 
 	SEND;
 }

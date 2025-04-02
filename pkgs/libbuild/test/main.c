@@ -5,6 +5,8 @@
 
 STEST(gen_make);
 STEST(pkg);
+STEST(pkg_loader);
+STEST(pkgs);
 STEST(proj);
 STEST(var);
 
@@ -13,6 +15,8 @@ TEST(libbuild)
 	SSTART;
 	RUN(gen_make);
 	RUN(pkg);
+	RUN(pkg_loader);
+	RUN(pkgs);
 	RUN(proj);
 	RUN(var);
 	SEND;

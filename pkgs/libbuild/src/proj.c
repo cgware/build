@@ -1,6 +1,8 @@
 #include "proj.h"
 
+#include "file.h"
 #include "log.h"
+#include "pkg_loader.h"
 
 proj_t *proj_init(proj_t *proj, uint pkgs_cap, alloc_t alloc)
 {
@@ -8,8 +10,7 @@ proj_t *proj_init(proj_t *proj, uint pkgs_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	if (arr_init(&proj->pkgs, pkgs_cap, sizeof(pkg_t), alloc) == NULL) {
-		log_error("build", "proj", NULL, "failed to initialize packages array");
+	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -22,17 +23,25 @@ void proj_free(proj_t *proj)
 		return;
 	}
 
-	if (proj->is_pkg) {
-		pkg_free(&proj->pkg);
-	} else {
-		pkg_t *pkg;
-		arr_foreach(&proj->pkgs, pkg)
-		{
-			pkg_free(pkg);
-		}
+	pkgs_free(&proj->pkgs);
+}
+
+static int on_pkg(path_t *path, const char *folder, void *priv)
+{
+	(void)folder;
+	pkgs_t *pkgs = priv;
+
+	strv_t dir = STRVN(path->data, path->len);
+
+	strv_t name;
+	pathv_get_dir(dir, &name);
+
+	uint id;
+	if (pkgs_add_pkg(pkgs, name, &id) == NULL) {
+		return 1; // LCOV_EXCL_LINE
 	}
 
-	arr_free(&proj->pkgs);
+	return pkg_load(id, dir, pkgs, pkgs->alloc);
 }
 
 int proj_set_dir(proj_t *proj, strv_t dir)
@@ -40,6 +49,8 @@ int proj_set_dir(proj_t *proj, strv_t dir)
 	if (proj == NULL) {
 		return 1;
 	}
+
+	int ret = 0;
 
 	path_init(&proj->dir, dir);
 	path_init(&proj->outdir, STRV("bin" SEP "${ARCH}-${CONFIG}/"));
@@ -62,23 +73,25 @@ int proj_set_dir(proj_t *proj, strv_t dir)
 	}
 
 	if (is_src) {
-		pkg_t *pkg = proj_set_pkg(proj);
+		strv_t name;
+		pathv_get_dir(dir, &name);
 
-		if (pkg_set_dir(pkg, dir)) {
-			//return 1;
+		uint id;
+		if (proj_set_pkg(proj, name, &id) == NULL) {
+			ret = 1;
+		} else {
+			ret |= pkg_load(id, dir, &proj->pkgs, proj->pkgs.alloc);
 		}
-
-		pathv_get_dir(STRVN(proj->dir.data, proj->dir.len), &pkg->name);
 	}
 
 	if (is_pkgs) {
-		// TODO
+		ret |= files_foreach(&tmp, on_pkg, NULL, &proj->pkgs);
 	}
 
-	return 0;
+	return ret;
 }
 
-pkg_t *proj_set_pkg(proj_t *proj)
+pkg_t *proj_set_pkg(proj_t *proj, strv_t name, uint *id)
 {
 	if (proj == NULL) {
 		return NULL;
@@ -86,21 +99,16 @@ pkg_t *proj_set_pkg(proj_t *proj)
 
 	proj->is_pkg = 1;
 
-	return pkg_init(&proj->pkg);
+	return pkgs_add_pkg(&proj->pkgs, name, id);
 }
 
-pkg_t *proj_add_pkg(proj_t *proj)
+pkg_t *proj_add_pkg(proj_t *proj, strv_t name, uint *id)
 {
 	if (proj == NULL) {
 		return NULL;
 	}
 
-	pkg_t *pkg = arr_add(&proj->pkgs);
-	if (pkg == NULL) {
-		return NULL;
-	}
-
-	return pkg_init(pkg);
+	return pkgs_add_pkg(&proj->pkgs, name, id);
 }
 
 int proj_print(const proj_t *proj, print_dst_t dst)
@@ -121,15 +129,7 @@ int proj_print(const proj_t *proj, print_dst_t dst)
 			     proj->outdir.len,
 			     proj->outdir.data);
 
-	if (proj->is_pkg) {
-		dst.off += pkg_print(&proj->pkg, dst);
-	} else {
-		const pkg_t *pkg;
-		arr_foreach(&proj->pkgs, pkg)
-		{
-			dst.off += pkg_print(pkg, dst);
-		}
-	}
+	dst.off += pkgs_print(&proj->pkgs, dst);
 
 	return dst.off - off;
 }

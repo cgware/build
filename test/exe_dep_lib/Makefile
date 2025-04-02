@@ -91,10 +91,11 @@ endef
 
 .PHONY: test coverage
 
-test: lib/test
+test: lib/test exe/test
 
 coverage: test
 	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)
 
-include $(SRCDIR)pkg.mk
+include $(SRCDIR)pkgs/lib/pkg.mk
+include $(SRCDIR)pkgs/exe/pkg.mk
 
