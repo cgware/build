@@ -68,7 +68,7 @@ int pkg_set_cfg(uint pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs)
 
 	cfg_var_t deps;
 	if (cfg_get_var(cfg, root, STRV("deps"), &deps) == 0) {
-		cfg_var_t dep;
+		cfg_var_t dep = CFG_VAL_END;
 		while (!cfg_get_arr(cfg, deps, &dep)) {
 			strv_t dep_str;
 			if (cfg_get_lit(cfg, dep, &dep_str)) {
