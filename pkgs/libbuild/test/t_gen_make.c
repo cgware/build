@@ -367,10 +367,10 @@ void *test_exe_dep_lib_open(print_dst_ex_t dst, const char *path, const char *mo
 
 	switch (file) {
 	case 0:
-		EXPECT_STR(path, "./test/exe_dep_lib/pkgs/lib/pkg.mk");
+		EXPECT_STR(path, "./test/exe_dep_lib/pkgs" SEP "lib" SEP "pkg.mk");
 		break;
 	case 1:
-		EXPECT_STR(path, "./test/exe_dep_lib/pkgs/exe/pkg.mk");
+		EXPECT_STR(path, "./test/exe_dep_lib/pkgs" SEP "exe" SEP "pkg.mk");
 		break;
 	case 2:
 		EXPECT_STR(path, "./test/exe_dep_lib/Makefile");
