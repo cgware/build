@@ -84,7 +84,7 @@ TEST(pkg_set_cfg)
 {
 	START;
 
-	EXPECT_EQ(pkg_set_cfg(0, NULL, CFG_VAL_END, NULL), 1);
+	EXPECT_EQ(pkg_set_cfg(0, NULL, CFG_VAR_END, NULL), 1);
 
 	END;
 }
