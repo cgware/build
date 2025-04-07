@@ -178,7 +178,9 @@ TEST(gen_make_empty)
 
 	file = 0;
 
+	log_set_quiet(0, 1);
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
+	log_set_quiet(0, 0);
 
 	proj_free(&proj);
 

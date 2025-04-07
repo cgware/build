@@ -1,6 +1,6 @@
-file(GLOB_RECURSE build_src src/*.h src/*.c ${CMAKE_SOURCE_DIR}/pkgs/libbuild/drivers/*.c)
+file(GLOB_RECURSE build_src src/*.h src/*.c ${CMAKE_SOURCE_DIR}/pkgs/cbuild/drivers/*.c)
 add_executable(build ${build_src})
-target_link_libraries(build libbuild)
+target_link_libraries(build cbuild)
 if(NOT MSVC)
 	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 		target_compile_options(build PRIVATE -Wall -Wextra -Werror -pedantic -coverage -O0 -ggdb)

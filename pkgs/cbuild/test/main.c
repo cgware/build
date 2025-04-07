@@ -10,7 +10,7 @@ STEST(pkgs);
 STEST(proj);
 STEST(var);
 
-TEST(libbuild)
+TEST(cbuild)
 {
 	SSTART;
 	RUN(gen_make);
@@ -32,7 +32,7 @@ int main()
 
 	t_init();
 
-	t_run(test_libbuild, 1);
+	t_run(test_cbuild, 1);
 
 	int ret = t_finish();
 

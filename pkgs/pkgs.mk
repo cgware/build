@@ -1,5 +1,5 @@
-include $(SRCDIR)pkgs/libbuild/pkg.mk
+include $(SRCDIR)pkgs/cbuild/pkg.mk
 include $(SRCDIR)pkgs/build/pkg.mk
 
 .PHONY: pkgs/test
-pkgs/test: libbuild/test build/test
+pkgs/test: cbuild/test build/test

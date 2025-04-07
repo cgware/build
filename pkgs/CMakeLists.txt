@@ -1,2 +1,2 @@
-add_subdirectory(libbuild)
+add_subdirectory(cbuild)
 add_subdirectory(build)

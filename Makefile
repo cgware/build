@@ -98,7 +98,7 @@ test: pkgs/test
 
 .PHONY: coverage
 coverage: test
-	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)/libbuild/src -d $(INTDIR)/libbuild/drivers
+	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)/cbuild/src -d $(INTDIR)/cbuild/drivers
 ifeq ($(SHOW), true)
 	genhtml -q -o $(BUILDDIR)/report/coverage $(BUILDDIR)/bin/lcov.info 
 	open $(BUILDDIR)/report/coverage/index.html
