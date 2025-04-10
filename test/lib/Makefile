@@ -55,8 +55,14 @@ PKGEXE = $(BINDIR)/$(PKG)
 PKGLIB = $(LIBDIR)/$(PKG).a
 PKGTST = $(TSTDIR)/$(PKG)
 
+.PHONY: all
+
+all:
+
 define pkg/exe
 $(PKG) := $(PKGEXE)
+
+all: $(PKG)/compile
 
 .PHONY: $(PKG)/compile
 
@@ -64,7 +70,7 @@ $(PKG)/compile: $(PKGEXE)
 
 $(PKGEXE): $($(PKG)_DRIVERS) $(PKGSRC_OBJ) $($(PKG)_LIBS)
 	@mkdir -pv $$(@D)
-	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) $(patsubst %,-l:%,$(notdir $($(PKG)_LIBS)))
+	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) $($(PKG)_LIBS)
 
 $(INTDIR_SRC)%.o: $(PKGDIR_SRC)%.c $(PKGSRC_H) $($(PKG)_HEADERS)
 	@mkdir -pv $$(@D)
@@ -74,6 +80,8 @@ endef
 
 define pkg/lib
 $(PKG) := $(PKGLIB)
+
+all: $(PKG)/compile
 
 .PHONY: $(PKG)/compile
 

@@ -55,8 +55,14 @@ PKGEXE = $(BINDIR)/$(PKG)
 PKGLIB = $(LIBDIR)/$(PKG).a
 PKGTST = $(TSTDIR)/$(PKG)
 
+.PHONY: all
+
+all:
+
 define pkg/exe
 $(PKG) := $(PKGEXE)
+
+all: $(PKG)/compile
 
 .PHONY: $(PKG)/compile
 
@@ -74,6 +80,8 @@ endef
 
 define pkg/lib
 $(PKG) := $(PKGLIB)
+
+all: $(PKG)/compile
 
 .PHONY: $(PKG)/compile
 

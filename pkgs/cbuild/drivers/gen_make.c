@@ -286,6 +286,10 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 	}
 	make_add_act(&make, make_create_empty(&make));
 
+	make_rule_t phony_all = make_add_act(&make, make_create_phony(&make));
+	make_rule_add_depend(&make, phony_all, MRULE(MSTR(STRV("all"))));
+	make_add_act(&make, make_create_rule(&make, MRULE(MSTR(STRV("all"))), 1));
+
 	defines_t defines[] = {
 		[PKG_TYPE_EXE] = {STRVS("pkg/exe")},
 		[PKG_TYPE_LIB] = {STRVS("pkg/lib")},
@@ -299,7 +303,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 				 MVAR(targets[PKGEXE].var));
 		make_def_add_act(&make, def, make_create_empty(&make));
 
+		make_rule_t def_all = make_def_add_act(&make, def, make_create_rule(&make, MRULE(MSTR(STRV("all"))), 1));
+		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
+
 		make_rule_t def_phony = make_def_add_act(&make, def, make_create_phony(&make));
+		
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
 		make_rule_t def_compile =
 			make_def_add_act(&make, def, make_create_rule(&make, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")), 1));
@@ -339,6 +347,9 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 				 make_def_add_act(&make, def, make_create_var(&make, STRV("$(PKG)"), MAKE_VAR_INST, NULL)),
 				 MVAR(targets[PKGLIB].var));
 		make_def_add_act(&make, def, make_create_empty(&make));
+
+		make_rule_t def_all = make_def_add_act(&make, def, make_create_rule(&make, MRULE(MSTR(STRV("all"))), 1));
+		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
 
 		make_rule_t def_phony = make_def_add_act(&make, def, make_create_phony(&make));
 
