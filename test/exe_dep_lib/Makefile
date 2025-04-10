@@ -64,7 +64,7 @@ $(PKG)/compile: $(PKGEXE)
 
 $(PKGEXE): $($(PKG)_DRIVERS) $(PKGSRC_OBJ) $($(PKG)_LIBS)
 	@mkdir -pv $$(@D)
-	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) $(patsubst %,-l:%,$(notdir $($(PKG)_LIBS)))
+	$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) $($(PKG)_LIBS)
 
 $(INTDIR_SRC)%.o: $(PKGDIR_SRC)%.c $(PKGSRC_H) $($(PKG)_HEADERS)
 	@mkdir -pv $$(@D)

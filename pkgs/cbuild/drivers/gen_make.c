@@ -315,8 +315,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 			&make,
 			def_rule_target,
 			make_create_cmd(&make,
-					MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) -L$(LIBDIR) "
-						  "$(patsubst %,-l:%,$(notdir $($(PKG)_LIBS)))"))));
+					MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PKG)_DRIVERS) $($(PKG)_LIBS)"))));
 
 		make_rule_t def_rule_obj = make_def_add_act(&make, def, make_create_rule(&make, MRULE(MSTR(STRV("$(INTDIR_SRC)%.o"))), 1));
 		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(PKGDIR_SRC)%.c"))));
