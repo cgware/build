@@ -8,6 +8,7 @@ typedef struct proj_s {
 	path_t dir;
 	path_t outdir;
 	pkgs_t pkgs;
+	targets_t targets;
 	uint8_t is_pkg : 1;
 } proj_t;
 
