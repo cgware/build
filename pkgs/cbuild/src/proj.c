@@ -10,7 +10,7 @@ proj_t *proj_init(proj_t *proj, uint pkgs_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL) {
+	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL || targets_init(&proj->targets, pkgs_cap, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -23,13 +23,14 @@ void proj_free(proj_t *proj)
 		return;
 	}
 
+	targets_free(&proj->targets);
 	pkgs_free(&proj->pkgs);
 }
 
 static int on_pkg(path_t *path, const char *folder, void *priv)
 {
 	(void)folder;
-	pkgs_t *pkgs = priv;
+	proj_t *proj = priv;
 
 	strv_t dir = STRVN(path->data, path->len);
 
@@ -37,11 +38,11 @@ static int on_pkg(path_t *path, const char *folder, void *priv)
 	pathv_get_dir(dir, &name);
 
 	uint id;
-	if (pkgs_add_pkg(pkgs, name, &id) == NULL) {
+	if (pkgs_add_pkg(&proj->pkgs, name, &id) == NULL) {
 		return 1; // LCOV_EXCL_LINE
 	}
 
-	return pkg_load(id, dir, pkgs, pkgs->alloc);
+	return pkg_load(id, dir, &proj->pkgs, &proj->targets, proj->pkgs.alloc);
 }
 
 int proj_set_dir(proj_t *proj, strv_t dir)
@@ -80,12 +81,12 @@ int proj_set_dir(proj_t *proj, strv_t dir)
 		if (proj_set_pkg(proj, name, &id) == NULL) {
 			ret = 1;
 		} else {
-			ret |= pkg_load(id, dir, &proj->pkgs, proj->pkgs.alloc);
+			ret |= pkg_load(id, dir, &proj->pkgs, &proj->targets, proj->pkgs.alloc);
 		}
 	}
 
 	if (is_pkgs) {
-		ret |= files_foreach(&tmp, on_pkg, NULL, &proj->pkgs);
+		ret |= files_foreach(&tmp, on_pkg, NULL, proj);
 	}
 
 	return ret;
@@ -129,7 +130,7 @@ int proj_print(const proj_t *proj, print_dst_t dst)
 			     proj->outdir.len,
 			     proj->outdir.data);
 
-	dst.off += pkgs_print(&proj->pkgs, dst);
+	dst.off += pkgs_print(&proj->pkgs, &proj->targets, dst);
 
 	return dst.off - off;
 }

@@ -12,19 +12,24 @@ typedef struct defines_s {
 	make_def_t def;
 } defines_t;
 
-static int gen_pkg(uint id, strv_t name, make_t *make, make_inc_t inc, const defines_t *defines, const pkgs_t *pkgs, arr_t *deps,
+static int gen_pkg(uint id, strv_t name, make_t *make, make_inc_t inc, const defines_t *defines, const pkgs_t *pkgs, const targets_t *targets, arr_t *deps,
 		   print_dst_ex_t dst)
 
 {
 	const pkg_t *pkg = pkgs_get_pkg(pkgs, id);
+	if (!pkg->is_target) {
+		log_error("make", "build", NULL, "Package with multiple targets is not supported");
+		return 1;
+	}
+
+	const target_t *target = targets_get(targets, pkg->targets);
 
 	make_var_add_val(make, make_inc_add_act(make, inc, make_create_var(make, STRV("PKG"), MAKE_VAR_INST, NULL)), MSTR(name));
 
 	make_inc_add_act(make, inc, make_create_var(make, STRV("$(PKG)_HEADERS"), MAKE_VAR_INST, NULL));
 	make_inc_add_act(make, inc, make_create_var(make, STRV("$(PKG)_INCLUDES"), MAKE_VAR_INST, NULL));
 	make_act_t libs = make_inc_add_act(make, inc, make_create_var(make, STRV("$(PKG)_LIBS"), MAKE_VAR_INST, NULL));
-
-	pkgs_get_pkg_deps(pkgs, id, deps);
+	targets_get_deps(targets, pkg->targets, deps);
 
 	char buff[256] = {0};
 
@@ -44,7 +49,7 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_inc_t inc, const def
 
 	make_inc_add_act(make, inc, make_create_var(make, STRV("$(PKG)_DRIVERS"), MAKE_VAR_INST, NULL));
 
-	make_inc_add_act(make, inc, make_create_eval_def(make, defines[pkg->type].def));
+	make_inc_add_act(make, inc, make_create_eval_def(make, defines[target->type].def));
 
 	path_t make_path = pkg->dir;
 	path_child(&make_path, STRV("pkg.mk"));
@@ -291,12 +296,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 	make_add_act(&make, make_create_rule(&make, MRULE(MSTR(STRV("all"))), 1));
 
 	defines_t defines[] = {
-		[PKG_TYPE_EXE] = {STRVS("pkg/exe")},
-		[PKG_TYPE_LIB] = {STRVS("pkg/lib")},
+		[TARGET_TYPE_EXE] = {STRVS("exe")},
+		[TARGET_TYPE_LIB] = {STRVS("lib")},
 	};
 
 	{
-		make_def_t def = defines[PKG_TYPE_EXE].def = make_add_act(&make, make_create_def(&make, STRV("pkg/exe")));
+		make_def_t def = defines[TARGET_TYPE_EXE].def = make_add_act(&make, make_create_def(&make, defines[TARGET_TYPE_EXE].name));
 
 		make_var_add_val(&make,
 				 make_def_add_act(&make, def, make_create_var(&make, STRV("$(PKG)"), MAKE_VAR_INST, NULL)),
@@ -307,7 +312,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
 
 		make_rule_t def_phony = make_def_add_act(&make, def, make_create_phony(&make));
-		
+
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")));
 		make_rule_t def_compile =
 			make_def_add_act(&make, def, make_create_rule(&make, MRULEACT(MSTR(STRV("$(PKG)")), STRV("/compile")), 1));
@@ -341,7 +346,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 	make_add_act(&make, make_create_empty(&make));
 
 	{
-		make_def_t def = defines[PKG_TYPE_LIB].def = make_add_act(&make, make_create_def(&make, STRV("pkg/lib")));
+		make_def_t def = defines[TARGET_TYPE_LIB].def = make_add_act(&make, make_create_def(&make, defines[TARGET_TYPE_LIB].name));
 
 		make_var_add_val(&make,
 				 make_def_add_act(&make, def, make_create_var(&make, STRV("$(PKG)"), MAKE_VAR_INST, NULL)),
@@ -399,7 +404,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
 
-		gen_pkg(0, name, &make, inc, defines, &proj->pkgs, &deps, drv->dst);
+		gen_pkg(0, name, &make, inc, defines, &proj->pkgs, &proj->targets, &deps, drv->dst);
 
 		arr_free(&deps);
 
@@ -412,7 +417,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		arr_t order = {0};
 		arr_init(&order, proj->pkgs.pkgs.cnt, sizeof(uint), ALLOC_STD);
 
-		pkgs_get_build_order(&proj->pkgs, &order);
+		pkgs_get_build_order(&proj->pkgs, &proj->targets, &order);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
@@ -426,7 +431,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 			str_cat(&buf, STRV("/pkg.mk"));
 			make_inc_t inc = make_add_act(&make, make_create_inc(&make, STRV_STR(buf)));
 
-			gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, drv->dst);
+			gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &proj->targets, &deps, drv->dst);
 
 			make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
 

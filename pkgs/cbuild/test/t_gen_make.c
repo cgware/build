@@ -96,7 +96,7 @@ int test_empty_close(print_dst_ex_t dst)
 			   "\n"
 			   "all:\n"
 			   "\n"
-			   "define pkg/exe\n"
+			   "define exe\n"
 			   "$(PKG) := $(PKGEXE)\n"
 			   "\n"
 			   "all: $(PKG)/compile\n"
@@ -115,7 +115,7 @@ int test_empty_close(print_dst_ex_t dst)
 			   "\n"
 			   "endef\n"
 			   "\n"
-			   "define pkg/lib\n"
+			   "define lib\n"
 			   "$(PKG) := $(PKGLIB)\n"
 			   "\n"
 			   "all: $(PKG)/compile\n"
@@ -229,7 +229,7 @@ int test_exe_close(print_dst_ex_t dst)
 			   "$(PKG)_INCLUDES :=\n"
 			   "$(PKG)_LIBS :=\n"
 			   "$(PKG)_DRIVERS :=\n"
-			   "$(eval $(call pkg/exe))\n");
+			   "$(eval $(call exe))\n");
 		break;
 	case 1:
 		break;
@@ -316,7 +316,7 @@ int test_lib_close(print_dst_ex_t dst)
 			   "$(PKG)_INCLUDES :=\n"
 			   "$(PKG)_LIBS :=\n"
 			   "$(PKG)_DRIVERS :=\n"
-			   "$(eval $(call pkg/lib))\n");
+			   "$(eval $(call lib))\n");
 		break;
 	case 1:
 		break;
@@ -406,7 +406,7 @@ int test_exe_dep_lib_close(print_dst_ex_t dst)
 			   "$(PKG)_INCLUDES :=\n"
 			   "$(PKG)_LIBS :=\n"
 			   "$(PKG)_DRIVERS :=\n"
-			   "$(eval $(call pkg/lib))\n");
+			   "$(eval $(call lib))\n");
 
 		break;
 	case 1:
@@ -416,7 +416,7 @@ int test_exe_dep_lib_close(print_dst_ex_t dst)
 			   "$(PKG)_INCLUDES :=\n"
 			   "$(PKG)_LIBS := $(lib)\n"
 			   "$(PKG)_DRIVERS :=\n"
-			   "$(eval $(call pkg/exe))\n");
+			   "$(eval $(call exe))\n");
 		break;
 	case 2:
 		break;
