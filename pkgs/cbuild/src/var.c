@@ -5,13 +5,13 @@
 #define MIN_VAR_NAME_LEN 4
 
 static const strv_t var_names[__VAR_CNT] = {
-	[VAR_ARCH]   = STRVS("ARCH"),
-	[VAR_CONFIG] = STRVS("CONFIG"),
+	[VAR_ARCH]   = STRVT("ARCH"),
+	[VAR_CONFIG] = STRVT("CONFIG"),
 };
 
 int var_replace(str_t *str, const strv_t *values)
 {
-	if (str == NULL || values == NULL) {
+	if (str == NULL || str->data == NULL || values == NULL) {
 		return 1;
 	}
 

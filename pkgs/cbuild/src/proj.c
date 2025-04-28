@@ -1,6 +1,6 @@
 #include "proj.h"
 
-#include "file.h"
+#include "fs.h"
 #include "log.h"
 #include "pkg_loader.h"
 
@@ -10,7 +10,7 @@ proj_t *proj_init(proj_t *proj, uint pkgs_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL) {
+	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL || targets_init(&proj->targets, pkgs_cap, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -23,28 +23,11 @@ void proj_free(proj_t *proj)
 		return;
 	}
 
+	targets_free(&proj->targets);
 	pkgs_free(&proj->pkgs);
 }
 
-static int on_pkg(path_t *path, const char *folder, void *priv)
-{
-	(void)folder;
-	pkgs_t *pkgs = priv;
-
-	strv_t dir = STRVN(path->data, path->len);
-
-	strv_t name;
-	pathv_get_dir(dir, &name);
-
-	uint id;
-	if (pkgs_add_pkg(pkgs, name, &id) == NULL) {
-		return 1; // LCOV_EXCL_LINE
-	}
-
-	return pkg_load(id, dir, pkgs, pkgs->alloc);
-}
-
-int proj_set_dir(proj_t *proj, strv_t dir)
+int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir)
 {
 	if (proj == NULL) {
 		return 1;
@@ -58,11 +41,11 @@ int proj_set_dir(proj_t *proj, strv_t dir)
 	path_t tmp = {0};
 	path_init(&tmp, dir);
 	path_child(&tmp, STRV("src"));
-	int is_src = path_is_dir(&tmp);
+	int is_src = fs_isdir(fs, STRVS(tmp));
 
 	path_init(&tmp, dir);
 	path_child(&tmp, STRV("pkgs"));
-	int is_pkgs = path_is_dir(&tmp);
+	int is_pkgs = fs_isdir(fs, STRVS(tmp));
 
 	if (!is_src && !is_pkgs) {
 		log_error("build", "proj", NULL, "No 'src' or 'pkgs' folder found: %.*s\n", dir.len, dir.data);
@@ -80,12 +63,34 @@ int proj_set_dir(proj_t *proj, strv_t dir)
 		if (proj_set_pkg(proj, name, &id) == NULL) {
 			ret = 1;
 		} else {
-			ret |= pkg_load(id, dir, &proj->pkgs, proj->pkgs.alloc);
+			ret |= pkg_load(id, fs, dir, &proj->pkgs, &proj->targets, proj->pkgs.alloc);
 		}
 	}
 
 	if (is_pkgs) {
-		ret |= files_foreach(&tmp, on_pkg, NULL, &proj->pkgs);
+		strbuf_t dirs = {0};
+		strbuf_init(&dirs, 4, 8, ALLOC_STD);
+		fs_lsdir(fs, STRVS(tmp), &dirs);
+
+		uint index = 0;
+		strv_t dir;
+
+		size_t tmp_len = tmp.len;
+		strbuf_foreach(&dirs, index, dir)
+		{
+			path_child(&tmp, dir);
+
+			uint id;
+			if (pkgs_add_pkg(&proj->pkgs, dir, &id) == NULL) {
+				ret = 1; // LCOV_EXCL_LINE
+			} else {
+				ret |= pkg_load(id, fs, STRVS(tmp), &proj->pkgs, &proj->targets, proj->pkgs.alloc);
+			}
+
+			tmp.len = tmp_len;
+		}
+
+		strbuf_free(&dirs);
 	}
 
 	return ret;
@@ -129,7 +134,7 @@ int proj_print(const proj_t *proj, print_dst_t dst)
 			     proj->outdir.len,
 			     proj->outdir.data);
 
-	dst.off += pkgs_print(&proj->pkgs, dst);
+	dst.off += pkgs_print(&proj->pkgs, &proj->targets, dst);
 
 	return dst.off - off;
 }

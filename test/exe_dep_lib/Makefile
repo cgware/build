@@ -59,7 +59,7 @@ PKGTST = $(TSTDIR)/$(PKG)
 
 all:
 
-define pkg/exe
+define exe
 $(PKG) := $(PKGEXE)
 
 all: $(PKG)/compile
@@ -78,7 +78,7 @@ $(INTDIR_SRC)%.o: $(PKGDIR_SRC)%.c $(PKGSRC_H) $($(PKG)_HEADERS)
 
 endef
 
-define pkg/lib
+define lib
 $(PKG) := $(PKGLIB)
 
 all: $(PKG)/compile

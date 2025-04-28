@@ -1,20 +1,19 @@
 #include "pkg.h"
 
-#include "file.h"
 #include "file/cfg_parse.h"
 #include "log.h"
 
-pkg_t *pkg_init(pkg_t *pkg)
+pkg_t *pkg_init(pkg_t *pkg, uint id)
 {
 	if (pkg == NULL) {
 		return NULL;
 	}
 
-	pkg->type = PKG_TYPE_UNKNOWN;
-	pkg->dir  = (path_t){0};
-	pkg->src  = (path_t){0};
-	pkg->inc  = (path_t){0};
-	pkg->deps = LIST_END;
+	pkg->id	       = id;
+	pkg->dir       = (path_t){0};
+	pkg->src       = (path_t){0};
+	pkg->inc       = (path_t){0};
+	pkg->targets   = LIST_END;
 
 	return pkg;
 }
@@ -26,29 +25,40 @@ void pkg_free(pkg_t *pkg)
 	}
 }
 
-static const char *pkg_type_str[] = {
-	[PKG_TYPE_UNKNOWN] = "UNKNOWN",
-	[PKG_TYPE_EXE]	   = "EXE",
-	[PKG_TYPE_LIB]	   = "LIB",
-};
+target_t *pkg_add_target(pkg_t *pkg, targets_t *targets, strv_t name, lnode_t *id)
+{
+	if (pkg == NULL || targets == NULL) {
+		return NULL;
+	}
 
-int pkg_print(const pkg_t *pkg, print_dst_t dst)
+	target_t *target = targets_add(targets, &pkg->targets, name, id);
+	if (target == NULL) {
+		return NULL;
+	}
+
+	target->pkg = pkg->id;
+	return target;
+}
+
+int pkg_print(const pkg_t *pkg, const targets_t *targets, print_dst_t dst)
 {
 	int off = dst.off;
 
 	dst.off += c_dprintf(dst,
 			     "[package]\n"
-			     "TYPE: %s\n"
+			     "ID: %d\n"
 			     "DIR: %.*s\n"
 			     "SRC: %.*s\n"
 			     "INC: %.*s\n",
-			     pkg_type_str[pkg->type],
+			     pkg->id,
 			     pkg->dir.len,
 			     pkg->dir.data,
 			     pkg->src.len,
 			     pkg->src.data,
 			     pkg->inc.len,
 			     pkg->inc.data);
+
+	dst.off += targets_print(targets, pkg->targets, dst);
 
 	return dst.off - off;
 }

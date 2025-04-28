@@ -14,7 +14,7 @@ int main(int argc, const char **argv)
 
 	log_t log = {0};
 	log_set(&log);
-	log_add_callback(log_std_cb, PRINT_DST_FILE(stderr), LOG_INFO, 1, 1);
+	log_add_callback(log_std_cb, PRINT_DST_STD(), LOG_INFO, 1, 1);
 
 	strv_t source = STRV(".");
 
@@ -34,7 +34,11 @@ int main(int argc, const char **argv)
 	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
 		if (i->type == GEN_DRIVER_TYPE) {
 			gen_driver_t *drv     = i->data;
-			gens[gen_drivers_cnt] = (opt_enum_val_t){drv->param, drv->desc, drv};
+			gens[gen_drivers_cnt] = (opt_enum_val_t){
+				.param = drv->param,
+				.desc  = drv->desc,
+				.priv  = drv,
+			};
 			gen_drivers_cnt++;
 		}
 	}
@@ -46,7 +50,7 @@ int main(int argc, const char **argv)
 	};
 
 	opt_t opts[] = {
-		OPT('s', "source", OPT_STR, "<path>", "Specify source directory", &source.data, {0}, OPT_OPT),
+		OPT('s', "source", OPT_STR, "<path>", "Specify source directory", &source, {0}, OPT_OPT),
 		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
 	};
 
@@ -54,18 +58,23 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	source.len = strv_len(source);
+	fs_t fs = {0};
+	fs_init(&fs, 0, 0, ALLOC_STD);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	path_t dir = {0};
-	if (path_get_cwd(&dir) == NULL) {
+	path_t path = {0};
+
+	str_t dir = STRB(path.data, 0);
+	if (fs_getcwd(&fs, &dir)) {
 		return 1;
 	}
-	path_merge(&dir, source);
+	path.len = dir.len;
 
-	if (proj_set_dir(&proj, STRVN(dir.data, dir.len))) {
+	path_merge(&path, source);
+
+	if (proj_set_dir(&proj, &fs, STRVS(path))) {
 		return 1;
 	}
 
@@ -73,14 +82,14 @@ int main(int argc, const char **argv)
 
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
-	gen_driver.dst = PRINT_DST_FILE_EX();
+	gen_driver.fs = &fs;
 	gen_driver.gen(&gen_driver, &proj);
 
 	proj_free(&proj);
+	fs_free(&fs);
 
 	mem_free(gens, gen_drivers_cnt * sizeof(opt_enum_val_t));
 
 	mem_print(PRINT_DST_STD());
-
 	return 0;
 }

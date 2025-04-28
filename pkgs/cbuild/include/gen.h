@@ -2,16 +2,16 @@
 #define GEN_H
 
 #include "driver.h"
-#include "file.h"
+#include "fs.h"
 #include "proj.h"
 
 typedef struct gen_driver_s gen_driver_t;
 
 struct gen_driver_s {
-	const char *param;
+	strv_t param;
 	const char *desc;
 	int (*gen)(const gen_driver_t *drv, const proj_t *proj);
-	print_dst_ex_t dst;
+	fs_t *fs;
 };
 
 #define GEN_DRIVER_TYPE 1
