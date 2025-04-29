@@ -92,8 +92,7 @@ static int get_target_deps(const targets_t *targets, const target_t *target, arr
 	{
 		const target_t *dep_target = list_get_data(&targets->targets, *dep);
 		get_target_deps(targets, dep_target, arr);
-		uint index = arr_addu(arr, &targets_get(targets, *dep)->pkg);
-		ret |= index >= arr->cnt;
+		ret |= arr_addu(arr, &targets_get(targets, *dep)->pkg);
 	}
 
 	return ret;
@@ -109,8 +108,7 @@ static int get_pkg_targets(const pkgs_t *pkgs, const targets_t *targets, uint id
 	list_foreach(&targets->targets, pkg->targets, target)
 	{
 		get_target_deps(targets, target, arr);
-		uint index = arr_addu(arr, &target->pkg);
-		ret |= index >= arr->cnt;
+		ret |= arr_addu(arr, &target->pkg);
 	}
 
 	return ret;
@@ -125,8 +123,7 @@ int pkgs_get_build_order(const pkgs_t *pkgs, const targets_t *targets, arr_t *or
 	int ret = 0;
 	for (uint i = 0; i < pkgs->pkgs.cnt; i++) {
 		ret |= get_pkg_targets(pkgs, targets, i, order);
-		uint index = arr_addu(order, &i);
-		ret |= index >= order->cnt;
+		ret |= arr_addu(order, &i);
 	}
 
 	return ret;

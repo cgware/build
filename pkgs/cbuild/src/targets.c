@@ -12,7 +12,7 @@ targets_t *targets_init(targets_t *targets, uint targets_cap, alloc_t alloc)
 	    strbuf_init(&targets->files, targets_cap, targets_cap * 8, alloc) == NULL ||
 	    list_init(&targets->targets, targets_cap, sizeof(target_t), alloc) == NULL ||
 	    list_init(&targets->deps, targets_cap, sizeof(lnode_t), alloc) == NULL) {
-		log_error("build", "proj", NULL, "failed to initialize packages");
+		log_error("build", "targets", NULL, "failed to initialize targets");
 		return NULL;
 	}
 
@@ -74,7 +74,7 @@ target_t *targets_add(targets_t *targets, lnode_t *list, strv_t name, lnode_t *i
 
 target_t *targets_get(const targets_t *targets, lnode_t id)
 {
-	if (targets == NULL || id == ARR_END) {
+	if (targets == NULL) {
 		return NULL;
 	}
 
@@ -126,9 +126,7 @@ static int get_target_deps(const targets_t *targets, lnode_t id, arr_t *arr)
 	list_foreach(&targets->deps, target->deps, dep)
 	{
 		get_target_deps(targets, *dep, arr);
-		if (arr_addu(arr, dep) >= arr->cnt) {
-			ret = 1;
-		}
+		ret |= arr_addu(arr, dep);
 	}
 
 	return ret;
@@ -154,9 +152,7 @@ int targets_get_build_order(const targets_t *targets, arr_t *order)
 	int ret = 0;
 	for (uint i = 0; i < targets->targets.cnt; i++) {
 		ret |= get_target_deps(targets, i, order);
-		if (arr_addu(order, &i) >= order->cnt) {
-			ret = 1;
-		}
+		ret |= arr_addu(order, &i);
 	}
 
 	return ret;

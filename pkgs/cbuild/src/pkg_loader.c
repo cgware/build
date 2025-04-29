@@ -55,8 +55,8 @@ int pkg_load(uint id, fs_t *fs, strv_t dir, pkgs_t *pkgs, targets_t *targets, al
 		}
 	}
 
-	target_t *target = targets_get(targets, pkg->targets);
-	if (target != NULL) {
+	if (pkg->targets < targets->targets.cnt) {
+		target_t *target = targets_get(targets, pkg->targets);
 		if (target->type == TARGET_TYPE_UNKNOWN) {
 			if (pkg->src.len > 0) {
 				target->type = TARGET_TYPE_EXE;
@@ -83,7 +83,7 @@ int pkg_set_cfg(uint id, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, targets
 
 	int ret = 0;
 
-	uint target_id	 = ARR_END;
+	uint target_id;
 	target_t *target = pkg_add_target(pkg, targets, pkgs_get_pkg_name(pkgs, id), &target_id);
 	if (target == NULL) {
 		ret = 1;

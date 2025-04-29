@@ -8,7 +8,6 @@ target_t *target_init(target_t *target)
 		return NULL;
 	}
 
-	target->pkg  = ARR_END;
 	target->type = TARGET_TYPE_UNKNOWN;
 	target->deps = LIST_END;
 
