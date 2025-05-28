@@ -23,9 +23,12 @@ TEST(pkg_load_empty)
 	EXPECT_EQ(pkg_load(0, &fs, STRV_NULL, NULL, NULL, ALLOC_STD), 1);
 	EXPECT_EQ(pkg_load(0, &fs, STRV("test/empty"), &pkgs, &targets, ALLOC_STD), 0);
 
-	EXPECT_STRN(pkg->dir.data, "test/empty", pkg->dir.len);
-	EXPECT_EQ(pkg->src.len, 0);
-	EXPECT_EQ(pkg->inc.len, 0);
+	strv_t dir = strvbuf_get(&pkgs.strs, pkg->dir);
+	strv_t src = strvbuf_get(&pkgs.strs, pkg->src);
+	strv_t inc = strvbuf_get(&pkgs.strs, pkg->inc);
+	EXPECT_STRN(dir.data, "test/empty", dir.len);
+	EXPECT_EQ(src.len, 0);
+	EXPECT_EQ(inc.len, 0);
 	EXPECT_EQ(targets.targets.cnt, 0);
 
 	targets_free(&targets);
@@ -53,9 +56,12 @@ TEST(pkg_load_empty_cfg)
 	EXPECT_EQ(pkg_load(0, &fs, STRV_NULL, NULL, NULL, ALLOC_STD), 1);
 	EXPECT_EQ(pkg_load(0, &fs, STRV("test/empty_cfg"), &pkgs, &targets, ALLOC_STD), 0);
 
-	EXPECT_STRN(pkg->dir.data, "test/empty_cfg", pkg->dir.len);
-	EXPECT_EQ(pkg->src.len, 0);
-	EXPECT_EQ(pkg->inc.len, 0);
+	strv_t dir = strvbuf_get(&pkgs.strs, pkg->dir);
+	strv_t src = strvbuf_get(&pkgs.strs, pkg->src);
+	strv_t inc = strvbuf_get(&pkgs.strs, pkg->inc);
+	EXPECT_STRN(dir.data, "test/empty_cfg", dir.len);
+	EXPECT_EQ(src.len, 0);
+	EXPECT_EQ(inc.len, 0);
 	EXPECT_EQ(targets.targets.cnt, 0);
 
 	targets_free(&targets);
@@ -82,7 +88,8 @@ TEST(pkg_load_exe)
 
 	EXPECT_EQ(pkg_load(0, &fs, STRV("test/exe"), &pkgs, &targets, ALLOC_STD), 0);
 
-	EXPECT_STRN(pkg->src.data, "test/exe" SEP "src", pkg->src.len);
+	strv_t src = strvbuf_get(&pkgs.strs, pkg->src);
+	EXPECT_STRN(src.data, "test/exe" SEP "src", src.len);
 	EXPECT_EQ(targets.targets.cnt, 1);
 
 	target_t *target = targets_get(&targets, pkg->targets);
@@ -107,18 +114,19 @@ TEST(pkg_load_lib)
 	fs_init(&fs, 0, 0, ALLOC_STD);
 
 	targets_t targets = {0};
-	log_set_quiet(0, 1);
-	targets_init(&targets, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
+	targets_init(&targets, 1, ALLOC_STD);
 
 	pkg_t *pkg = pkgs_add_pkg(&pkgs, STRV(""), NULL);
 
 	mem_oom(1);
+	targets.targets.cnt = targets.targets.cap;
 	EXPECT_EQ(pkg_load(0, &fs, STRV("test/lib"), &pkgs, &targets, ALLOC_STD), 1);
+	targets.targets.cnt = 0;
 	mem_oom(0);
 	EXPECT_EQ(pkg_load(0, &fs, STRV("test/lib"), &pkgs, &targets, ALLOC_STD), 0);
 
-	EXPECT_STRN(pkg->inc.data, "test/lib" SEP "include", pkg->inc.len);
+	strv_t inc = strvbuf_get(&pkgs.strs, pkg->inc);
+	EXPECT_STRN(inc.data, "test/lib" SEP "include", inc.len);
 	EXPECT_EQ(targets.targets.cnt, 1);
 
 	target_t *target = targets_get(&targets, pkg->targets);

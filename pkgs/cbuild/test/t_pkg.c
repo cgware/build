@@ -61,13 +61,8 @@ TEST(pkg_print)
 	pkg_add_target(&pkg, &targets, STRV("target"), NULL);
 
 	char buf[256] = {0};
-	EXPECT_EQ(pkg_print(&pkg, &targets, DST_BUF(buf)), 84);
+	EXPECT_EQ(pkg_print(&pkg, &targets, DST_BUF(buf)), 50);
 	EXPECT_STR(buf,
-		   "[package]\n"
-		   "ID: 0\n"
-		   "DIR: \n"
-		   "SRC: \n"
-		   "INC: \n"
 		   "[target]\n"
 		   "TYPE: UNKNOWN\n"
 		   "NAME: target\n"

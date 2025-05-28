@@ -27,34 +27,36 @@ TEST(pkgs_add_pkg)
 	START;
 
 	pkgs_t pkgs = {0};
-	log_set_quiet(0, 1);
-	pkgs_init(&pkgs, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkgs_add_pkg(&pkgs, STRV("a"), NULL);
 
 	EXPECT_EQ(pkgs_add_pkg(NULL, STRV_NULL, NULL), NULL);
 	mem_oom(1);
 	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
 	mem_oom(0);
-	EXPECT_NE(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	EXPECT_NE(pkgs_add_pkg(&pkgs, STRV("b"), NULL), NULL);
 
 	pkgs_free(&pkgs);
 
 	END;
 }
 
-TEST(pkgs_add_pkg_pkgs_oom)
+TEST(pkgs_add_pkg_strs_oom)
 {
 	START;
 
 	pkgs_t pkgs = {0};
-	log_set_quiet(0, 1);
-	pkgs_init(&pkgs, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	strbuf_free(&pkgs.names);
-	strbuf_init(&pkgs.names, 1, 8, ALLOC_STD);
+	pkgs_init(&pkgs, 1, ALLOC_STD);
 
 	mem_oom(1);
+	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 0;
+	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 1;
+	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 2;
+	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 3;
 	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
 	mem_oom(0);
 
@@ -83,6 +85,28 @@ TEST(pkgs_add_pkg_exist)
 	END;
 }
 
+TEST(pkgs_set_str)
+{
+	START;
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	EXPECT_EQ(pkgs_set_str(NULL, 0, STRV_NULL), 1);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(pkgs_set_str(&pkgs, 0, STRV_NULL), 1);
+	log_set_quiet(0, 0);
+
+	pkgs_add_pkg(&pkgs, STRV("pkg0"), NULL);
+	pkgs_add_pkg(&pkgs, STRV("pkg1"), NULL);
+
+	EXPECT_EQ(pkgs_set_str(&pkgs, 0, STRV("")), 0);
+
+	pkgs_free(&pkgs);
+
+	END;
+}
+
 TEST(pkgs_get_pkg_name)
 {
 	START;
@@ -96,6 +120,11 @@ TEST(pkgs_get_pkg_name)
 
 	name = pkgs_get_pkg_name(NULL, 0);
 	EXPECT_EQ(name.data, NULL);
+
+	log_set_quiet(0, 1);
+	name = pkgs_get_pkg_name(&pkgs, pkgs.pkgs.cnt);
+	EXPECT_EQ(name.data, NULL);
+	log_set_quiet(0, 0);
 
 	name = pkgs_get_pkg_name(&pkgs, 0);
 	EXPECT_STRN(name.data, "pkg", name.len);
@@ -187,10 +216,11 @@ TEST(pkgs_print)
 	pkgs_add_pkg(&pkgs, STRV(""), NULL);
 
 	char buf[256] = {0};
-	EXPECT_EQ(pkgs_print(&pkgs, &targets, DST_BUF(buf)), 35);
+	EXPECT_EQ(pkgs_print(&pkgs, &targets, DST_BUF(buf)), 42);
 	EXPECT_STR(buf,
 		   "[package]\n"
 		   "ID: 0\n"
+		   "NAME: \n"
 		   "DIR: \n"
 		   "SRC: \n"
 		   "INC: \n"
@@ -208,8 +238,9 @@ STEST(pkgs)
 
 	RUN(pkgs_init_free);
 	RUN(pkgs_add_pkg);
-	RUN(pkgs_add_pkg_pkgs_oom);
+	RUN(pkgs_add_pkg_strs_oom);
 	RUN(pkgs_add_pkg_exist);
+	RUN(pkgs_set_str);
 	RUN(pkgs_get_pkg_name);
 	RUN(pkgs_get_pkg);
 	RUN(pkgs_get_build_order);

@@ -12,33 +12,33 @@ int pkg_load(uint id, fs_t *fs, strv_t dir, pkgs_t *pkgs, targets_t *targets, al
 
 	int ret = 0;
 
-	path_init(&pkg->dir, dir);
+	pkgs_set_str(pkgs, pkg->dir, dir);
 
-	path_init(&pkg->src, dir);
-	path_child(&pkg->src, STRV("src"));
+	path_t path = {0};
+	path_init(&path, dir);
+	path_child(&path, STRV("src"));
 
-	if (!fs_isdir(fs, STRVS(pkg->src))) {
-		pkg->src.len = 0;
+	if (fs_isdir(fs, STRVS(path))) {
+		pkgs_set_str(pkgs, pkg->src, STRVS(path));
 	}
 
-	path_init(&pkg->inc, dir);
-	path_child(&pkg->inc, STRV("include"));
+	path_init(&path, dir);
+	path_child(&path, STRV("include"));
 
-	if (!fs_isdir(fs, STRVS(pkg->inc))) {
-		pkg->inc.len = 0;
+	if (fs_isdir(fs, STRVS(path))) {
+		pkgs_set_str(pkgs, pkg->inc, STRVS(path));
 	}
 
-	path_t conf_path = {0};
-	path_init(&conf_path, dir);
-	path_child(&conf_path, STRV("pkg.cfg"));
+	path_init(&path, dir);
+	path_child(&path, STRV("pkg.cfg"));
 
-	if (fs_isfile(fs, STRVS(conf_path))) {
+	if (fs_isfile(fs, STRVS(path))) {
 		cfg_prs_t prs = {0};
 		cfg_prs_init(&prs, alloc);
 
 		str_t buf = strz(1024);
 
-		fs_read(fs, STRVS(conf_path), 0, &buf);
+		fs_read(fs, STRVS(path), 0, &buf);
 
 		cfg_t cfg = {0};
 		cfg_init(&cfg, 4, 4, alloc);
@@ -51,20 +51,25 @@ int pkg_load(uint id, fs_t *fs, strv_t dir, pkgs_t *pkgs, targets_t *targets, al
 
 		cfg_free(&cfg);
 		str_free(&buf);
-	} else if (pkg->src.len > 0) {
-		if (pkg_add_target(pkg, targets, pkgs_get_pkg_name(pkgs, id), NULL) == NULL) {
-			log_error("cbuild", "pkg_loader", NULL, "failed to add target");
-			ret = 1;
+	} else {
+		strv_t src = strvbuf_get(&pkgs->strs, pkg->src);
+		if (src.len > 0) {
+			if (pkg_add_target(pkg, targets, strvbuf_get(&pkgs->strs, pkg->name), NULL) == NULL) {
+				log_error("cbuild", "pkg_loader", NULL, "failed to add target");
+				ret = 1;
+			}
 		}
 	}
 
 	if (pkg->has_targets) {
 		target_t *target = targets_get(targets, pkg->targets);
 		if (target->type == TARGET_TYPE_UNKNOWN) {
-			if (pkg->src.len > 0) {
+			strv_t src = strvbuf_get(&pkgs->strs, pkg->src);
+			if (src.len > 0) {
 				target->type = TARGET_TYPE_EXE;
 			}
-			if (pkg->inc.len > 0) {
+			strv_t inc = strvbuf_get(&pkgs->strs, pkg->inc);
+			if (inc.len > 0) {
 				target->type = TARGET_TYPE_LIB;
 			}
 		}
@@ -87,7 +92,7 @@ int pkg_set_cfg(uint id, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, targets
 	int ret = 0;
 
 	uint target_id;
-	target_t *target = pkg_add_target(pkg, targets, pkgs_get_pkg_name(pkgs, id), &target_id);
+	target_t *target = pkg_add_target(pkg, targets, strvbuf_get(&pkgs->strs, pkg->name), &target_id);
 	if (target == NULL) {
 		ret = 1;
 	}

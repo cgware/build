@@ -10,9 +10,10 @@
 
 typedef struct pkg_s {
 	uint id;
-	path_t dir;
-	path_t src;
-	path_t inc;
+	size_t name;
+	size_t dir;
+	size_t src;
+	size_t inc;
 	list_node_t targets;
 	byte has_targets : 1;
 } pkg_t;

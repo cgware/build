@@ -10,9 +10,6 @@ pkg_t *pkg_init(pkg_t *pkg, uint id)
 	}
 
 	pkg->id		 = id;
-	pkg->dir	 = (path_t){0};
-	pkg->src	 = (path_t){0};
-	pkg->inc	 = (path_t){0};
 	pkg->has_targets = 0;
 
 	return pkg;
@@ -59,20 +56,6 @@ target_t *pkg_add_target(pkg_t *pkg, targets_t *targets, strv_t name, list_node_
 size_t pkg_print(const pkg_t *pkg, const targets_t *targets, dst_t dst)
 {
 	size_t off = dst.off;
-
-	dst.off += dputf(dst,
-			 "[package]\n"
-			 "ID: %d\n"
-			 "DIR: %.*s\n"
-			 "SRC: %.*s\n"
-			 "INC: %.*s\n",
-			 pkg->id,
-			 pkg->dir.len,
-			 pkg->dir.data,
-			 pkg->src.len,
-			 pkg->src.data,
-			 pkg->inc.len,
-			 pkg->inc.data);
 
 	if (pkg->has_targets) {
 		dst.off += targets_print(targets, pkg->targets, dst);

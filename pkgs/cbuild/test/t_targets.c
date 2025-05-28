@@ -68,10 +68,8 @@ TEST(targets_target_oom_targets)
 
 	targets_t targets = {0};
 	log_set_quiet(0, 1);
-	targets_init(&targets, 1, ALLOC_STD);
+	targets_init(&targets, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
-
-	targets.targets.cnt = targets.targets.cap;
 
 	mem_oom(1);
 	EXPECT_EQ(targets_target(&targets, STRV("t"), NULL), NULL);

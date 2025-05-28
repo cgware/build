@@ -60,7 +60,8 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 		}
 	}
 
-	path_t make_path = pkg->dir;
+	path_t make_path = {0};
+	path_init(&make_path, strvbuf_get(&pkgs->strs, pkg->dir));
 	path_child(&make_path, STRV("pkg.mk"));
 
 	void *file;
