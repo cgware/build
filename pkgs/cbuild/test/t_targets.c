@@ -48,11 +48,10 @@ TEST(targets_target_oom)
 
 	targets_t targets = {0};
 	log_set_quiet(0, 1);
-	targets_init(&targets, 0, ALLOC_STD);
+	targets_init(&targets, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	strbuf_free(&targets.names);
-	strbuf_init(&targets.names, 1, 8, ALLOC_STD);
+	targets.strs.used = targets.strs.size;
 
 	mem_oom(1);
 	EXPECT_EQ(targets_target(&targets, STRV_NULL, NULL), NULL);
@@ -75,7 +74,7 @@ TEST(targets_target_oom_targets)
 	targets.targets.cnt = targets.targets.cap;
 
 	mem_oom(1);
-	EXPECT_EQ(targets_target(&targets, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(targets_target(&targets, STRV("t"), NULL), NULL);
 	mem_oom(0);
 
 	targets_free(&targets);

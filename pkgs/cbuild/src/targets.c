@@ -8,8 +8,7 @@ targets_t *targets_init(targets_t *targets, uint targets_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	if (strbuf_init(&targets->names, targets_cap, targets_cap * 8, alloc) == NULL ||
-	    strbuf_init(&targets->files, targets_cap, targets_cap * 8, alloc) == NULL ||
+	if (strvbuf_init(&targets->strs, targets_cap * 2, 8, alloc) == NULL ||
 	    list_init(&targets->targets, targets_cap, sizeof(target_t), alloc) == NULL ||
 	    list_init(&targets->deps, targets_cap, sizeof(list_node_t), alloc) == NULL) {
 		log_error("build", "targets", NULL, "failed to initialize targets");
@@ -36,8 +35,24 @@ void targets_free(targets_t *targets)
 	}
 
 	list_free(&targets->targets);
-	strbuf_free(&targets->files);
-	strbuf_free(&targets->names);
+	strvbuf_free(&targets->strs);
+}
+
+static target_t *get_target(const targets_t *targets, strv_t name, list_node_t *node)
+{
+	target_t *target;
+	list_node_t i = 0;
+	list_foreach_all(&targets->targets, i, target)
+	{
+		if (strv_eq(strvbuf_get(&targets->strs, target->name), name)) {
+			if (node) {
+				*node = i;
+			}
+			return target;
+		}
+	}
+
+	return NULL;
 }
 
 target_t *targets_target(targets_t *targets, strv_t name, list_node_t *id)
@@ -46,34 +61,31 @@ target_t *targets_target(targets_t *targets, strv_t name, list_node_t *id)
 		return NULL;
 	}
 
-	uint index;
-	if (strbuf_find(&targets->names, name, &index) == 0) {
-		if (id) {
-			*id = index;
-		}
-		return targets_get(targets, index);
+	target_t *target = get_target(targets, name, id);
+	if (target) {
+		return target;
 	}
 
-	if (strbuf_add(&targets->names, name, &index)) {
+	size_t name_off;
+	if (strvbuf_add(&targets->strs, name, &name_off)) {
 		return NULL;
 	}
 
-	if (strbuf_add(&targets->files, STRV(""), NULL)) {
+	size_t file_off;
+	if (strvbuf_add(&targets->strs, STRV(""), &file_off)) {
 		return NULL;
 	}
 
-	list_node_t node;
-	target_t *target = list_node(&targets->targets, &node);
+	target = list_node(&targets->targets, id);
 	if (target == NULL) {
 		log_error("cbuild", "targets", NULL, "failed to create target");
 		return NULL;
 	}
 
-	if (id) {
-		*id = index;
-	}
-
-	return target_init(target);
+	target_init(target);
+	target->name = name_off;
+	target->file = file_off;
+	return target;
 }
 
 int targets_app(targets_t *targets, list_node_t list, list_node_t id)
@@ -111,8 +123,8 @@ target_t *targets_add_dep(targets_t *targets, list_node_t id, strv_t dep)
 		return NULL;
 	}
 
-	uint dep_id;
-	if (strbuf_find(&targets->names, dep, &dep_id) && targets_target(targets, dep, &dep_id) == NULL) {
+	list_node_t dep_id;
+	if (targets_target(targets, dep, &dep_id) == NULL) {
 		return NULL;
 	}
 
@@ -205,8 +217,8 @@ size_t targets_print(const targets_t *targets, list_node_t start, dst_t dst)
 	{
 		dst.off += target_print(target, dst);
 
-		strv_t name = strbuf_get(&targets->names, i);
-		strv_t file = strbuf_get(&targets->files, i);
+		strv_t name = strvbuf_get(&targets->strs, target->name);
+		strv_t file = strvbuf_get(&targets->strs, target->file);
 
 		dst.off += dputf(dst,
 				 "NAME: %.*s\n"
@@ -218,12 +230,13 @@ size_t targets_print(const targets_t *targets, list_node_t start, dst_t dst)
 
 		dst.off += dputs(dst, STRV("DEPS:"));
 		if (target->has_deps) {
-			const uint *dep;
+			const list_node_t *dep;
 			list_node_t j = target->deps;
 			list_foreach(&targets->deps, j, dep)
 			{
+				const target_t *dtarget = targets_get(targets, *dep);
 				dst.off += dputs(dst, STRV(" "));
-				dst.off += dputs(dst, strbuf_get(&targets->names, *dep));
+				dst.off += dputs(dst, strvbuf_get(&targets->strs, dtarget->name));
 			}
 		}
 		dst.off += dputs(dst, STRV("\n"));

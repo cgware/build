@@ -14,6 +14,8 @@ typedef enum target_type_s {
 
 typedef struct target_s {
 	uint pkg;
+	size_t name;
+	size_t file;
 	target_type_t type;
 	list_node_t deps;
 	byte has_deps : 1;

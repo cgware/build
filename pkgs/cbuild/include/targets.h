@@ -2,14 +2,13 @@
 #define targets_H
 
 #include "list.h"
-#include "strbuf.h"
+#include "strvbuf.h"
 #include "target.h"
 
 typedef struct targets_s {
-	strbuf_t names;
-	strbuf_t files;
 	list_t targets;
 	list_t deps;
+	strvbuf_t strs;
 	alloc_t alloc;
 } targets_t;
 
