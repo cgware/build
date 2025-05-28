@@ -217,8 +217,8 @@ TEST(proj_print)
 	log_set_quiet(0, 0);
 
 	char buf[256] = {0};
-	EXPECT_EQ(proj_print(NULL, PRINT_DST_BUF(buf, sizeof(buf), 0)), 0);
-	EXPECT_EQ(proj_print(&proj, PRINT_DST_BUF(buf, sizeof(buf), 0)), 26);
+	EXPECT_EQ(proj_print(NULL, DST_BUF(buf)), 0);
+	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 26);
 	EXPECT_STR(buf,
 		   "[project]\n"
 		   "DIR: \n"

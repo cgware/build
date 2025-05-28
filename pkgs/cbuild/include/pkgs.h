@@ -20,6 +20,6 @@ pkg_t *pkgs_get_pkg(const pkgs_t *pkgs, uint id);
 
 int pkgs_get_build_order(const pkgs_t *pkgs, const targets_t *targets, arr_t *order);
 
-int pkgs_print(const pkgs_t *pkgs, const targets_t *targets, print_dst_t dst);
+size_t pkgs_print(const pkgs_t *pkgs, const targets_t *targets, dst_t dst);
 
 #endif

@@ -26,7 +26,8 @@ void pkgs_free(pkgs_t *pkgs)
 	}
 
 	pkg_t *pkg;
-	arr_foreach(&pkgs->pkgs, pkg)
+	uint i = 0;
+	arr_foreach(&pkgs->pkgs, i, pkg)
 	{
 		pkg_free(pkg);
 	}
@@ -53,7 +54,7 @@ pkg_t *pkgs_add_pkg(pkgs_t *pkgs, strv_t name, uint *id)
 		return NULL;
 	}
 
-	pkg_t *pkg = arr_add(&pkgs->pkgs);
+	pkg_t *pkg = arr_add(&pkgs->pkgs, NULL);
 	if (pkg == NULL) {
 		return NULL;
 	}
@@ -80,19 +81,30 @@ pkg_t *pkgs_get_pkg(const pkgs_t *pkgs, uint id)
 		return NULL;
 	}
 
-	return arr_get(&pkgs->pkgs, id);
+	pkg_t *pkg = arr_get(&pkgs->pkgs, id);
+	if (pkg == NULL) {
+		log_error("cbuild", "pkgs", NULL, "failed to get package");
+		return NULL;
+	}
+
+	return pkg;
 }
 
 static int get_target_deps(const targets_t *targets, const target_t *target, arr_t *arr)
 {
+	if (!target->has_deps) {
+		return 0;
+	}
+
 	int ret = 0;
 
 	const uint *dep;
-	list_foreach(&targets->deps, target->deps, dep)
+	list_node_t i = target->deps;
+	list_foreach(&targets->deps, i, dep)
 	{
-		const target_t *dep_target = list_get_data(&targets->targets, *dep);
+		const target_t *dep_target = targets_get(targets, *dep);
 		get_target_deps(targets, dep_target, arr);
-		ret |= arr_addu(arr, &targets_get(targets, *dep)->pkg);
+		ret |= arr_addu(arr, &targets_get(targets, *dep)->pkg, NULL);
 	}
 
 	return ret;
@@ -100,15 +112,19 @@ static int get_target_deps(const targets_t *targets, const target_t *target, arr
 
 static int get_pkg_targets(const pkgs_t *pkgs, const targets_t *targets, uint id, arr_t *arr)
 {
-	int ret = 0;
-
 	const pkg_t *pkg = arr_get(&pkgs->pkgs, id);
 
+	if (!pkg->has_targets) {
+		return 0;
+	}
+
+	int ret = 0;
 	const target_t *target;
-	list_foreach(&targets->targets, pkg->targets, target)
+	list_node_t i = pkg->targets;
+	list_foreach(&targets->targets, i, target)
 	{
 		get_target_deps(targets, target, arr);
-		ret |= arr_addu(arr, &target->pkg);
+		ret |= arr_addu(arr, &target->pkg, NULL);
 	}
 
 	return ret;
@@ -123,21 +139,22 @@ int pkgs_get_build_order(const pkgs_t *pkgs, const targets_t *targets, arr_t *or
 	int ret = 0;
 	for (uint i = 0; i < pkgs->pkgs.cnt; i++) {
 		ret |= get_pkg_targets(pkgs, targets, i, order);
-		ret |= arr_addu(order, &i);
+		ret |= arr_addu(order, &i, NULL);
 	}
 
 	return ret;
 }
 
-int pkgs_print(const pkgs_t *pkgs, const targets_t *targets, print_dst_t dst)
+size_t pkgs_print(const pkgs_t *pkgs, const targets_t *targets, dst_t dst)
 {
-	int off = dst.off;
+	size_t off = dst.off;
 
+	uint i = 0;
 	const pkg_t *pkg;
-	arr_foreach(&pkgs->pkgs, pkg)
+	arr_foreach(&pkgs->pkgs, i, pkg)
 	{
 		dst.off += pkg_print(pkg, targets, dst);
-		dst.off += c_dprintf(dst, "\n");
+		dst.off += dputs(dst, STRV("\n"));
 	}
 
 	return dst.off - off;

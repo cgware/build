@@ -21,6 +21,6 @@ int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir);
 pkg_t *proj_set_pkg(proj_t *proj, strv_t name, uint *id);
 pkg_t *proj_add_pkg(proj_t *proj, strv_t name, uint *id);
 
-int proj_print(const proj_t *proj, print_dst_t dst);
+size_t proj_print(const proj_t *proj, dst_t dst);
 
 #endif

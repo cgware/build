@@ -1,6 +1,7 @@
 #include "pkg_loader.h"
 
-#include "file/cfg_parse.h"
+#include "file/cfg_prs.h"
+#include "log.h"
 
 int pkg_load(uint id, fs_t *fs, strv_t dir, pkgs_t *pkgs, targets_t *targets, alloc_t alloc)
 {
@@ -42,7 +43,8 @@ int pkg_load(uint id, fs_t *fs, strv_t dir, pkgs_t *pkgs, targets_t *targets, al
 		cfg_t cfg = {0};
 		cfg_init(&cfg, 4, 4, alloc);
 
-		cfg_var_t root = cfg_prs_parse(&prs, STRVS(buf), &cfg, alloc, PRINT_DST_STD());
+		cfg_var_t root;
+		cfg_prs_parse(&prs, STRVS(buf), &cfg, alloc, &root, DST_STD());
 		cfg_prs_free(&prs);
 
 		ret |= pkg_set_cfg(id, &cfg, root, pkgs, targets);
@@ -51,11 +53,12 @@ int pkg_load(uint id, fs_t *fs, strv_t dir, pkgs_t *pkgs, targets_t *targets, al
 		str_free(&buf);
 	} else if (pkg->src.len > 0) {
 		if (pkg_add_target(pkg, targets, pkgs_get_pkg_name(pkgs, id), NULL) == NULL) {
+			log_error("cbuild", "pkg_loader", NULL, "failed to add target");
 			ret = 1;
 		}
 	}
 
-	if (pkg->targets < targets->targets.cnt) {
+	if (pkg->has_targets) {
 		target_t *target = targets_get(targets, pkg->targets);
 		if (target->type == TARGET_TYPE_UNKNOWN) {
 			if (pkg->src.len > 0) {
@@ -91,8 +94,10 @@ int pkg_set_cfg(uint id, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, targets
 
 	cfg_var_t deps;
 	if (cfg_get_var(cfg, root, STRV("deps"), &deps) == 0) {
-		cfg_var_t dep = CFG_VAR_END;
-		while (!cfg_get_arr(cfg, deps, &dep)) {
+		cfg_var_t dep;
+		void *data;
+		cfg_foreach(cfg, deps, data, &dep)
+		{
 			strv_t dep_str;
 			if (cfg_get_lit(cfg, dep, &dep_str)) {
 				ret = 1;

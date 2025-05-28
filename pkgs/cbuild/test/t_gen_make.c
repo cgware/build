@@ -62,7 +62,7 @@ TEST(gen_make_empty)
 		    "BITS := 32\n"
 		    "endif\n"
 		    "\n"
-		    "CONFIG := Release\n"
+		    "CONFIG := Debug\n"
 		    "ifeq ($(CONFIG),Debug)\n"
 		    "CFLAGS := -Wall -Wextra -Werror -pedantic -O0 -ggdb -coverage\n"
 		    "LDFLAGS := -coverage\n"

@@ -1,6 +1,6 @@
 #include "pkg.h"
 
-#include "file/cfg_parse.h"
+#include "file/cfg_prs.h"
 #include "log.h"
 
 pkg_t *pkg_init(pkg_t *pkg, uint id)
@@ -9,11 +9,11 @@ pkg_t *pkg_init(pkg_t *pkg, uint id)
 		return NULL;
 	}
 
-	pkg->id	       = id;
-	pkg->dir       = (path_t){0};
-	pkg->src       = (path_t){0};
-	pkg->inc       = (path_t){0};
-	pkg->targets   = LIST_END;
+	pkg->id		 = id;
+	pkg->dir	 = (path_t){0};
+	pkg->src	 = (path_t){0};
+	pkg->inc	 = (path_t){0};
+	pkg->has_targets = 0;
 
 	return pkg;
 }
@@ -25,40 +25,58 @@ void pkg_free(pkg_t *pkg)
 	}
 }
 
-target_t *pkg_add_target(pkg_t *pkg, targets_t *targets, strv_t name, lnode_t *id)
+target_t *pkg_add_target(pkg_t *pkg, targets_t *targets, strv_t name, list_node_t *id)
 {
 	if (pkg == NULL || targets == NULL) {
 		return NULL;
 	}
 
-	target_t *target = targets_add(targets, &pkg->targets, name, id);
+	list_node_t tmp;
+	target_t *target = targets_target(targets, name, &tmp);
 	if (target == NULL) {
+		log_error("cbuild", "pkg", NULL, "failed to create target");
 		return NULL;
+	}
+
+	if (pkg->has_targets) {
+		if (targets_app(targets, pkg->targets, tmp)) {
+			log_error("cbuild", "pkg", NULL, "failed to add target");
+			return NULL;
+		}
+	} else {
+		pkg->targets	 = tmp;
+		pkg->has_targets = 1;
+	}
+
+	if (id) {
+		*id = tmp;
 	}
 
 	target->pkg = pkg->id;
 	return target;
 }
 
-int pkg_print(const pkg_t *pkg, const targets_t *targets, print_dst_t dst)
+size_t pkg_print(const pkg_t *pkg, const targets_t *targets, dst_t dst)
 {
-	int off = dst.off;
+	size_t off = dst.off;
 
-	dst.off += c_dprintf(dst,
-			     "[package]\n"
-			     "ID: %d\n"
-			     "DIR: %.*s\n"
-			     "SRC: %.*s\n"
-			     "INC: %.*s\n",
-			     pkg->id,
-			     pkg->dir.len,
-			     pkg->dir.data,
-			     pkg->src.len,
-			     pkg->src.data,
-			     pkg->inc.len,
-			     pkg->inc.data);
+	dst.off += dputf(dst,
+			 "[package]\n"
+			 "ID: %d\n"
+			 "DIR: %.*s\n"
+			 "SRC: %.*s\n"
+			 "INC: %.*s\n",
+			 pkg->id,
+			 pkg->dir.len,
+			 pkg->dir.data,
+			 pkg->src.len,
+			 pkg->src.data,
+			 pkg->inc.len,
+			 pkg->inc.data);
 
-	dst.off += targets_print(targets, pkg->targets, dst);
+	if (pkg->has_targets) {
+		dst.off += targets_print(targets, pkg->targets, dst);
+	}
 
 	return dst.off - off;
 }

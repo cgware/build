@@ -133,9 +133,17 @@ TEST(pkgs_get_build_order)
 	targets_init(&targets, 1, ALLOC_STD);
 
 	pkg_t *pkg;
-	lnode_t target;
+	list_node_t target;
 
 	pkg = pkgs_add_pkg(&pkgs, STRV("pkg0"), NULL);
+
+	arr_t deps = {0};
+	log_set_quiet(0, 1);
+	arr_init(&deps, 0, sizeof(uint), ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	EXPECT_EQ(pkgs_get_build_order(&pkgs, &targets, &deps), 0);
+
 	pkg_add_target(pkg, &targets, STRV("target0"), &target);
 
 	targets_add_dep(&targets, target, STRV("target1"));
@@ -146,10 +154,7 @@ TEST(pkgs_get_build_order)
 	pkg = pkgs_add_pkg(&pkgs, STRV("pkg2"), NULL);
 	pkg_add_target(pkg, &targets, STRV("target2"), &target);
 
-	arr_t deps = {0};
-	log_set_quiet(0, 1);
-	arr_init(&deps, 0, sizeof(uint), ALLOC_STD);
-	log_set_quiet(0, 0);
+	deps.cnt = 0;
 
 	EXPECT_EQ(pkgs_get_build_order(NULL, NULL, NULL), 1);
 	mem_oom(1);
@@ -182,7 +187,7 @@ TEST(pkgs_print)
 	pkgs_add_pkg(&pkgs, STRV(""), NULL);
 
 	char buf[256] = {0};
-	EXPECT_EQ(pkgs_print(&pkgs, &targets, PRINT_DST_BUF(buf, sizeof(buf), 0)), 35);
+	EXPECT_EQ(pkgs_print(&pkgs, &targets, DST_BUF(buf)), 35);
 	EXPECT_STR(buf,
 		   "[package]\n"
 		   "ID: 0\n"

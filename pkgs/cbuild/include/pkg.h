@@ -13,14 +13,15 @@ typedef struct pkg_s {
 	path_t dir;
 	path_t src;
 	path_t inc;
-	lnode_t targets;
+	list_node_t targets;
+	byte has_targets : 1;
 } pkg_t;
 
 pkg_t *pkg_init(pkg_t *pkg, uint id);
 void pkg_free(pkg_t *pkg);
 
-target_t *pkg_add_target(pkg_t *pkg, targets_t *targets, strv_t name, lnode_t *id);
+target_t *pkg_add_target(pkg_t *pkg, targets_t *targets, strv_t name, list_node_t *id);
 
-int pkg_print(const pkg_t *pkg, const targets_t *targets, print_dst_t dst);
+size_t pkg_print(const pkg_t *pkg, const targets_t *targets, dst_t dst);
 
 #endif

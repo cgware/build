@@ -14,7 +14,7 @@ int main(int argc, const char **argv)
 
 	log_t log = {0};
 	log_set(&log);
-	log_add_callback(log_std_cb, PRINT_DST_STD(), LOG_INFO, 1, 1);
+	log_add_callback(log_std_cb, DST_STD(), LOG_INFO, 1, 1);
 
 	strv_t source = STRV(".");
 
@@ -54,7 +54,7 @@ int main(int argc, const char **argv)
 		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
 	};
 
-	if (args_parse(argc, argv, opts, sizeof(opts), PRINT_DST_STD())) {
+	if (args_parse(argc, argv, opts, sizeof(opts), DST_STD())) {
 		return 1;
 	}
 
@@ -78,7 +78,7 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
-	proj_print(&proj, PRINT_DST_STD());
+	proj_print(&proj, DST_STD());
 
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
@@ -90,6 +90,6 @@ int main(int argc, const char **argv)
 
 	mem_free(gens, gen_drivers_cnt * sizeof(opt_enum_val_t));
 
-	mem_print(PRINT_DST_STD());
+	mem_print(DST_STD());
 	return 0;
 }

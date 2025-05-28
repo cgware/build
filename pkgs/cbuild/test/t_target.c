@@ -27,7 +27,7 @@ TEST(target_print)
 	target_init(&target);
 
 	char buf[256] = {0};
-	EXPECT_EQ(target_print(&target, PRINT_DST_BUF(buf, sizeof(buf), 0)), 23);
+	EXPECT_EQ(target_print(&target, DST_BUF(buf)), 23);
 	EXPECT_STR(buf,
 		   "[target]\n"
 		   "TYPE: UNKNOWN\n");

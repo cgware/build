@@ -116,23 +116,23 @@ pkg_t *proj_add_pkg(proj_t *proj, strv_t name, uint *id)
 	return pkgs_add_pkg(&proj->pkgs, name, id);
 }
 
-int proj_print(const proj_t *proj, print_dst_t dst)
+size_t proj_print(const proj_t *proj, dst_t dst)
 {
 	if (proj == NULL) {
 		return 0;
 	}
 
-	int off = dst.off;
+	size_t off = dst.off;
 
-	dst.off += c_dprintf(dst,
-			     "[project]\n"
-			     "DIR: %.*s\n"
-			     "OUTDIR: %.*s\n"
-			     "\n",
-			     proj->dir.len,
-			     proj->dir.data,
-			     proj->outdir.len,
-			     proj->outdir.data);
+	dst.off += dputf(dst,
+			 "[project]\n"
+			 "DIR: %.*s\n"
+			 "OUTDIR: %.*s\n"
+			 "\n",
+			 proj->dir.len,
+			 proj->dir.data,
+			 proj->outdir.len,
+			 proj->outdir.data);
 
 	dst.off += pkgs_print(&proj->pkgs, &proj->targets, dst);
 

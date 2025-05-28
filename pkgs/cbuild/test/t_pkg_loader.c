@@ -163,7 +163,7 @@ TEST(pkg_set_cfg)
 {
 	START;
 
-	EXPECT_EQ(pkg_set_cfg(0, NULL, CFG_VAR_END, NULL, NULL), 1);
+	EXPECT_EQ(pkg_set_cfg(0, NULL, 0, NULL, NULL), 1);
 
 	END;
 }
@@ -207,7 +207,9 @@ TEST(pkg_set_cfg_target_oom)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
+	cfg_var_t root;
+
+	cfg_root(&cfg, &root);
 
 	mem_oom(1);
 	EXPECT_EQ(pkg_set_cfg(0, &cfg, root, &pkgs, &targets), 1);
@@ -235,9 +237,13 @@ TEST(pkg_set_cfg_wrong_dep_type)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
-	cfg_var_t deps = cfg_add_var(&cfg, root, CFG_ARR(&cfg, STRV("deps")));
-	cfg_add_var(&cfg, deps, CFG_INT(&cfg, STRV_NULL, 0));
+	cfg_var_t root, deps, in;
+
+	cfg_root(&cfg, &root);
+	cfg_arr(&cfg, STRV("deps"), &deps);
+	cfg_add_var(&cfg, root, deps);
+	cfg_int(&cfg, STRV_NULL, 0, &in);
+	cfg_add_var(&cfg, deps, in);
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(pkg_set_cfg(0, &cfg, root, &pkgs, &targets), 1);
@@ -265,9 +271,13 @@ TEST(pkg_set_cfg_dep_oom)
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
-	cfg_var_t root = CFG_ROOT(&cfg);
-	cfg_var_t deps = cfg_add_var(&cfg, root, CFG_ARR(&cfg, STRV("deps")));
-	cfg_add_var(&cfg, deps, CFG_LIT(&cfg, STRV_NULL, STRV("lib")));
+	cfg_var_t root, deps, lit;
+
+	cfg_root(&cfg, &root);
+	cfg_arr(&cfg, STRV("deps"), &deps);
+	cfg_add_var(&cfg, root, deps);
+	cfg_lit(&cfg, STRV_NULL, STRV("lib"), &lit);
+	cfg_add_var(&cfg, deps, lit);
 
 	mem_oom(1);
 	EXPECT_EQ(pkg_set_cfg(0, &cfg, root, &pkgs, &targets), 1);

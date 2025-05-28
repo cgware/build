@@ -37,6 +37,11 @@ TEST(pkg_add_target)
 	mem_oom(0);
 	EXPECT_NE(pkg_add_target(&pkg, &targets, STRV("target"), NULL), NULL);
 
+	pkg.targets = targets.targets.cnt;
+	log_set_quiet(0, 1);
+	EXPECT_EQ(pkg_add_target(&pkg, &targets, STRV("target"), NULL), NULL);
+	log_set_quiet(0, 0);
+
 	targets_free(&targets);
 	pkg_free(&pkg);
 
@@ -56,7 +61,7 @@ TEST(pkg_print)
 	pkg_add_target(&pkg, &targets, STRV("target"), NULL);
 
 	char buf[256] = {0};
-	EXPECT_EQ(pkg_print(&pkg, &targets, PRINT_DST_BUF(buf, sizeof(buf), 0)), 84);
+	EXPECT_EQ(pkg_print(&pkg, &targets, DST_BUF(buf)), 84);
 	EXPECT_STR(buf,
 		   "[package]\n"
 		   "ID: 0\n"

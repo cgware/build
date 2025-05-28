@@ -15,12 +15,13 @@ typedef enum target_type_s {
 typedef struct target_s {
 	uint pkg;
 	target_type_t type;
-	lnode_t deps;
+	list_node_t deps;
+	byte has_deps : 1;
 } target_t;
 
 target_t *target_init(target_t *target);
 void target_free(target_t *target);
 
-int target_print(const target_t *target, print_dst_t dst);
+size_t target_print(const target_t *target, dst_t dst);
 
 #endif
