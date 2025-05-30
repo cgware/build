@@ -8,16 +8,18 @@ TEST(gen_make_empty)
 {
 	START;
 
-	strv_t dir = STRV("./test/empty/");
+	strv_t dir = STRV("empty/");
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	fs_t tfs = {0};
-	fs_init(&tfs, 0, 0, ALLOC_STD);
+	fs_t fs = {0};
+	fs_init(&fs, 2, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("empty"));
 
 	log_set_quiet(0, 1);
-	proj_set_dir(&proj, &tfs, dir);
+	proj_set_dir(&proj, &fs, dir);
 	log_set_quiet(0, 0);
 
 	gen_driver_t *drvi = NULL;
@@ -33,13 +35,6 @@ TEST(gen_make_empty)
 
 	gen_driver_t drv = *drvi;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("."));
-	fs_mkdir(&fs, STRV("./test"));
-	fs_mkdir(&fs, STRV("./test/empty"));
-
 	drv.fs = &fs;
 
 	log_set_quiet(0, 1);
@@ -47,7 +42,7 @@ TEST(gen_make_empty)
 	log_set_quiet(0, 0);
 
 	str_t buf = strz(2600);
-	fs_read(&fs, STRV("./test/empty/Makefile"), 0, &buf);
+	fs_read(&fs, STRV("empty/Makefile"), 0, &buf);
 	EXPECT_STRN(buf.data,
 		    "BUILDDIR := \n"
 		    "SRCDIR := \n"
@@ -159,7 +154,6 @@ TEST(gen_make_empty)
 
 	proj_free(&proj);
 	fs_free(&fs);
-	fs_free(&tfs);
 	str_free(&buf);
 
 	END;

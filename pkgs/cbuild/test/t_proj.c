@@ -59,10 +59,12 @@ TEST(proj_set_dir_empty)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("empty"));
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("test/empty")), 1);
+	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("empty")), 1);
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
@@ -179,8 +181,8 @@ TEST(proj_set_pkg)
 	proj_init(&proj, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(proj_set_pkg(NULL, STRV_NULL, NULL), NULL);
-	EXPECT_NE(proj_set_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_set_pkg(NULL, NULL), NULL);
+	EXPECT_NE(proj_set_pkg(&proj, NULL), NULL);
 
 	proj_free(&proj);
 
@@ -197,10 +199,10 @@ TEST(proj_add_pkg)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_pkg(&proj, NULL), NULL);
 	mem_oom(0);
-	EXPECT_EQ(proj_add_pkg(NULL, STRV_NULL, NULL), NULL);
-	EXPECT_NE(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_pkg(NULL, NULL), NULL);
+	EXPECT_NE(proj_add_pkg(&proj, NULL), NULL);
 
 	proj_free(&proj);
 

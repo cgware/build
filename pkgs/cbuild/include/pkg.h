@@ -8,12 +8,17 @@
 #include "strbuf.h"
 #include "targets.h"
 
+typedef enum pkg_str_e {
+	PKG_DIR,  // path: internal: pkgs/libs, external: /home/user/libs
+	PKG_NAME,
+	PKG_SRC,
+	PKG_INC,
+	__PKG_STR_CNT,
+} pkg_str_t;
+
 typedef struct pkg_s {
 	uint id;
-	size_t name;
-	size_t dir;
-	size_t src;
-	size_t inc;
+	size_t strs[__PKG_STR_CNT];
 	list_node_t targets;
 	byte has_targets : 1;
 } pkg_t;
