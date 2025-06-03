@@ -3,115 +3,196 @@
 #include "file/cfg_prs.h"
 #include "log.h"
 
-int pkg_load(uint id, fs_t *fs, strv_t dir, pkgs_t *pkgs, targets_t *targets, alloc_t alloc)
+int pkg_load(fs_t *fs, strv_t proj_dir, strv_t dir, pkgs_t *pkgs, alloc_t alloc, str_t *buf)
 {
-	pkg_t *pkg = pkgs_get_pkg(pkgs, id);
+	int ret = 0;
+
+	path_t path = {0};
+	path_t tmp  = {0};
+	path_init(&path, proj_dir);
+	path_child(&path, dir);
+
+	size_t path_len = path.len;
+
+	cfg_t cfg = {0};
+	cfg_var_t root;
+	cfg_init(&cfg, 4, 4, alloc);
+
+	path_child(&path, STRV("pkg.cfg"));
+	if (fs_isfile(fs, STRVS(path))) {
+		if (buf) {
+			cfg_prs_t prs = {0};
+			cfg_prs_init(&prs, alloc);
+			fs_read(fs, STRVS(path), 0, buf);
+			cfg_prs_parse(&prs, STRVS(*buf), &cfg, alloc, &root, DST_STD());
+			cfg_prs_free(&prs);
+		}
+	} else {
+		cfg_root(&cfg, &root);
+	}
+	path.len = path_len;
+
+	strv_t name = {0};
+	cfg_var_t var;
+	if (cfg_has_var(&cfg, root, STRV("name"), &var)) {
+		cfg_get_lit(&cfg, var, &name);
+	} else if (dir.len > 0) {
+		pathv_get_dir(dir, &name);
+	} else {
+		str_t cwd = STRB(tmp.data, tmp.len);
+		fs_getcwd(fs, &cwd);
+		tmp.len = cwd.len;
+		path_merge(&tmp, proj_dir);
+		pathv_get_dir(STRVS(tmp), &name);
+	}
+
+	pkg_t *pkg = pkgs_find(pkgs, name, NULL);
 	if (pkg == NULL) {
+		pkg = pkgs_add(pkgs, NULL);
+	}
+
+	if (pkg) {
+		pkgs_set_str(pkgs, pkg->strs[PKG_NAME], name);
+		pkgs_set_str(pkgs, pkg->strs[PKG_DIR], dir);
+		ret |= pkg_set_cfg(pkg, &cfg, root, pkgs, proj_dir, fs);
+	} else {
+		ret = 1;
+	}
+
+	cfg_free(&cfg);
+
+	return ret;
+}
+
+int pkg_set_cfg(pkg_t *pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, strv_t proj_dir, fs_t *fs)
+{
+	if (pkg == NULL || cfg == NULL || pkgs == NULL) {
 		return 1;
 	}
 
 	int ret = 0;
 
-	pkgs_set_str(pkgs, pkg->dir, dir);
-
 	path_t path = {0};
-	path_init(&path, dir);
-	path_child(&path, STRV("src"));
+	path_init(&path, proj_dir);
+	path_child(&path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
+	size_t path_len = path.len;
 
-	if (fs_isdir(fs, STRVS(path))) {
-		pkgs_set_str(pkgs, pkg->src, STRVS(path));
-	}
+	cfg_var_t var;
 
-	path_init(&path, dir);
-	path_child(&path, STRV("include"));
-
-	if (fs_isdir(fs, STRVS(path))) {
-		pkgs_set_str(pkgs, pkg->inc, STRVS(path));
-	}
-
-	path_init(&path, dir);
-	path_child(&path, STRV("pkg.cfg"));
-
-	if (fs_isfile(fs, STRVS(path))) {
-		cfg_prs_t prs = {0};
-		cfg_prs_init(&prs, alloc);
-
-		str_t buf = strz(1024);
-
-		fs_read(fs, STRVS(path), 0, &buf);
-
-		cfg_t cfg = {0};
-		cfg_init(&cfg, 4, 4, alloc);
-
-		cfg_var_t root;
-		cfg_prs_parse(&prs, STRVS(buf), &cfg, alloc, &root, DST_STD());
-		cfg_prs_free(&prs);
-
-		ret |= pkg_set_cfg(id, &cfg, root, pkgs, targets);
-
-		cfg_free(&cfg);
-		str_free(&buf);
+	strv_t src = {0};
+	if (cfg_has_var(cfg, root, STRV("src"), &var)) {
+		cfg_get_str(cfg, var, &src);
+		path_child(&path, src);
+		if (!fs_isdir(fs, STRVS(path))) {
+			src.len = 0;
+			log_error("cbuild", "pkg_loader", NULL, "src does not exist: '%.*s'", src.len, src.data);
+			ret = 1;
+		}
 	} else {
-		strv_t src = strvbuf_get(&pkgs->strs, pkg->src);
-		if (src.len > 0) {
-			if (pkg_add_target(pkg, targets, strvbuf_get(&pkgs->strs, pkg->name), NULL) == NULL) {
+		src = STRV("src");
+		path_child(&path, src);
+		if (!fs_isdir(fs, STRVS(path))) {
+			src.len = 0;
+		}
+	}
+	path.len = path_len;
+
+	if (src.len > 0) {
+		pkgs_set_str(pkgs, pkg->strs[PKG_SRC], src);
+	}
+
+	strv_t inc = {0};
+	if (cfg_has_var(cfg, root, STRV("include"), &var)) {
+		cfg_get_str(cfg, var, &inc);
+		path_child(&path, inc);
+		if (!fs_isdir(fs, STRVS(path))) {
+			inc.len = 0;
+			log_error("cbuild", "pkg_loader", NULL, "include does not exist: '%.*s'", inc.len, inc.data);
+			ret = 1;
+		}
+	} else {
+		inc = STRV("include");
+		path_child(&path, inc);
+		if (!fs_isdir(fs, STRVS(path))) {
+			inc.len = 0;
+		}
+	}
+	path.len = path_len;
+
+	if (inc.len > 0) {
+		pkgs_set_str(pkgs, pkg->strs[PKG_INC], inc);
+	}
+
+	void *data;
+	cfg_var_t cfg_target;
+	cfg_foreach(cfg, root, data, &cfg_target)
+	{
+		strv_t key = cfg_get_key(cfg, cfg_target);
+		if (strv_eq(key, STRV("target"))) {
+			target_t *target = pkg_add_target(pkg, &pkgs->targets, strvbuf_get(&pkgs->strs, pkg->strs[PKG_NAME]), NULL);
+			if (target == NULL) {
 				log_error("cbuild", "pkg_loader", NULL, "failed to add target");
 				ret = 1;
+			} else {
+				cfg_var_t cfg_type;
+				if (cfg_has_var(cfg, cfg_target, STRV("type"), &cfg_type)) {
+					strv_t type;
+					cfg_get_lit(cfg, cfg_type, &type);
+					if (strv_eq(type, STRV("EXE"))) {
+						target->type = TARGET_TYPE_EXE;
+					} else if (strv_eq(type, STRV("LIB"))) {
+						target->type = TARGET_TYPE_LIB;
+					} else {
+						log_error("cbuild", "pkg_loader", NULL, "unknown target type: '%.*s'", type.len, type.data);
+						ret = 1;
+					}
+				} else {
+					if (src.len > 0) {
+						target->type = TARGET_TYPE_EXE;
+					}
+					if (inc.len > 0) {
+						target->type = TARGET_TYPE_LIB;
+					}
+				}
 			}
 		}
 	}
 
-	if (pkg->has_targets) {
-		target_t *target = targets_get(targets, pkg->targets);
-		if (target->type == TARGET_TYPE_UNKNOWN) {
-			strv_t src = strvbuf_get(&pkgs->strs, pkg->src);
+	if (!pkg->has_targets) {
+		target_t *target = pkg_add_target(pkg, &pkgs->targets, strvbuf_get(&pkgs->strs, pkg->strs[PKG_NAME]), NULL);
+		if (target == NULL) {
+			log_error("cbuild", "pkg_loader", NULL, "failed to add target");
+			ret = 1;
+		} else {
 			if (src.len > 0) {
 				target->type = TARGET_TYPE_EXE;
 			}
-			strv_t inc = strvbuf_get(&pkgs->strs, pkg->inc);
 			if (inc.len > 0) {
 				target->type = TARGET_TYPE_LIB;
 			}
 		}
 	}
 
-	return ret;
-}
-
-int pkg_set_cfg(uint id, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, targets_t *targets)
-{
-	if (cfg == NULL || pkgs == NULL) {
-		return 1;
-	}
-
-	pkg_t *pkg = pkgs_get_pkg(pkgs, id);
-	if (pkg == NULL) {
-		return 1;
-	}
-
-	int ret = 0;
-
-	uint target_id;
-	target_t *target = pkg_add_target(pkg, targets, strvbuf_get(&pkgs->strs, pkg->name), &target_id);
-	if (target == NULL) {
-		ret = 1;
-	}
-
-	cfg_var_t deps;
-	if (cfg_get_var(cfg, root, STRV("deps"), &deps) == 0) {
+	if (cfg_has_var(cfg, root, STRV("deps"), &var)) {
 		cfg_var_t dep;
 		void *data;
-		cfg_foreach(cfg, deps, data, &dep)
+		cfg_foreach(cfg, var, data, &dep)
 		{
 			strv_t dep_str;
 			if (cfg_get_lit(cfg, dep, &dep_str)) {
+				log_error("cbuild", "pkg_loader", NULL, "invalid dependency");
 				ret = 1;
 				continue;
 			}
 
-			if (targets_add_dep(targets, target_id, dep_str) == NULL) {
-				ret = 1;
-				continue;
+			const target_t *target;
+			list_node_t i = pkg->targets;
+			list_foreach(&pkgs->targets.targets, i, target)
+			{
+				if (targets_add_dep(&pkgs->targets, i, dep_str) == NULL) {
+					log_error("cbuild", "pkg_loader", NULL, "failed to dependency");
+					ret = 1;
+				}
 			}
 		}
 	}

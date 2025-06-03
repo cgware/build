@@ -11,7 +11,8 @@ TEST(var_replace)
 
 	strv_t values[__VAR_CNT] = {0};
 
-	str_t str = strz(16);
+	char buf[16] = {0};
+	str_t str    = STRB(buf, 0);
 
 	EXPECT_EQ(var_replace(NULL, NULL), 1);
 
@@ -61,8 +62,6 @@ TEST(var_replace)
 		EXPECT_STRN(str.data, "${ARCH}", str.len);
 		str.size = size;
 	}
-
-	str_free(&str);
 
 	END;
 }

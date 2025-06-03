@@ -74,7 +74,8 @@ int main(int argc, const char **argv)
 
 	path_merge(&path, source);
 
-	if (proj_set_dir(&proj, &fs, STRVS(path))) {
+	str_t buf = strz(1024);
+	if (proj_set_dir(&proj, &fs, STRVS(path), &buf)) {
 		return 1;
 	}
 

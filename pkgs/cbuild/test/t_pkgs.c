@@ -22,27 +22,27 @@ TEST(pkgs_init_free)
 	END;
 }
 
-TEST(pkgs_add_pkg)
+TEST(pkgs_add)
 {
 	START;
 
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	pkgs_add_pkg(&pkgs, STRV("a"), NULL);
+	pkgs_add(&pkgs, NULL);
 
-	EXPECT_EQ(pkgs_add_pkg(NULL, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(pkgs_add(NULL, NULL), NULL);
 	mem_oom(1);
-	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(pkgs_add(&pkgs, NULL), NULL);
 	mem_oom(0);
-	EXPECT_NE(pkgs_add_pkg(&pkgs, STRV("b"), NULL), NULL);
+	EXPECT_NE(pkgs_add(&pkgs, NULL), NULL);
 
 	pkgs_free(&pkgs);
 
 	END;
 }
 
-TEST(pkgs_add_pkg_strs_oom)
+TEST(pkgs_add_strs_oom)
 {
 	START;
 
@@ -51,34 +51,14 @@ TEST(pkgs_add_pkg_strs_oom)
 
 	mem_oom(1);
 	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 0;
-	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(pkgs_add(&pkgs, NULL), NULL);
 	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 1;
-	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(pkgs_add(&pkgs, NULL), NULL);
 	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 2;
-	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(pkgs_add(&pkgs, NULL), NULL);
 	pkgs.strs.used = pkgs.strs.size - sizeof(size_t) * 3;
-	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(pkgs_add(&pkgs, NULL), NULL);
 	mem_oom(0);
-
-	pkgs_free(&pkgs);
-
-	END;
-}
-
-TEST(pkgs_add_pkg_exist)
-{
-	START;
-
-	pkgs_t pkgs = {0};
-	log_set_quiet(0, 1);
-	pkgs_init(&pkgs, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	pkg_t *pkg = pkgs_add_pkg(&pkgs, STRV(""), NULL);
-
-	uint id;
-	EXPECT_EQ(pkgs_add_pkg(&pkgs, STRV(""), &id), pkg);
-	EXPECT_EQ(id, 0);
 
 	pkgs_free(&pkgs);
 
@@ -97,8 +77,8 @@ TEST(pkgs_set_str)
 	EXPECT_EQ(pkgs_set_str(&pkgs, 0, STRV_NULL), 1);
 	log_set_quiet(0, 0);
 
-	pkgs_add_pkg(&pkgs, STRV("pkg0"), NULL);
-	pkgs_add_pkg(&pkgs, STRV("pkg1"), NULL);
+	pkgs_add(&pkgs, NULL);
+	pkgs_add(&pkgs, NULL);
 
 	EXPECT_EQ(pkgs_set_str(&pkgs, 0, STRV("")), 0);
 
@@ -107,26 +87,27 @@ TEST(pkgs_set_str)
 	END;
 }
 
-TEST(pkgs_get_pkg_name)
+TEST(pkgs_get_name)
 {
 	START;
 
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	pkgs_add_pkg(&pkgs, STRV("pkg"), NULL);
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+	pkgs_set_str(&pkgs, pkg->strs[PKG_NAME], STRV("pkg"));
 
 	strv_t name;
 
-	name = pkgs_get_pkg_name(NULL, 0);
+	name = pkgs_get_name(NULL, 0);
 	EXPECT_EQ(name.data, NULL);
 
 	log_set_quiet(0, 1);
-	name = pkgs_get_pkg_name(&pkgs, pkgs.pkgs.cnt);
+	name = pkgs_get_name(&pkgs, pkgs.pkgs.cnt);
 	EXPECT_EQ(name.data, NULL);
 	log_set_quiet(0, 0);
 
-	name = pkgs_get_pkg_name(&pkgs, 0);
+	name = pkgs_get_name(&pkgs, 0);
 	EXPECT_STRN(name.data, "pkg", name.len);
 
 	pkgs_free(&pkgs);
@@ -134,17 +115,38 @@ TEST(pkgs_get_pkg_name)
 	END;
 }
 
-TEST(pkgs_get_pkg)
+TEST(pkgs_get)
 {
 	START;
 
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	pkg_t *pkg = pkgs_add_pkg(&pkgs, STRV("pkg"), NULL);
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
 
-	EXPECT_EQ(pkgs_get_pkg(NULL, 0), NULL)
-	EXPECT_EQ(pkgs_get_pkg(&pkgs, 0), pkg);
+	EXPECT_EQ(pkgs_get(NULL, 0), NULL)
+	EXPECT_EQ(pkgs_get(&pkgs, 0), pkg);
+
+	pkgs_free(&pkgs);
+
+	END;
+}
+
+TEST(pkgs_find)
+{
+	START;
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	uint pkg, found;
+	pkg_t *data = pkgs_add(&pkgs, &pkg);
+
+	EXPECT_EQ(pkgs_find(NULL, STRV_NULL, NULL), NULL)
+	EXPECT_EQ(pkgs_find(&pkgs, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(pkgs_find(&pkgs, STRV("asd"), NULL), NULL);
+	EXPECT_EQ(pkgs_find(&pkgs, STRV(""), &found), data);
+	EXPECT_EQ(found, pkg);
 
 	pkgs_free(&pkgs);
 
@@ -158,38 +160,35 @@ TEST(pkgs_get_build_order)
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
-
 	pkg_t *pkg;
 	list_node_t target;
 
-	pkg = pkgs_add_pkg(&pkgs, STRV("pkg0"), NULL);
+	pkg = pkgs_add(&pkgs, NULL);
 
 	arr_t deps = {0};
 	log_set_quiet(0, 1);
 	arr_init(&deps, 0, sizeof(uint), ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(pkgs_get_build_order(&pkgs, &targets, &deps), 0);
+	EXPECT_EQ(pkgs_get_build_order(&pkgs, &deps), 0);
 
-	pkg_add_target(pkg, &targets, STRV("target0"), &target);
+	pkg_add_target(pkg, &pkgs.targets, STRV("target0"), &target);
 
-	targets_add_dep(&targets, target, STRV("target1"));
+	targets_add_dep(&pkgs.targets, target, STRV("target1"));
 
-	pkg = pkgs_add_pkg(&pkgs, STRV("pkg1"), NULL);
-	pkg_add_target(pkg, &targets, STRV("target1"), &target);
+	pkg = pkgs_add(&pkgs, NULL);
+	pkg_add_target(pkg, &pkgs.targets, STRV("target1"), &target);
 
-	pkg = pkgs_add_pkg(&pkgs, STRV("pkg2"), NULL);
-	pkg_add_target(pkg, &targets, STRV("target2"), &target);
+	pkg = pkgs_add(&pkgs, NULL);
+	pkg_add_target(pkg, &pkgs.targets, STRV("target2"), &target);
 
 	deps.cnt = 0;
 
-	EXPECT_EQ(pkgs_get_build_order(NULL, NULL, NULL), 1);
+	EXPECT_EQ(pkgs_get_build_order(NULL, NULL), 1);
 	mem_oom(1);
-	EXPECT_EQ(pkgs_get_build_order(&pkgs, &targets, &deps), 1);
+	EXPECT_EQ(pkgs_get_build_order(&pkgs, &deps), 1);
 	mem_oom(0);
-	EXPECT_EQ(pkgs_get_build_order(&pkgs, &targets, &deps), 0);
+	EXPECT_EQ(pkgs_get_build_order(&pkgs, &deps), 0);
 
 	EXPECT_EQ(deps.cnt, 3);
 	EXPECT_EQ(*(uint *)arr_get(&deps, 0), 1);
@@ -197,7 +196,6 @@ TEST(pkgs_get_build_order)
 	EXPECT_EQ(*(uint *)arr_get(&deps, 2), 2);
 
 	arr_free(&deps);
-	targets_free(&targets);
 	pkgs_free(&pkgs);
 
 	END;
@@ -210,13 +208,10 @@ TEST(pkgs_print)
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
-
-	pkgs_add_pkg(&pkgs, STRV(""), NULL);
+	pkgs_add(&pkgs, NULL);
 
 	char buf[256] = {0};
-	EXPECT_EQ(pkgs_print(&pkgs, &targets, DST_BUF(buf)), 42);
+	EXPECT_EQ(pkgs_print(&pkgs, DST_BUF(buf)), 42);
 	EXPECT_STR(buf,
 		   "[package]\n"
 		   "ID: 0\n"
@@ -226,7 +221,6 @@ TEST(pkgs_print)
 		   "INC: \n"
 		   "\n");
 
-	targets_free(&targets);
 	pkgs_free(&pkgs);
 
 	END;
@@ -237,12 +231,12 @@ STEST(pkgs)
 	SSTART;
 
 	RUN(pkgs_init_free);
-	RUN(pkgs_add_pkg);
-	RUN(pkgs_add_pkg_strs_oom);
-	RUN(pkgs_add_pkg_exist);
+	RUN(pkgs_add);
+	RUN(pkgs_add_strs_oom);
 	RUN(pkgs_set_str);
-	RUN(pkgs_get_pkg_name);
-	RUN(pkgs_get_pkg);
+	RUN(pkgs_get_name);
+	RUN(pkgs_get);
+	RUN(pkgs_find);
 	RUN(pkgs_get_build_order);
 	RUN(pkgs_print);
 

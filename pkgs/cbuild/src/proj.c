@@ -10,7 +10,7 @@ proj_t *proj_init(proj_t *proj, uint pkgs_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL || targets_init(&proj->targets, pkgs_cap, alloc) == NULL) {
+	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -23,11 +23,10 @@ void proj_free(proj_t *proj)
 		return;
 	}
 
-	targets_free(&proj->targets);
 	pkgs_free(&proj->pkgs);
 }
 
-int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir)
+int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir, str_t *buf)
 {
 	if (proj == NULL) {
 		return 1;
@@ -36,7 +35,7 @@ int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir)
 	int ret = 0;
 
 	path_init(&proj->dir, dir);
-	path_init(&proj->outdir, STRV("bin" SEP "${ARCH}-${CONFIG}/"));
+	path_init(&proj->outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
 	path_t tmp = {0};
 	path_init(&tmp, dir);
@@ -56,15 +55,10 @@ int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir)
 	}
 
 	if (is_src) {
-		strv_t name;
-		pathv_get_dir(dir, &name);
-
-		uint id;
-		if (proj_set_pkg(proj, name, &id) == NULL) {
-			ret = 1;
-		} else {
-			ret |= pkg_load(id, fs, dir, &proj->pkgs, &proj->targets, proj->pkgs.alloc);
-		}
+		strv_t folder;
+		pathv_get_dir(dir, &folder);
+		ret |= pkg_load(fs, dir, STRV_NULL, &proj->pkgs, proj->pkgs.alloc, buf);
+		proj->is_pkg = 1;
 	}
 
 	if (is_pkgs) {
@@ -72,21 +66,15 @@ int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir)
 		strbuf_init(&dirs, 4, 8, ALLOC_STD);
 		fs_lsdir(fs, STRVS(tmp), &dirs);
 
+		path_init(&tmp, STRV("pkgs"));
+
 		uint index = 0;
-		strv_t dir;
-
+		strv_t folder;
 		size_t tmp_len = tmp.len;
-		strbuf_foreach(&dirs, index, dir)
+		strbuf_foreach(&dirs, index, folder)
 		{
-			path_child(&tmp, dir);
-
-			uint id;
-			if (pkgs_add_pkg(&proj->pkgs, dir, &id) == NULL) {
-				ret = 1; // LCOV_EXCL_LINE
-			} else {
-				ret |= pkg_load(id, fs, STRVS(tmp), &proj->pkgs, &proj->targets, proj->pkgs.alloc);
-			}
-
+			path_child(&tmp, folder);
+			ret |= pkg_load(fs, dir, STRVS(tmp), &proj->pkgs, proj->pkgs.alloc, buf);
 			tmp.len = tmp_len;
 		}
 
@@ -96,7 +84,7 @@ int proj_set_dir(proj_t *proj, fs_t *fs, strv_t dir)
 	return ret;
 }
 
-pkg_t *proj_set_pkg(proj_t *proj, strv_t name, uint *id)
+pkg_t *proj_set_pkg(proj_t *proj, uint *id)
 {
 	if (proj == NULL) {
 		return NULL;
@@ -104,16 +92,16 @@ pkg_t *proj_set_pkg(proj_t *proj, strv_t name, uint *id)
 
 	proj->is_pkg = 1;
 
-	return pkgs_add_pkg(&proj->pkgs, name, id);
+	return pkgs_add(&proj->pkgs, id);
 }
 
-pkg_t *proj_add_pkg(proj_t *proj, strv_t name, uint *id)
+pkg_t *proj_add_pkg(proj_t *proj, uint *id)
 {
 	if (proj == NULL) {
 		return NULL;
 	}
 
-	return pkgs_add_pkg(&proj->pkgs, name, id);
+	return pkgs_add(&proj->pkgs, id);
 }
 
 size_t proj_print(const proj_t *proj, dst_t dst)
@@ -134,7 +122,7 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 			 proj->outdir.len,
 			 proj->outdir.data);
 
-	dst.off += pkgs_print(&proj->pkgs, &proj->targets, dst);
+	dst.off += pkgs_print(&proj->pkgs, dst);
 
 	return dst.off - off;
 }

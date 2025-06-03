@@ -71,11 +71,9 @@ mk() {
 }
 
 test() {
-	mk "$1" "$2" empty 1
 	mk "$1" "$2" exe 0 bin/exe
 	mk "$1" "$2" exe_dep_lib 0 "bin/exe lib/lib.a"
 	mk "$1" "$2" lib 0 lib/lib.a
-	mk "$1" "$2" pkgs_src 1
 }
 
 test x64 Debug

@@ -123,13 +123,17 @@ target_t *targets_add_dep(targets_t *targets, list_node_t id, strv_t dep)
 		return NULL;
 	}
 
+	uint targets_cnt = targets->targets.cnt;
+
 	list_node_t dep_id;
-	if (targets_target(targets, dep, &dep_id) == NULL) {
+	target_t *dtarget = targets_target(targets, dep, &dep_id);
+	if (dtarget == NULL) {
 		return NULL;
 	}
 
 	target_t *target = targets_get(targets, id);
 	if (target == NULL) {
+		list_reset(&targets->targets, targets_cnt);
 		log_error("cbuild", "targets", NULL, "target not found: %d", id);
 		return NULL;
 	}
@@ -137,12 +141,14 @@ target_t *targets_add_dep(targets_t *targets, list_node_t id, strv_t dep)
 	list_node_t node;
 	uint *data = list_node(&targets->deps, &node);
 	if (data == NULL) {
+		list_reset(&targets->targets, targets_cnt);
 		log_error("cbuild", "targets", NULL, "failed to create target dependency");
 		return NULL;
 	}
 
 	if (target->has_deps) {
 		if (list_app(&targets->deps, target->deps, node)) {
+			list_reset(&targets->targets, targets_cnt);
 			log_error("cbuild", "targets", NULL, "failed to add target dependency");
 			return NULL;
 		}
@@ -153,7 +159,7 @@ target_t *targets_add_dep(targets_t *targets, list_node_t id, strv_t dep)
 
 	*data = dep_id;
 
-	return target;
+	return dtarget;
 }
 
 static int get_target_deps(const targets_t *targets, list_node_t id, arr_t *arr)

@@ -8,16 +8,16 @@ TEST(gen_make_empty)
 {
 	START;
 
-	strv_t dir = STRV("./test/empty/");
-
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	fs_t tfs = {0};
-	fs_init(&tfs, 0, 0, ALLOC_STD);
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
 
+	char buf[2600] = {0};
+	str_t tmp      = STRB(buf, 0);
 	log_set_quiet(0, 1);
-	proj_set_dir(&proj, &tfs, dir);
+	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
 	log_set_quiet(0, 0);
 
 	gen_driver_t *drvi = NULL;
@@ -33,22 +33,14 @@ TEST(gen_make_empty)
 
 	gen_driver_t drv = *drvi;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("."));
-	fs_mkdir(&fs, STRV("./test"));
-	fs_mkdir(&fs, STRV("./test/empty"));
-
 	drv.fs = &fs;
 
 	log_set_quiet(0, 1);
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 	log_set_quiet(0, 0);
 
-	str_t buf = strz(2600);
-	fs_read(&fs, STRV("./test/empty/Makefile"), 0, &buf);
-	EXPECT_STRN(buf.data,
+	fs_read(&fs, STRV("Makefile"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
 		    "BUILDDIR := \n"
 		    "SRCDIR := \n"
 		    "\n"
@@ -72,7 +64,7 @@ TEST(gen_make_empty)
 		    "LDFLAGS := \n"
 		    "endif\n"
 		    "\n"
-		    "OUTDIR := $(BUILDDIR)bin" SEP "$(ARCH)-$(CONFIG)/\n"
+		    "OUTDIR := $(BUILDDIR)bin" SEP "$(ARCH)-$(CONFIG)" SEP "\n"
 		    "INTDIR := $(OUTDIR)int\n"
 		    "LIBDIR := $(OUTDIR)lib\n"
 		    "BINDIR := $(OUTDIR)bin\n"
@@ -155,12 +147,10 @@ TEST(gen_make_empty)
 		    "coverage: test\n"
 		    "	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)\n"
 		    "\n",
-		    buf.len);
+		    tmp.len);
 
 	proj_free(&proj);
 	fs_free(&fs);
-	fs_free(&tfs);
-	str_free(&buf);
 
 	END;
 }
@@ -169,15 +159,17 @@ TEST(gen_make_exe)
 {
 	START;
 
-	strv_t dir = STRV("./test/exe/");
-
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	fs_t tfs = {0};
-	fs_init(&tfs, 0, 0, ALLOC_STD);
+	fs_t fs = {0};
+	fs_init(&fs, 3, 1, ALLOC_STD);
 
-	proj_set_dir(&proj, &tfs, dir);
+	fs_mkdir(&fs, STRV("src"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -192,32 +184,22 @@ TEST(gen_make_exe)
 
 	gen_driver_t drv = *drvi;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("."));
-	fs_mkdir(&fs, STRV("./test"));
-	fs_mkdir(&fs, STRV("./test/exe"));
-
 	drv.fs = &fs;
 
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 
-	str_t buf = strz(128);
-	fs_read(&fs, STRV("./test/exe/pkg.mk"), 0, &buf);
-	EXPECT_STRN(buf.data,
-		    "PKG := exe\n"
+	fs_read(&fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PKG := \n"
 		    "$(PKG)_HEADERS :=\n"
 		    "$(PKG)_INCLUDES :=\n"
 		    "$(PKG)_LIBS :=\n"
 		    "$(PKG)_DRIVERS :=\n"
 		    "$(eval $(call exe))\n",
-		    buf.len);
+		    tmp.len);
 
 	proj_free(&proj);
 	fs_free(&fs);
-	fs_free(&tfs);
-	str_free(&buf);
 
 	END;
 }
@@ -226,15 +208,18 @@ TEST(gen_make_lib)
 {
 	START;
 
-	strv_t dir = STRV("./test/lib/");
-
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	fs_t tfs = {0};
-	fs_init(&tfs, 0, 0, ALLOC_STD);
+	fs_t fs = {0};
+	fs_init(&fs, 4, 1, ALLOC_STD);
 
-	proj_set_dir(&proj, &tfs, dir);
+	fs_mkdir(&fs, STRV("src"));
+	fs_mkdir(&fs, STRV("include"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -249,32 +234,22 @@ TEST(gen_make_lib)
 
 	gen_driver_t drv = *drvi;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("."));
-	fs_mkdir(&fs, STRV("./test"));
-	fs_mkdir(&fs, STRV("./test/lib"));
-
 	drv.fs = &fs;
 
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 
-	str_t buf = strz(128);
-	fs_read(&fs, STRV("./test/lib/pkg.mk"), 0, &buf);
-	EXPECT_STRN(buf.data,
-		    "PKG := lib\n"
+	fs_read(&fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PKG := \n"
 		    "$(PKG)_HEADERS :=\n"
 		    "$(PKG)_INCLUDES :=\n"
 		    "$(PKG)_LIBS :=\n"
 		    "$(PKG)_DRIVERS :=\n"
 		    "$(eval $(call lib))\n",
-		    buf.len);
+		    tmp.len);
 
 	proj_free(&proj);
 	fs_free(&fs);
-	fs_free(&tfs);
-	str_free(&buf);
 
 	END;
 }
@@ -283,15 +258,27 @@ TEST(gen_make_exe_dep_lib)
 {
 	START;
 
-	strv_t dir = STRV("./test/exe_dep_lib/");
-
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	fs_t tfs = {0};
-	fs_init(&tfs, 0, 0, ALLOC_STD);
+	fs_t fs = {0};
+	fs_init(&fs, 10, 1, ALLOC_STD);
+	// TODO: test without src and lib
+	fs_mkdir(&fs, STRV("pkgs"));
+	fs_mkdir(&fs, STRV("pkgs/lib"));
+	fs_mkdir(&fs, STRV("pkgs/lib/src"));
+	fs_mkdir(&fs, STRV("pkgs/lib/include"));
+	fs_mkdir(&fs, STRV("pkgs/exe"));
+	fs_mkdir(&fs, STRV("pkgs/exe/src"));
 
-	proj_set_dir(&proj, &tfs, dir);
+	void *f;
+	fs_open(&fs, STRV("pkgs/exe/pkg.cfg"), "w", &f);
+	fs_write(&fs, f, STRV("deps = [lib]\n"));
+	fs_close(&fs, f);
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -306,45 +293,32 @@ TEST(gen_make_exe_dep_lib)
 
 	gen_driver_t drv = *drvi;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("."));
-	fs_mkdir(&fs, STRV("./test"));
-	fs_mkdir(&fs, STRV("./test/exe_dep_lib"));
-	fs_mkdir(&fs, STRV("./test/exe_dep_lib/pkgs"));
-	fs_mkdir(&fs, STRV("./test/exe_dep_lib/pkgs" SEP "lib"));
-	fs_mkdir(&fs, STRV("./test/exe_dep_lib/pkgs" SEP "exe"));
-
 	drv.fs = &fs;
 
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 
-	str_t buf = strz(128);
-	fs_read(&fs, STRV("./test/exe_dep_lib/pkgs" SEP "lib" SEP "pkg.mk"), 0, &buf);
-	EXPECT_STRN(buf.data,
+	fs_read(&fs, STRV("pkgs/lib/pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
 		    "PKG := lib\n"
 		    "$(PKG)_HEADERS :=\n"
 		    "$(PKG)_INCLUDES :=\n"
 		    "$(PKG)_LIBS :=\n"
 		    "$(PKG)_DRIVERS :=\n"
 		    "$(eval $(call lib))\n",
-		    buf.len);
+		    tmp.len);
 
-	fs_read(&fs, STRV("./test/exe_dep_lib/pkgs" SEP "exe" SEP "pkg.mk"), 0, &buf);
-	EXPECT_STRN(buf.data,
+	fs_read(&fs, STRV("pkgs/exe/pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
 		    "PKG := exe\n"
 		    "$(PKG)_HEADERS :=\n"
 		    "$(PKG)_INCLUDES :=\n"
 		    "$(PKG)_LIBS := $(lib)\n"
 		    "$(PKG)_DRIVERS :=\n"
 		    "$(eval $(call exe))\n",
-		    buf.len);
+		    tmp.len);
 
 	proj_free(&proj);
 	fs_free(&fs);
-	fs_free(&tfs);
-	str_free(&buf);
 
 	END;
 }

@@ -44,7 +44,7 @@ TEST(proj_set_dir)
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	EXPECT_EQ(proj_set_dir(NULL, NULL, STRV_NULL), 1);
+	EXPECT_EQ(proj_set_dir(NULL, NULL, STRV_NULL, NULL), 1);
 
 	proj_free(&proj);
 
@@ -59,10 +59,10 @@ TEST(proj_set_dir_empty)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_init(&fs, 1, 1, ALLOC_STD);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("test/empty")), 1);
+	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV_NULL, NULL), 1);
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
@@ -79,9 +79,13 @@ TEST(proj_set_dir_exe)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_init(&fs, 1, 1, ALLOC_STD);
 
-	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("test/exe")), 0);
+	fs_mkdir(&fs, STRV("src"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV_NULL, &tmp), 0);
 	EXPECT_EQ(proj.pkgs.pkgs.cnt, 1);
 
 	proj_free(&proj);
@@ -100,10 +104,14 @@ TEST(proj_set_dir_exe_oom)
 	log_set_quiet(0, 0);
 
 	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_init(&fs, 1, 1, ALLOC_STD);
 
+	fs_mkdir(&fs, STRV("src"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
 	mem_oom(1);
-	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("test/exe")), 1);
+	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV_NULL, &tmp), 1);
 	mem_oom(0);
 
 	proj_free(&proj);
@@ -120,9 +128,14 @@ TEST(proj_set_dir_lib)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_init(&fs, 2, 1, ALLOC_STD);
 
-	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("test/lib")), 0);
+	fs_mkdir(&fs, STRV("include"));
+	fs_mkdir(&fs, STRV("src"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV_NULL, &tmp), 0);
 	EXPECT_EQ(proj.pkgs.pkgs.cnt, 1);
 
 	proj_free(&proj);
@@ -139,10 +152,15 @@ TEST(proj_set_dir_pkgs_src)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_init(&fs, 2, 1, ALLOC_STD);
 
+	fs_mkdir(&fs, STRV("pkgs"));
+	fs_mkdir(&fs, STRV("src"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("test/pkgs_src")), 1);
+	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV_NULL, &tmp), 1);
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
@@ -159,9 +177,18 @@ TEST(proj_set_dir_exe_dep_lib)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_init(&fs, 6, 1, ALLOC_STD);
 
-	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV("test/exe_dep_lib")), 0);
+	fs_mkdir(&fs, STRV("pkgs"));
+	fs_mkdir(&fs, STRV("pkgs/exe"));
+	fs_mkdir(&fs, STRV("pkgs/exe/src"));
+	fs_mkdir(&fs, STRV("pkgs/lib"));
+	fs_mkdir(&fs, STRV("pkgs/lib/src"));
+	fs_mkdir(&fs, STRV("pkgs/lib/include"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	EXPECT_EQ(proj_set_dir(&proj, &fs, STRV_NULL, &tmp), 0);
 	EXPECT_EQ(proj.pkgs.pkgs.cnt, 2);
 
 	proj_free(&proj);
@@ -179,8 +206,8 @@ TEST(proj_set_pkg)
 	proj_init(&proj, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(proj_set_pkg(NULL, STRV_NULL, NULL), NULL);
-	EXPECT_NE(proj_set_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_set_pkg(NULL, NULL), NULL);
+	EXPECT_NE(proj_set_pkg(&proj, NULL), NULL);
 
 	proj_free(&proj);
 
@@ -197,10 +224,10 @@ TEST(proj_add_pkg)
 	log_set_quiet(0, 0);
 
 	mem_oom(1);
-	EXPECT_EQ(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_pkg(&proj, NULL), NULL);
 	mem_oom(0);
-	EXPECT_EQ(proj_add_pkg(NULL, STRV_NULL, NULL), NULL);
-	EXPECT_NE(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_pkg(NULL, NULL), NULL);
+	EXPECT_NE(proj_add_pkg(&proj, NULL), NULL);
 
 	proj_free(&proj);
 

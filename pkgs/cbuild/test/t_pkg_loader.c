@@ -9,29 +9,27 @@ TEST(pkg_load_empty)
 {
 	START;
 
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, NULL, ALLOC_STD, NULL), 1);
+	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, NULL), 0);
 
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
+	pkg_t *pkg = pkgs_get(&pkgs, 0);
 
-	pkg_t *pkg = pkgs_add_pkg(&pkgs, STRV(""), NULL);
-
-	EXPECT_EQ(pkg_load(0, &fs, STRV_NULL, NULL, NULL, ALLOC_STD), 1);
-	EXPECT_EQ(pkg_load(0, &fs, STRV("test/empty"), &pkgs, &targets, ALLOC_STD), 0);
-
-	strv_t dir = strvbuf_get(&pkgs.strs, pkg->dir);
-	strv_t src = strvbuf_get(&pkgs.strs, pkg->src);
-	strv_t inc = strvbuf_get(&pkgs.strs, pkg->inc);
-	EXPECT_STRN(dir.data, "test/empty", dir.len);
+	strv_t dir  = strvbuf_get(&pkgs.strs, pkg->strs[PKG_DIR]);
+	strv_t name = strvbuf_get(&pkgs.strs, pkg->strs[PKG_NAME]);
+	strv_t src  = strvbuf_get(&pkgs.strs, pkg->strs[PKG_SRC]);
+	strv_t inc  = strvbuf_get(&pkgs.strs, pkg->strs[PKG_INC]);
+	EXPECT_EQ(dir.len, 0);
+	EXPECT_EQ(name.len, 0);
 	EXPECT_EQ(src.len, 0);
 	EXPECT_EQ(inc.len, 0);
-	EXPECT_EQ(targets.targets.cnt, 0);
+	EXPECT_EQ(pkgs.targets.targets.cnt, 1);
 
-	targets_free(&targets);
 	pkgs_free(&pkgs);
 	fs_free(&fs);
 
@@ -42,125 +40,60 @@ TEST(pkg_load_empty_cfg)
 {
 	START;
 
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	fs_mkfile(&fs, STRV("pkg.cfg"));
 
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), 0);
 
-	pkg_t *pkg = pkgs_add_pkg(&pkgs, STRV(""), NULL);
+	pkg_t *pkg = pkgs_get(&pkgs, 0);
 
-	EXPECT_EQ(pkg_load(0, &fs, STRV_NULL, NULL, NULL, ALLOC_STD), 1);
-	EXPECT_EQ(pkg_load(0, &fs, STRV("test/empty_cfg"), &pkgs, &targets, ALLOC_STD), 0);
-
-	strv_t dir = strvbuf_get(&pkgs.strs, pkg->dir);
-	strv_t src = strvbuf_get(&pkgs.strs, pkg->src);
-	strv_t inc = strvbuf_get(&pkgs.strs, pkg->inc);
-	EXPECT_STRN(dir.data, "test/empty_cfg", dir.len);
+	strv_t dir  = strvbuf_get(&pkgs.strs, pkg->strs[PKG_DIR]);
+	strv_t name = strvbuf_get(&pkgs.strs, pkg->strs[PKG_NAME]);
+	strv_t src  = strvbuf_get(&pkgs.strs, pkg->strs[PKG_SRC]);
+	strv_t inc  = strvbuf_get(&pkgs.strs, pkg->strs[PKG_INC]);
+	EXPECT_EQ(dir.len, 0);
+	EXPECT_EQ(name.len, 0);
 	EXPECT_EQ(src.len, 0);
 	EXPECT_EQ(inc.len, 0);
-	EXPECT_EQ(targets.targets.cnt, 0);
+	EXPECT_EQ(pkgs.targets.targets.cnt, 1);
 
-	targets_free(&targets);
 	pkgs_free(&pkgs);
 	fs_free(&fs);
 
 	END;
 }
 
-TEST(pkg_load_exe)
+TEST(pkg_load_name)
 {
 	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
 
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
+	void *f;
+	fs_open(&fs, STRV("pkg.cfg"), "w", &f);
+	fs_write(&fs, f, STRV("name = pkg\n"));
+	fs_close(&fs, f);
 
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), 0);
 
-	pkg_t *pkg = pkgs_add_pkg(&pkgs, STRV(""), NULL);
+	pkg_t *pkg = pkgs_get(&pkgs, 0);
 
-	EXPECT_EQ(pkg_load(0, &fs, STRV("test/exe"), &pkgs, &targets, ALLOC_STD), 0);
+	strv_t name = strvbuf_get(&pkgs.strs, pkg->strs[PKG_NAME]);
+	EXPECT_STRN(name.data, "pkg", name.len);
 
-	strv_t src = strvbuf_get(&pkgs.strs, pkg->src);
-	EXPECT_STRN(src.data, "test/exe" SEP "src", src.len);
-	EXPECT_EQ(targets.targets.cnt, 1);
-
-	target_t *target = targets_get(&targets, pkg->targets);
-
-	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
-
-	targets_free(&targets);
-	pkgs_free(&pkgs);
-	fs_free(&fs);
-
-	END;
-}
-
-TEST(pkg_load_lib)
-{
-	START;
-
-	pkgs_t pkgs = {0};
-	pkgs_init(&pkgs, 1, ALLOC_STD);
-
-	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
-
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
-
-	pkg_t *pkg = pkgs_add_pkg(&pkgs, STRV(""), NULL);
-
-	mem_oom(1);
-	targets.targets.cnt = targets.targets.cap;
-	EXPECT_EQ(pkg_load(0, &fs, STRV("test/lib"), &pkgs, &targets, ALLOC_STD), 1);
-	targets.targets.cnt = 0;
-	mem_oom(0);
-	EXPECT_EQ(pkg_load(0, &fs, STRV("test/lib"), &pkgs, &targets, ALLOC_STD), 0);
-
-	strv_t inc = strvbuf_get(&pkgs.strs, pkg->inc);
-	EXPECT_STRN(inc.data, "test/lib" SEP "include", inc.len);
-	EXPECT_EQ(targets.targets.cnt, 1);
-
-	target_t *target = targets_get(&targets, pkg->targets);
-
-	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
-
-	targets_free(&targets);
-	pkgs_free(&pkgs);
-	fs_free(&fs);
-
-	END;
-}
-
-TEST(pkg_load_exe_dep_lib)
-{
-	START;
-
-	pkgs_t pkgs = {0};
-	pkgs_init(&pkgs, 1, ALLOC_STD);
-
-	fs_t fs = {0};
-	fs_init(&fs, 0, 0, ALLOC_STD);
-
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
-
-	pkgs_add_pkg(&pkgs, STRV(""), NULL);
-
-	EXPECT_EQ(pkg_load(0, &fs, STRV("test/exe_dep_lib/pkgs/exe"), &pkgs, &targets, ALLOC_STD), 0);
-
-	EXPECT_EQ(targets.targets.cnt, 2);
-	EXPECT_EQ(targets.deps.cnt, 1);
-
-	targets_free(&targets);
 	pkgs_free(&pkgs);
 	fs_free(&fs);
 
@@ -171,7 +104,71 @@ TEST(pkg_set_cfg)
 {
 	START;
 
-	EXPECT_EQ(pkg_set_cfg(0, NULL, 0, NULL, NULL), 1);
+	EXPECT_EQ(pkg_set_cfg(NULL, NULL, 0, NULL, STRV_NULL, NULL), 1);
+
+	END;
+}
+
+TEST(pkg_set_cfg_src_not_found)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, src;
+
+	cfg_root(&cfg, &root);
+	cfg_str(&cfg, STRV("src"), STRV("src"), &src);
+	cfg_add_var(&cfg, root, src);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 1);
+	log_set_quiet(0, 0);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_inc_not_found)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, inc;
+
+	cfg_root(&cfg, &root);
+	cfg_str(&cfg, STRV("include"), STRV("include"), &inc);
+	cfg_add_var(&cfg, root, inc);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 1);
+	log_set_quiet(0, 0);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
 
 	END;
 }
@@ -183,13 +180,13 @@ TEST(pkg_set_cfg_invalid_id)
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	pkgs_add_pkg(&pkgs, STRV(""), NULL);
+	pkgs_add(&pkgs, NULL);
 
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(pkg_set_cfg(-1, &cfg, -1, &pkgs, NULL), 1);
+	EXPECT_EQ(pkg_set_cfg(NULL, &cfg, -1, &pkgs, STRV_NULL, NULL), 1);
 	log_set_quiet(0, 0);
 
 	cfg_free(&cfg);
@@ -202,15 +199,13 @@ TEST(pkg_set_cfg_target_oom)
 {
 	START;
 
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	targets_t targets = {0};
-	log_set_quiet(0, 1);
-	targets_init(&targets, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	pkgs_add_pkg(&pkgs, STRV(""), NULL);
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
 
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
@@ -220,12 +215,268 @@ TEST(pkg_set_cfg_target_oom)
 	cfg_root(&cfg, &root);
 
 	mem_oom(1);
-	EXPECT_EQ(pkg_set_cfg(0, &cfg, root, &pkgs, &targets), 1);
+	pkgs.targets.targets.cnt = pkgs.targets.targets.cap;
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 1);
+	pkgs.targets.targets.cnt = 0;
 	mem_oom(0);
 
 	cfg_free(&cfg);
-	targets_free(&targets);
 	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_target_type_exe)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("src"));
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, cfg_target;
+
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &cfg_target);
+	cfg_add_var(&cfg, root, cfg_target);
+
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 0);
+
+	strv_t src = strvbuf_get(&pkgs.strs, pkg->strs[PKG_SRC]);
+	EXPECT_STRN(src.data, "src", src.len);
+
+	target_t *target = targets_get(&pkgs.targets, pkg->targets);
+	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_target_type_lib)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("include"));
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, cfg_target;
+
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &cfg_target);
+	cfg_add_var(&cfg, root, cfg_target);
+
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 0);
+
+	strv_t inc = strvbuf_get(&pkgs.strs, pkg->strs[PKG_INC]);
+	EXPECT_STRN(inc.data, "include", inc.len);
+
+	target_t *target = targets_get(&pkgs.targets, pkg->targets);
+	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_target_cfg_oom)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, targets;
+
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &targets);
+	cfg_add_var(&cfg, root, targets);
+
+	mem_oom(1);
+	pkgs.targets.targets.cnt = pkgs.targets.targets.cap;
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 1);
+	pkgs.targets.targets.cnt = 0;
+	mem_oom(0);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_target_cfg_type_exe)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, cfg_target, type;
+
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &cfg_target);
+	cfg_add_var(&cfg, root, cfg_target);
+	cfg_lit(&cfg, STRV("type"), STRV("EXE"), &type);
+	cfg_add_var(&cfg, cfg_target, type);
+
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 0);
+
+	target_t *target = targets_get(&pkgs.targets, pkg->targets);
+	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_target_cfg_type_lib)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, cfg_target, type;
+
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &cfg_target);
+	cfg_add_var(&cfg, root, cfg_target);
+	cfg_lit(&cfg, STRV("type"), STRV("LIB"), &type);
+	cfg_add_var(&cfg, cfg_target, type);
+
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 0);
+
+	target_t *target = targets_get(&pkgs.targets, pkg->targets);
+	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_target_cfg_type_invalid)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, cfg_target, type;
+
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &cfg_target);
+	cfg_add_var(&cfg, root, cfg_target);
+	cfg_lit(&cfg, STRV("type"), STRV("A"), &type);
+	cfg_add_var(&cfg, cfg_target, type);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 1);
+	log_set_quiet(0, 0);
+
+	target_t *target = targets_get(&pkgs.targets, pkg->targets);
+	EXPECT_EQ(target->type, TARGET_TYPE_UNKNOWN);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_exe_dep_lib)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	fs_mkdir(&fs, STRV("src"));
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, deps, lib;
+
+	cfg_root(&cfg, &root);
+	cfg_arr(&cfg, STRV("deps"), &deps);
+	cfg_add_var(&cfg, root, deps);
+	cfg_lit(&cfg, STRV_NULL, STRV("lib"), &lib);
+	cfg_add_var(&cfg, deps, lib);
+
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 0);
+
+	EXPECT_EQ(pkgs.targets.targets.cnt, 2);
+	EXPECT_EQ(pkgs.targets.deps.cnt, 1);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
 
 	END;
 }
@@ -234,13 +485,13 @@ TEST(pkg_set_cfg_wrong_dep_type)
 {
 	START;
 
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
-
-	pkgs_add_pkg(&pkgs, STRV(""), NULL);
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
 
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
@@ -254,12 +505,12 @@ TEST(pkg_set_cfg_wrong_dep_type)
 	cfg_add_var(&cfg, deps, in);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(pkg_set_cfg(0, &cfg, root, &pkgs, &targets), 1);
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 1);
 	log_set_quiet(0, 0);
 
 	cfg_free(&cfg);
-	targets_free(&targets);
 	pkgs_free(&pkgs);
+	fs_free(&fs);
 
 	END;
 }
@@ -268,13 +519,13 @@ TEST(pkg_set_cfg_dep_oom)
 {
 	START;
 
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	targets_t targets = {0};
-	targets_init(&targets, 1, ALLOC_STD);
-
-	pkgs_add_pkg(&pkgs, STRV(""), NULL);
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
 
 	cfg_t cfg = {0};
 	cfg_init(&cfg, 1, 1, ALLOC_STD);
@@ -287,13 +538,15 @@ TEST(pkg_set_cfg_dep_oom)
 	cfg_lit(&cfg, STRV_NULL, STRV("lib"), &lit);
 	cfg_add_var(&cfg, deps, lit);
 
+	pkgs.targets.targets.cnt = pkgs.targets.targets.cap;
+
 	mem_oom(1);
-	EXPECT_EQ(pkg_set_cfg(0, &cfg, root, &pkgs, &targets), 1);
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 1);
 	mem_oom(0);
 
 	cfg_free(&cfg);
-	targets_free(&targets);
 	pkgs_free(&pkgs);
+	fs_free(&fs);
 
 	END;
 }
@@ -304,12 +557,19 @@ STEST(pkg_loader)
 
 	RUN(pkg_load_empty);
 	RUN(pkg_load_empty_cfg);
-	RUN(pkg_load_exe);
-	RUN(pkg_load_lib);
-	RUN(pkg_load_exe_dep_lib);
+	RUN(pkg_load_name);
 	RUN(pkg_set_cfg);
+	RUN(pkg_set_cfg_src_not_found);
+	RUN(pkg_set_cfg_inc_not_found);
 	RUN(pkg_set_cfg_invalid_id);
 	RUN(pkg_set_cfg_target_oom);
+	RUN(pkg_set_cfg_target_type_exe);
+	RUN(pkg_set_cfg_target_type_lib);
+	RUN(pkg_set_cfg_target_cfg_oom);
+	RUN(pkg_set_cfg_target_cfg_type_exe);
+	RUN(pkg_set_cfg_target_cfg_type_lib);
+	RUN(pkg_set_cfg_target_cfg_type_invalid);
+	RUN(pkg_set_cfg_exe_dep_lib);
 	RUN(pkg_set_cfg_wrong_dep_type);
 	RUN(pkg_set_cfg_dep_oom);
 

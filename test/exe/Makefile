@@ -11,7 +11,7 @@ ifeq ($(ARCH),x86)
 BITS := 32
 endif
 
-CONFIG := Release
+CONFIG := Debug
 ifeq ($(CONFIG),Debug)
 CFLAGS := -Wall -Wextra -Werror -pedantic -O0 -ggdb -coverage
 LDFLAGS := -coverage

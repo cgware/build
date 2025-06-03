@@ -12,11 +12,11 @@ typedef struct defines_s {
 	make_act_t def;
 } defines_t;
 
-static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const defines_t *defines, const pkgs_t *pkgs,
-		   const targets_t *targets, arr_t *deps, str_t *buf, fs_t *fs)
+static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const defines_t *defines, const pkgs_t *pkgs, arr_t *deps,
+		   str_t *buf, fs_t *fs, strv_t proj_dir)
 
 {
-	const pkg_t *pkg = pkgs_get_pkg(pkgs, id);
+	const pkg_t *pkg = pkgs_get(pkgs, id);
 
 	make_act_t act;
 	make_var(make, STRV("PKG"), MAKE_VAR_INST, &act);
@@ -31,7 +31,7 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	make_var(make, STRV("$(PKG)_LIBS"), MAKE_VAR_INST, &libs);
 	make_inc_add_act(make, inc, libs);
 	if (pkg->has_targets) {
-		targets_get_deps(targets, pkg->targets, deps);
+		targets_get_deps(&pkgs->targets, pkg->targets, deps);
 
 		buf->len = 0;
 
@@ -42,7 +42,7 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 		uint *dep;
 		arr_foreach(deps, i, dep)
 		{
-			str_cat(buf, pkgs_get_pkg_name(pkgs, *dep));
+			str_cat(buf, pkgs_get_name(pkgs, *dep));
 			str_cat(buf, STRV(")"));
 			make_var_add_val(make, libs, MSTR(STRVS(*buf)));
 			buf->len = buf_len;
@@ -53,7 +53,7 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	make_inc_add_act(make, inc, act);
 
 	if (pkg->has_targets) {
-		const target_t *target = targets_get(targets, pkg->targets);
+		const target_t *target = targets_get(&pkgs->targets, pkg->targets);
 		if (target != NULL) {
 			make_eval_def(make, defines[target->type].def, &act);
 			make_inc_add_act(make, inc, act);
@@ -61,7 +61,8 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	}
 
 	path_t make_path = {0};
-	path_init(&make_path, strvbuf_get(&pkgs->strs, pkg->dir));
+	path_init(&make_path, proj_dir);
+	path_child(&make_path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
 	path_child(&make_path, STRV("pkg.mk"));
 
 	void *file;
@@ -467,7 +468,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 
 	str_t buf2 = strz(16);
 	if (proj->is_pkg) {
-		strv_t name = pkgs_get_pkg_name(&proj->pkgs, 0);
+		strv_t name = pkgs_get_name(&proj->pkgs, 0);
 
 		make_act_t inc;
 		make_inc(&make, STRV("$(SRCDIR)pkg.mk"), &inc);
@@ -478,7 +479,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
 
-		gen_pkg(0, name, &make, inc, defines, &proj->pkgs, &proj->targets, &deps, &buf2, drv->fs);
+		gen_pkg(0, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, STRVS(proj->dir));
 
 		arr_free(&deps);
 
@@ -491,7 +492,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		arr_t order = {0};
 		arr_init(&order, proj->pkgs.pkgs.cnt, sizeof(uint), ALLOC_STD);
 
-		pkgs_get_build_order(&proj->pkgs, &proj->targets, &order);
+		pkgs_get_build_order(&proj->pkgs, &order);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
@@ -500,7 +501,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		const uint *id;
 		arr_foreach(&order, i, id)
 		{
-			strv_t name = pkgs_get_pkg_name(&proj->pkgs, *id);
+			strv_t name = pkgs_get_name(&proj->pkgs, *id);
 
 			str_cat(&buf, name);
 			str_cat(&buf, STRV("/pkg.mk"));
@@ -508,7 +509,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 			make_inc(&make, STRVS(buf), &inc);
 			make_add_act(&make, root, inc);
 
-			gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &proj->targets, &deps, &buf2, drv->fs);
+			gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, STRVS(proj->dir));
 
 			make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
 

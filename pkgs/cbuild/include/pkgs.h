@@ -6,6 +6,7 @@
 
 typedef struct pkgs_s {
 	arr_t pkgs;
+	targets_t targets;
 	strvbuf_t strs;
 	alloc_t alloc;
 } pkgs_t;
@@ -13,15 +14,17 @@ typedef struct pkgs_s {
 pkgs_t *pkgs_init(pkgs_t *pkgs, uint pkgs_cap, alloc_t alloc);
 void pkgs_free(pkgs_t *pkgs);
 
-pkg_t *pkgs_add_pkg(pkgs_t *pkgs, strv_t name, uint *id);
+pkg_t *pkgs_add(pkgs_t *pkgs, uint *id);
 
 int pkgs_set_str(pkgs_t *pkgs, size_t off, strv_t val);
 
-strv_t pkgs_get_pkg_name(const pkgs_t *pkgs, uint id);
-pkg_t *pkgs_get_pkg(const pkgs_t *pkgs, uint id);
+strv_t pkgs_get_name(const pkgs_t *pkgs, uint id);
+pkg_t *pkgs_get(const pkgs_t *pkgs, uint id);
 
-int pkgs_get_build_order(const pkgs_t *pkgs, const targets_t *targets, arr_t *order);
+pkg_t *pkgs_find(const pkgs_t *pkgs, strv_t name, list_node_t *pkg);
 
-size_t pkgs_print(const pkgs_t *pkgs, const targets_t *targets, dst_t dst);
+int pkgs_get_build_order(const pkgs_t *pkgs, arr_t *order);
+
+size_t pkgs_print(const pkgs_t *pkgs, dst_t dst);
 
 #endif

@@ -51,9 +51,10 @@ TEST(targets_target_oom)
 	targets_init(&targets, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	targets.strs.used = targets.strs.size;
-
 	mem_oom(1);
+	targets.strs.used = targets.strs.size - sizeof(size_t) * 0;
+	EXPECT_EQ(targets_target(&targets, STRV_NULL, NULL), NULL);
+	targets.strs.used = targets.strs.size - sizeof(size_t) * 1;
 	EXPECT_EQ(targets_target(&targets, STRV_NULL, NULL), NULL);
 	mem_oom(0);
 
