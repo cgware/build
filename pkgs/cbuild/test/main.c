@@ -7,6 +7,7 @@ STEST(pkg);
 STEST(pkg_loader);
 STEST(pkgs);
 STEST(proj);
+STEST(proj_loader);
 STEST(target);
 STEST(targets);
 STEST(var);
@@ -19,6 +20,7 @@ TEST(cbuild)
 	RUN(pkg_loader);
 	RUN(pkgs);
 	RUN(proj);
+	RUN(proj_loader);
 	RUN(target);
 	RUN(targets);
 	RUN(var);

@@ -11,6 +11,7 @@ pkg_t *pkg_init(pkg_t *pkg, uint id)
 
 	pkg->id		 = id;
 	pkg->has_targets = 0;
+	pkg->loaded	 = 0;
 
 	return pkg;
 }

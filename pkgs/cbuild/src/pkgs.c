@@ -14,8 +14,6 @@ pkgs_t *pkgs_init(pkgs_t *pkgs, uint pkgs_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	pkgs->alloc = alloc;
-
 	return pkgs;
 }
 
@@ -92,6 +90,32 @@ int pkgs_set_str(pkgs_t *pkgs, size_t off, strv_t val)
 			}
 		}
 	}
+
+	return 0;
+}
+
+int pkgs_set_uri(pkgs_t *pkgs, pkg_t *pkg, strv_t uri)
+{
+	if (pkgs == NULL || pkg == NULL) {
+		return 1;
+	}
+
+	strv_t proto;
+	strv_t url;
+
+	if (strv_lsplit(uri, ':', &proto, &url)) {
+		log_error("cbuild", "proj", NULL, "invalid dependency URI: '%.*s'", uri.len, uri.data);
+		return 1;
+	}
+
+	if (strv_eq(proto, STRV("git"))) {
+		pkg->proto = PKG_URL_GIT;
+	} else {
+		log_error("cbuild", "proj", NULL, "not supported protocol: '%.*s'", proto.len, proto.data);
+		return 1;
+	}
+
+	pkgs_set_str(pkgs, pkg->strs[PKG_URL], url);
 
 	return 0;
 }
@@ -211,20 +235,24 @@ size_t pkgs_print(const pkgs_t *pkgs, dst_t dst)
 	{
 		strv_t dir  = strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]);
 		strv_t name = strvbuf_get(&pkgs->strs, pkg->strs[PKG_NAME]);
+		strv_t url  = strvbuf_get(&pkgs->strs, pkg->strs[PKG_URL]);
 		strv_t src  = strvbuf_get(&pkgs->strs, pkg->strs[PKG_SRC]);
 		strv_t inc  = strvbuf_get(&pkgs->strs, pkg->strs[PKG_INC]);
 		dst.off += dputf(dst,
 				 "[package]\n"
 				 "ID: %d\n"
 				 "NAME: %.*s\n"
+				 "URL: %.*s\n"
 				 "DIR: %.*s\n"
 				 "SRC: %.*s\n"
 				 "INC: %.*s\n",
 				 pkg->id,
-				 dir.len,
-				 dir.data,
 				 name.len,
 				 name.data,
+				 url.len,
+				 url.data,
+				 dir.len,
+				 dir.data,
 				 src.len,
 				 src.data,
 				 inc.len,

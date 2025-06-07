@@ -48,7 +48,7 @@ mk() {
 		return
 	fi
 
-	if ! out="$(make -C "$dir" ARCH="$p_arch" CONFIG="$p_config" 2>&1)"; then
+	if ! out="$(make -C "$dir/tmp/build" ARCH="$p_arch" CONFIG="$p_config" 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "Failed to build project"
 		echo "$out"
@@ -71,6 +71,7 @@ mk() {
 }
 
 test() {
+	mk "$1" "$2" ext 0 bin/ext
 	mk "$1" "$2" exe 0 bin/exe
 	mk "$1" "$2" exe_dep_lib 0 "bin/exe lib/lib.a"
 	mk "$1" "$2" lib 0 lib/lib.a

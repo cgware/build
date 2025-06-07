@@ -3,7 +3,8 @@
 #include "log.h"
 #include "mem.h"
 #include "path.h"
-#include "proj.h"
+#include "proj_gen.h"
+#include "proj_loader.h"
 
 int main(int argc, const char **argv)
 {
@@ -61,6 +62,9 @@ int main(int argc, const char **argv)
 	fs_t fs = {0};
 	fs_init(&fs, 0, 0, ALLOC_STD);
 
+	proc_t proc = {0};
+	proc_init(&proc, 0, 0);
+
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
@@ -75,7 +79,7 @@ int main(int argc, const char **argv)
 	path_merge(&path, source);
 
 	str_t buf = strz(1024);
-	if (proj_set_dir(&proj, &fs, STRVS(path), &buf)) {
+	if (proj_load(&fs, &proc, STRVS(path), &proj, ALLOC_STD, &buf)) {
 		return 1;
 	}
 
@@ -84,9 +88,10 @@ int main(int argc, const char **argv)
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
 	gen_driver.fs = &fs;
-	gen_driver.gen(&gen_driver, &proj);
+	proj_gen(&proj, &gen_driver);
 
 	proj_free(&proj);
+	proc_free(&proc);
 	fs_free(&fs);
 
 	mem_free(gens, gen_drivers_cnt * sizeof(opt_enum_val_t));

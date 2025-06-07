@@ -3,12 +3,11 @@
 #include "file/cfg_prs.h"
 #include "log.h"
 
-int pkg_load(fs_t *fs, strv_t proj_dir, strv_t dir, pkgs_t *pkgs, alloc_t alloc, str_t *buf)
+pkg_t *pkg_load(fs_t *fs, strv_t proj_dir, strv_t dir, pkgs_t *pkgs, alloc_t alloc, str_t *buf)
 {
 	int ret = 0;
 
 	path_t path = {0};
-	path_t tmp  = {0};
 	path_init(&path, proj_dir);
 	path_child(&path, dir);
 
@@ -37,31 +36,33 @@ int pkg_load(fs_t *fs, strv_t proj_dir, strv_t dir, pkgs_t *pkgs, alloc_t alloc,
 	if (cfg_has_var(&cfg, root, STRV("name"), &var)) {
 		cfg_get_lit(&cfg, var, &name);
 	} else if (dir.len > 0) {
-		pathv_get_dir(dir, &name);
+		strv_t l;
+		pathv_rsplit(dir, &l, &name);
+		if (name.len == 0) {
+			pathv_rsplit(l, NULL, &name);
+		}
 	} else {
-		str_t cwd = STRB(tmp.data, tmp.len);
-		fs_getcwd(fs, &cwd);
-		tmp.len = cwd.len;
-		path_merge(&tmp, proj_dir);
-		pathv_get_dir(STRVS(tmp), &name);
+		pathv_rsplit(STRVS(proj_dir), NULL, &name);
 	}
 
 	pkg_t *pkg = pkgs_find(pkgs, name, NULL);
 	if (pkg == NULL) {
 		pkg = pkgs_add(pkgs, NULL);
+	} else if (pkg->loaded) {
+		log_error("cbuild", "pkg_loader", NULL, "package already exists: '%.*s'", name.len, name.data);
+		pkg = NULL;
 	}
 
 	if (pkg) {
 		pkgs_set_str(pkgs, pkg->strs[PKG_NAME], name);
 		pkgs_set_str(pkgs, pkg->strs[PKG_DIR], dir);
 		ret |= pkg_set_cfg(pkg, &cfg, root, pkgs, proj_dir, fs);
-	} else {
-		ret = 1;
+		pkg->loaded = 1;
 	}
 
 	cfg_free(&cfg);
 
-	return ret;
+	return pkg;
 }
 
 int pkg_set_cfg(pkg_t *pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, strv_t proj_dir, fs_t *fs)

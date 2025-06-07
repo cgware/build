@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "mem.h"
+#include "proj_loader.h"
 #include "test.h"
 
 TEST(gen_make_empty)
@@ -12,12 +13,12 @@ TEST(gen_make_empty)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
+	fs_init(&fs, 4, 1, ALLOC_STD);
 
 	char buf[2600] = {0};
 	str_t tmp      = STRB(buf, 0);
 	log_set_quiet(0, 1);
-	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 	log_set_quiet(0, 0);
 
 	gen_driver_t *drvi = NULL;
@@ -39,10 +40,10 @@ TEST(gen_make_empty)
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 	log_set_quiet(0, 0);
 
-	fs_read(&fs, STRV("Makefile"), 0, &tmp);
+	fs_read(&fs, STRV("tmp/build/Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "BUILDDIR := \n"
-		    "SRCDIR := \n"
+		    "PROJDIR := ../../\n"
+		    "BUILDDIR := $(PROJDIR)tmp/build/\n"
 		    "\n"
 		    "TCC := $(CC)\n"
 		    "\n"
@@ -61,16 +62,16 @@ TEST(gen_make_empty)
 		    "endif\n"
 		    "ifeq ($(CONFIG),Release)\n"
 		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
-		    "LDFLAGS := \n"
+		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
-		    "OUTDIR := $(BUILDDIR)bin" SEP "$(ARCH)-$(CONFIG)" SEP "\n"
+		    "OUTDIR := $(PROJDIR)bin" SEP "$(ARCH)-$(CONFIG)" SEP "\n"
 		    "INTDIR := $(OUTDIR)int\n"
 		    "LIBDIR := $(OUTDIR)lib\n"
 		    "BINDIR := $(OUTDIR)bin\n"
 		    "TSTDIR := $(OUTDIR)test\n"
 		    "\n"
-		    "PKGDIR = $(dir $(lastword $(MAKEFILE_LIST)))\n"
+		    "PKGDIR = $(PROJDIR)$($(PKG)_DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
 		    "PKGDIR_INC = $(PKGDIR)include/\n"
 		    "PKGDIR_DRV = $(PKGDIR)drivers/\n"
@@ -145,7 +146,7 @@ TEST(gen_make_empty)
 		    "test:\n"
 		    "\n"
 		    "coverage: test\n"
-		    "	lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)\n"
+		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
 		    "\n",
 		    tmp.len);
 
@@ -163,13 +164,13 @@ TEST(gen_make_exe)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 3, 1, ALLOC_STD);
+	fs_init(&fs, 6, 1, ALLOC_STD);
 
 	fs_mkdir(&fs, STRV("src"));
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -188,9 +189,10 @@ TEST(gen_make_exe)
 
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 
-	fs_read(&fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("tmp/build/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := \n"
+		    "$(PKG)_DIR :=\n"
 		    "$(PKG)_HEADERS :=\n"
 		    "$(PKG)_INCLUDES :=\n"
 		    "$(PKG)_LIBS :=\n"
@@ -212,14 +214,14 @@ TEST(gen_make_lib)
 	proj_init(&proj, 1, ALLOC_STD);
 
 	fs_t fs = {0};
-	fs_init(&fs, 4, 1, ALLOC_STD);
+	fs_init(&fs, 7, 1, ALLOC_STD);
 
 	fs_mkdir(&fs, STRV("src"));
 	fs_mkdir(&fs, STRV("include"));
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -238,11 +240,12 @@ TEST(gen_make_lib)
 
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 
-	fs_read(&fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("tmp/build/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := \n"
-		    "$(PKG)_HEADERS :=\n"
-		    "$(PKG)_INCLUDES :=\n"
+		    "$(PKG)_DIR :=\n"
+		    "$(PKG)_HEADERS := $(PKGINC_H)\n"
+		    "$(PKG)_INCLUDES := $(PKGDIR)include\n"
 		    "$(PKG)_LIBS :=\n"
 		    "$(PKG)_DRIVERS :=\n"
 		    "$(eval $(call lib))\n",
@@ -264,12 +267,9 @@ TEST(gen_make_exe_dep_lib)
 	fs_t fs = {0};
 	fs_init(&fs, 10, 1, ALLOC_STD);
 	// TODO: test without src and lib
-	fs_mkdir(&fs, STRV("pkgs"));
-	fs_mkdir(&fs, STRV("pkgs/lib"));
-	fs_mkdir(&fs, STRV("pkgs/lib/src"));
-	fs_mkdir(&fs, STRV("pkgs/lib/include"));
-	fs_mkdir(&fs, STRV("pkgs/exe"));
-	fs_mkdir(&fs, STRV("pkgs/exe/src"));
+	fs_mkpath(&fs, STRV_NULL, STRV("pkgs/lib/src"));
+	fs_mkpath(&fs, STRV_NULL, STRV("pkgs/lib/include"));
+	fs_mkpath(&fs, STRV_NULL, STRV("pkgs/exe/src"));
 
 	void *f;
 	fs_open(&fs, STRV("pkgs/exe/pkg.cfg"), "w", &f);
@@ -278,7 +278,7 @@ TEST(gen_make_exe_dep_lib)
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_set_dir(&proj, &fs, STRV_NULL, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -297,19 +297,21 @@ TEST(gen_make_exe_dep_lib)
 
 	EXPECT_EQ(drv.gen(&drv, &proj), 0);
 
-	fs_read(&fs, STRV("pkgs/lib/pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("tmp/build/pkgs/lib/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := lib\n"
-		    "$(PKG)_HEADERS :=\n"
-		    "$(PKG)_INCLUDES :=\n"
+		    "$(PKG)_DIR := pkgs" SEP "lib" SEP "\n"
+		    "$(PKG)_HEADERS := $(PKGINC_H)\n"
+		    "$(PKG)_INCLUDES := $(PKGDIR)include\n"
 		    "$(PKG)_LIBS :=\n"
 		    "$(PKG)_DRIVERS :=\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&fs, STRV("pkgs/exe/pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("tmp/build/pkgs/exe/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := exe\n"
+		    "$(PKG)_DIR := pkgs" SEP "exe" SEP "\n"
 		    "$(PKG)_HEADERS :=\n"
 		    "$(PKG)_INCLUDES :=\n"
 		    "$(PKG)_LIBS := $(lib)\n"

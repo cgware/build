@@ -87,6 +87,27 @@ TEST(pkgs_set_str)
 	END;
 }
 
+TEST(pkgs_set_uri)
+{
+	START;
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	EXPECT_EQ(pkgs_set_uri(NULL, NULL, STRV_NULL), 1);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(pkgs_set_uri(&pkgs, pkg, STRV_NULL), 1);
+	EXPECT_EQ(pkgs_set_uri(&pkgs, pkg, STRV("invalid")), 1);
+	log_set_quiet(0, 0);
+	EXPECT_EQ(pkgs_set_uri(&pkgs, pkg, STRV("git:repo")), 0);
+
+	pkgs_free(&pkgs);
+
+	END;
+}
+
 TEST(pkgs_get_name)
 {
 	START;
@@ -211,11 +232,12 @@ TEST(pkgs_print)
 	pkgs_add(&pkgs, NULL);
 
 	char buf[256] = {0};
-	EXPECT_EQ(pkgs_print(&pkgs, DST_BUF(buf)), 42);
+	EXPECT_EQ(pkgs_print(&pkgs, DST_BUF(buf)), 48);
 	EXPECT_STR(buf,
 		   "[package]\n"
 		   "ID: 0\n"
 		   "NAME: \n"
+		   "URL: \n"
 		   "DIR: \n"
 		   "SRC: \n"
 		   "INC: \n"
@@ -234,6 +256,7 @@ STEST(pkgs)
 	RUN(pkgs_add);
 	RUN(pkgs_add_strs_oom);
 	RUN(pkgs_set_str);
+	RUN(pkgs_set_uri);
 	RUN(pkgs_get_name);
 	RUN(pkgs_get);
 	RUN(pkgs_find);

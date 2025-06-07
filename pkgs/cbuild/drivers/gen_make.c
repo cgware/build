@@ -12,6 +12,27 @@ typedef struct defines_s {
 	make_act_t def;
 } defines_t;
 
+static int create_tmp(fs_t *fs, strv_t dir)
+{
+	path_t path = {0};
+	path_init(&path, dir);
+
+	path_child(&path, STRV("tmp"));
+	if (!fs_isdir(fs, STRVS(path))) {
+		fs_mkdir(fs, STRVS(path));
+	}
+
+	path_child(&path, STRV(".gitignore"));
+	if (!fs_isfile(fs, STRVS(path))) {
+		void *f;
+		fs_open(fs, STRVS(path), "w", &f);
+		fs_write(fs, f, STRV("*"));
+		fs_close(fs, f);
+	}
+
+	return 0;
+}
+
 static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const defines_t *defines, const pkgs_t *pkgs, arr_t *deps,
 		   str_t *buf, fs_t *fs, strv_t proj_dir)
 
@@ -23,9 +44,25 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	make_var_add_val(make, act, MSTR(name));
 	make_inc_add_act(make, inc, act);
 
+	make_var(make, STRV("$(PKG)_DIR"), MAKE_VAR_INST, &act);
+	strv_t dir = strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]);
+	if (dir.len > 0) {
+		make_var_add_val(make, act, MSTR(dir));
+	}
+	make_inc_add_act(make, inc, act);
 	make_var(make, STRV("$(PKG)_HEADERS"), MAKE_VAR_INST, &act);
+	strv_t include = strvbuf_get(&pkgs->strs, pkg->strs[PKG_INC]);
+	if (include.len > 0) {
+		make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
+	}
 	make_inc_add_act(make, inc, act);
 	make_var(make, STRV("$(PKG)_INCLUDES"), MAKE_VAR_INST, &act);
+	if (include.len > 0) {
+		buf->len = 0;
+		str_cat(buf, STRV("$(PKGDIR)"));
+		str_cat(buf, include);
+		make_var_add_val(make, act, MSTR(STRVS(*buf)));
+	}
 	make_inc_add_act(make, inc, act);
 	make_act_t libs;
 	make_var(make, STRV("$(PKG)_LIBS"), MAKE_VAR_INST, &libs);
@@ -60,8 +97,15 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 		}
 	}
 
+	create_tmp(fs, proj_dir);
 	path_t make_path = {0};
 	path_init(&make_path, proj_dir);
+	path_child(&make_path, STRV("tmp"));
+	path_child(&make_path, STRV("build"));
+	if (!fs_isdir(fs, STRVS(make_path))) {
+		fs_mkdir(fs, STRVS(make_path));
+	}
+	fs_mkpath(fs, STRVS(make_path), strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
 	path_child(&make_path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
 	path_child(&make_path, STRV("pkg.mk"));
 
@@ -102,11 +146,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 #else
 	#define CURDIR ""
 #endif
-	make_var(&make, STRV("BUILDDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV(CURDIR)));
+	make_var(&make, STRV("PROJDIR"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("../../")));
 	make_add_act(&make, root, act);
-	make_var(&make, STRV("SRCDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV(CURDIR)));
+	make_var(&make, STRV("BUILDDIR"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)tmp/build/")));
 	make_add_act(&make, root, act);
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
@@ -153,14 +197,13 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 	make_var_add_val(&make, act, MSTR(STRV("-Wall -Wextra -Werror -pedantic")));
 	make_if_add_true_act(&make, if_release, act);
 	make_var_var(&make, mldflags, MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("")));
 	make_if_add_true_act(&make, if_release, act);
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
 	str_t buf = strz(16);
 	if (pathv_is_rel(STRVS(outdir))) {
-		str_cat(&buf, STRV("$(BUILDDIR)"));
+		str_cat(&buf, STRV("$(PROJDIR)"));
 	}
 	str_cat(&buf, STRVN(outdir.data, outdir.len));
 
@@ -187,11 +230,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 	make_add_act(&make, root, act);
 
 	make_var(&make, STRV("PKGDIR"), MAKE_VAR_REF, &act);
-#ifdef ABS_PATH
-	make_var_add_val(&make, act, MSTR(STRV("$(dir $(abspath $(lastword $(MAKEFILE_LIST))))")));
-#else
-	make_var_add_val(&make, act, MSTR(STRV("$(dir $(lastword $(MAKEFILE_LIST)))")));
-#endif
+	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)$($(PKG)_DIR)")));
 	make_add_act(&make, root, act);
 
 	enum {
@@ -462,70 +501,57 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 	make_act_t cov;
 	make_rule(&make, MRULE(MSTR(STRV("coverage"))), 1, &cov);
 	make_rule_add_depend(&make, cov, MRULE(MSTR(STRV("test"))));
-	make_cmd(&make, MCMD(STRV("lcov -q -c -o $(BUILDDIR)/bin/lcov.info -d $(INTDIR)")), &act);
+	make_cmd(&make, MCMD(STRV("lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)")), &act);
 	make_rule_add_act(&make, cov, act);
 	make_add_act(&make, root, cov);
 
 	str_t buf2 = strz(16);
-	if (proj->is_pkg) {
-		strv_t name = pkgs_get_name(&proj->pkgs, 0);
+
+	arr_t order = {0};
+	arr_init(&order, proj->pkgs.pkgs.cnt, sizeof(uint), ALLOC_STD);
+
+	pkgs_get_build_order(&proj->pkgs, &order);
+
+	arr_t deps = {0};
+	arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
+
+	uint i = 0;
+	const uint *id;
+	arr_foreach(&order, i, id)
+	{
+		const pkg_t *pkg = pkgs_get(&proj->pkgs, *id);
+
+		strv_t name = pkgs_get_name(&proj->pkgs, *id);
+
+		buf.len = 0;
+		str_cat(&buf, STRV("$(BUILDDIR)"));
+		str_cat(&buf, strvbuf_get(&proj->pkgs.strs, pkg->strs[PKG_DIR]));
+		str_cat(&buf, STRV("pkg.mk"));
 
 		make_act_t inc;
-		make_inc(&make, STRV("$(SRCDIR)pkg.mk"), &inc);
+		make_inc(&make, STRVS(buf), &inc);
 		make_add_act(&make, root, inc);
-		make_empty(&make, &act);
-		make_add_act(&make, root, act);
 
-		arr_t deps = {0};
-		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
-
-		gen_pkg(0, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, STRVS(proj->dir));
-
-		arr_free(&deps);
+		gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, STRVS(proj->dir));
 
 		make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
-	} else {
-		buf.len = 0;
-		str_cat(&buf, STRV("$(SRCDIR)pkgs/"));
-		size_t buf_len = buf.len;
-
-		arr_t order = {0};
-		arr_init(&order, proj->pkgs.pkgs.cnt, sizeof(uint), ALLOC_STD);
-
-		pkgs_get_build_order(&proj->pkgs, &order);
-
-		arr_t deps = {0};
-		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
-
-		uint i = 0;
-		const uint *id;
-		arr_foreach(&order, i, id)
-		{
-			strv_t name = pkgs_get_name(&proj->pkgs, *id);
-
-			str_cat(&buf, name);
-			str_cat(&buf, STRV("/pkg.mk"));
-			make_act_t inc;
-			make_inc(&make, STRVS(buf), &inc);
-			make_add_act(&make, root, inc);
-
-			gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, STRVS(proj->dir));
-
-			make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
-
-			buf.len = buf_len;
-		}
-
-		arr_free(&deps);
-		arr_free(&order);
-
-		if (proj->pkgs.pkgs.cnt > 0) {
-			make_empty(&make, &act);
-			make_add_act(&make, root, act);
-		}
 	}
 
+	arr_free(&deps);
+	arr_free(&order);
+
+	if (proj->pkgs.pkgs.cnt > 0) {
+		make_empty(&make, &act);
+		make_add_act(&make, root, act);
+	}
+
+	create_tmp(drv->fs, STRVS(proj->dir));
 	path_t make_path = proj->dir;
+	path_child(&make_path, STRV("tmp"));
+	path_child(&make_path, STRV("build"));
+	if (!fs_isdir(drv->fs, STRVS(make_path))) {
+		fs_mkdir(drv->fs, STRVS(make_path));
+	}
 	path_child(&make_path, STRV("Makefile"));
 
 	void *file;
