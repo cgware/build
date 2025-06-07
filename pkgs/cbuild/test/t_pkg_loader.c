@@ -15,8 +15,8 @@ TEST(pkg_load_empty)
 	pkgs_t pkgs = {0};
 	pkgs_init(&pkgs, 1, ALLOC_STD);
 
-	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, NULL, ALLOC_STD, NULL), NULL);
-	EXPECT_NE(pkg_load(&fs, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, NULL), NULL);
+	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD, NULL), NULL);
+	EXPECT_NE(pkg_load(&fs, STRV_NULL, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, NULL), NULL);
 
 	pkg_t *pkg = pkgs_get(&pkgs, 0);
 
@@ -50,7 +50,7 @@ TEST(pkg_load_empty_cfg)
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	EXPECT_NE(pkg_load(&fs, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), NULL);
+	EXPECT_NE(pkg_load(&fs, STRV_NULL, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), NULL);
 
 	pkg_t *pkg = pkgs_get(&pkgs, 0);
 
@@ -87,7 +87,7 @@ TEST(pkg_load_name)
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	EXPECT_NE(pkg_load(&fs, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), NULL);
+	EXPECT_NE(pkg_load(&fs, STRV_NULL, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), NULL);
 
 	pkg_t *pkg = pkgs_get(&pkgs, 0);
 
@@ -122,7 +122,7 @@ TEST(pkg_load_exists)
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), NULL);
+	EXPECT_EQ(pkg_load(&fs, STRV_NULL, STRV_NULL, STRV_NULL, &pkgs, ALLOC_STD, &tmp), NULL);
 	log_set_quiet(0, 0);
 
 	pkgs_free(&pkgs);

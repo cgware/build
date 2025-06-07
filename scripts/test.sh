@@ -29,6 +29,7 @@ mk() {
 
 	dir="./test/$proj"
 	bin="./test/$proj/bin"
+	tmp="./test/$proj/tmp"
 
 	printf "%s %-7s %-12s " "$p_arch" "$p_config" "$proj"
 
@@ -67,7 +68,7 @@ mk() {
 
 	printf "\033[0;32mPASS\033[0m\n"
 
-	rm -rf "$bin"
+	rm -rf "$bin" "$tmp"
 }
 
 test() {
@@ -81,6 +82,5 @@ test x64 Debug
 test x64 Release
 test x86 Debug
 test x86 Release
-
 
 exit $ret

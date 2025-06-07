@@ -3,7 +3,7 @@
 #include "file/cfg_prs.h"
 #include "log.h"
 
-pkg_t *pkg_load(fs_t *fs, strv_t proj_dir, strv_t dir, pkgs_t *pkgs, alloc_t alloc, str_t *buf)
+pkg_t *pkg_load(fs_t *fs, strv_t proj_dir, strv_t def_name, strv_t dir, pkgs_t *pkgs, alloc_t alloc, str_t *buf)
 {
 	int ret = 0;
 
@@ -42,7 +42,7 @@ pkg_t *pkg_load(fs_t *fs, strv_t proj_dir, strv_t dir, pkgs_t *pkgs, alloc_t all
 			pathv_rsplit(l, NULL, &name);
 		}
 	} else {
-		pathv_rsplit(STRVS(proj_dir), NULL, &name);
+		name = def_name;
 	}
 
 	pkg_t *pkg = pkgs_find(pkgs, name, NULL);

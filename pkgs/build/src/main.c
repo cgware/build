@@ -78,8 +78,13 @@ int main(int argc, const char **argv)
 
 	path_merge(&path, source);
 
+	strv_t l, name;
+	pathv_rsplit(STRVS(path), &l, &name);
+	if (name.len == 0) {
+		pathv_rsplit(l, NULL, &name);
+	}
 	str_t buf = strz(1024);
-	if (proj_load(&fs, &proc, STRVS(path), &proj, ALLOC_STD, &buf)) {
+	if (proj_load(&fs, &proc, source, name, &proj, ALLOC_STD, &buf)) {
 		return 1;
 	}
 

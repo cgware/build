@@ -18,7 +18,7 @@ TEST(gen_make_empty)
 	char buf[2600] = {0};
 	str_t tmp      = STRB(buf, 0);
 	log_set_quiet(0, 1);
-	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 	log_set_quiet(0, 0);
 
 	gen_driver_t *drvi = NULL;
@@ -170,7 +170,7 @@ TEST(gen_make_exe)
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -221,7 +221,7 @@ TEST(gen_make_lib)
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -278,7 +278,7 @@ TEST(gen_make_exe_dep_lib)
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
+	proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 

@@ -26,7 +26,7 @@ static int create_tmp(fs_t *fs, strv_t dir)
 	return 0;
 }
 
-int proj_load(fs_t *fs, proc_t *proc, strv_t dir, proj_t *proj, alloc_t alloc, str_t *buf)
+int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, alloc_t alloc, str_t *buf)
 {
 	if (proj == NULL) {
 		return 1;
@@ -82,7 +82,7 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, proj_t *proj, alloc_t alloc, s
 	}
 
 	if (is_src) {
-		ret |= pkg_load(fs, STRVS(proj->dir), STRV_NULL, &proj->pkgs, alloc, buf) == NULL;
+		ret |= pkg_load(fs, STRVS(proj->dir), name, STRV_NULL, &proj->pkgs, alloc, buf) == NULL;
 	}
 
 	if (is_pkgs) {
@@ -99,7 +99,7 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, proj_t *proj, alloc_t alloc, s
 		{
 			path_child(&tmp, folder);
 			path_child(&tmp, STRV(""));
-			ret |= pkg_load(fs, dir, STRVS(tmp), &proj->pkgs, alloc, buf) == NULL;
+			ret |= pkg_load(fs, dir, name, STRVS(tmp), &proj->pkgs, alloc, buf) == NULL;
 			tmp.len = pkgs_len;
 		}
 
@@ -183,7 +183,7 @@ int proj_set_cfg(proj_t *proj, const cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_
 
 			path_child(&ext_dir, name);
 			path_child(&ext_dir, STRV(""));
-			ret |= pkg_load(fs, STRVS(proj->dir), STRVS(ext_dir), &proj->pkgs, alloc, buf) == NULL;
+			ret |= pkg_load(fs, STRVS(proj->dir), name, STRVS(ext_dir), &proj->pkgs, alloc, buf) == NULL;
 		}
 	}
 

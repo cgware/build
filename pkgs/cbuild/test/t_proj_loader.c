@@ -12,7 +12,7 @@ TEST(proj_load)
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	EXPECT_EQ(proj_load(NULL, NULL, STRV_NULL, NULL, ALLOC_STD, NULL), 1);
+	EXPECT_EQ(proj_load(NULL, NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD, NULL), 1);
 
 	proj_free(&proj);
 
@@ -30,7 +30,7 @@ TEST(proj_load_empty)
 	fs_init(&fs, 1, 1, ALLOC_STD);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, NULL), 1);
+	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, NULL), 1);
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
@@ -54,7 +54,7 @@ TEST(proj_load_empty_cfg)
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp), 1);
+	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp), 1);
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
@@ -77,7 +77,7 @@ TEST(proj_load_src)
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp), 0);
+	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp), 0);
 	EXPECT_EQ(proj.pkgs.pkgs.cnt, 1);
 
 	proj_free(&proj);
@@ -102,7 +102,7 @@ TEST(proj_load_pkgs_src)
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, &proj, ALLOC_STD, &tmp), 1);
+	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp), 1);
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
