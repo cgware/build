@@ -10,7 +10,7 @@ proj_t *proj_init(proj_t *proj, uint pkgs_cap, alloc_t alloc)
 		return NULL;
 	}
 
-	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL || strvbuf_init(&proj->strs, __EXT_STR_CNT, 8 + 36, alloc) == NULL) {
+	if (pkgs_init(&proj->pkgs, pkgs_cap, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -23,7 +23,6 @@ void proj_free(proj_t *proj)
 		return;
 	}
 
-	strvbuf_free(&proj->strs);
 	pkgs_free(&proj->pkgs);
 }
 
