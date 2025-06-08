@@ -90,6 +90,10 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 
 static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir, strv_t build_dir)
 {
+	if (drv == NULL || proj == NULL) {
+		return 1;
+	}
+
 	strv_t values[__VAR_CNT] = {
 		[VAR_ARCH]   = STRVT("$(ARCH)"),
 		[VAR_CONFIG] = STRVT("$(CONFIG)"),
@@ -354,7 +358,16 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		[TARGET_TYPE_LIB] = {STRVT("lib")},
 	};
 
+	int types[__TARGET_TYPE_MAX] = {0};
+
+	uint i = 0;
+	target_t *target;
+	list_foreach_all(&proj->pkgs.targets.targets, i, target)
 	{
+		types[target->type] = 1;
+	}
+
+	if (types[TARGET_TYPE_EXE]) {
 		make_act_t def;
 		make_def(&make, defines[TARGET_TYPE_EXE].name, &def);
 		make_add_act(&make, root, def);
@@ -403,12 +416,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_cmd(&make, MCMD(STRV("$(TCC) -m$(BITS) -c $(PKGDIR_SRC:%=-I%) $($(PKG)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")), &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_def_add_act(&make, def, def_rule_obj);
+
+		make_empty(&make, &act);
+		make_add_act(&make, root, act);
 	}
 
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	{
+	if (types[TARGET_TYPE_LIB]) {
 		make_act_t def;
 		make_def(&make, defines[TARGET_TYPE_LIB].name, &def);
 		make_add_act(&make, root, def);
@@ -453,10 +466,10 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_cmd(&make, MCMD(STRV("$(TCC) -m$(BITS) -c $(PKGDIR_SRC:%=-I%) $($(PKG)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")), &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_def_add_act(&make, def, def_rule_obj);
-	}
 
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
+		make_empty(&make, &act);
+		make_add_act(&make, root, act);
+	}
 
 	make_act_t phony;
 	make_phony(&make, &phony);
@@ -475,44 +488,46 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_rule_add_act(&make, cov, act);
 	make_add_act(&make, root, cov);
 
-	str_t buf2 = strz(16);
-
-	arr_t order = {0};
-	arr_init(&order, proj->pkgs.pkgs.cnt, sizeof(uint), ALLOC_STD);
-
-	pkgs_get_build_order(&proj->pkgs, &order);
-
-	arr_t deps = {0};
-	arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
-
-	uint i = 0;
-	const uint *id;
-	arr_foreach(&order, i, id)
-	{
-		const pkg_t *pkg = pkgs_get(&proj->pkgs, *id);
-
-		strv_t name = pkgs_get_name(&proj->pkgs, *id);
-
-		buf.len = 0;
-		str_cat(&buf, STRV("$(BUILDDIR)"));
-		str_cat(&buf, strvbuf_get(&proj->pkgs.strs, pkg->strs[PKG_DIR]));
-		str_cat(&buf, STRV("pkg.mk"));
-
-		make_act_t inc;
-		make_inc(&make, STRVS(buf), &inc);
-		make_add_act(&make, root, inc);
-
-		gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, build_dir);
-
-		make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
-	}
-
-	arr_free(&deps);
-	arr_free(&order);
-
 	if (proj->pkgs.pkgs.cnt > 0) {
+		str_t buf2 = strz(16);
+
+		arr_t order = {0};
+		arr_init(&order, proj->pkgs.pkgs.cnt, sizeof(uint), ALLOC_STD);
+
+		pkgs_get_build_order(&proj->pkgs, &order);
+
+		arr_t deps = {0};
+		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
+
+		i = 0;
+		const uint *id;
+		arr_foreach(&order, i, id)
+		{
+			const pkg_t *pkg = pkgs_get(&proj->pkgs, *id);
+
+			strv_t name = pkgs_get_name(&proj->pkgs, *id);
+
+			buf.len = 0;
+			str_cat(&buf, STRV("$(BUILDDIR)"));
+			str_cat(&buf, strvbuf_get(&proj->pkgs.strs, pkg->strs[PKG_DIR]));
+			str_cat(&buf, STRV("pkg.mk"));
+
+			make_act_t inc;
+			make_inc(&make, STRVS(buf), &inc);
+			make_add_act(&make, root, inc);
+
+			gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, build_dir);
+
+			make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
+		}
+
+		arr_free(&deps);
+		arr_free(&order);
+
 		make_empty(&make, &act);
 		make_add_act(&make, root, act);
+
+		str_free(&buf2);
 	}
 
 	path_t make_path = {0};
@@ -528,7 +543,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	str_free(&outdir);
 	str_free(&buf);
-	str_free(&buf2);
 
 	return 0;
 }

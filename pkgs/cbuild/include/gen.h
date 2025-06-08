@@ -18,4 +18,6 @@ struct gen_driver_s {
 
 #define GEN_DRIVER(_name, _data) DRIVER(_name, GEN_DRIVER_TYPE, _data)
 
+gen_driver_t *gen_find_param(strv_t param);
+
 #endif

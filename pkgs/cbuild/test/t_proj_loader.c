@@ -86,6 +86,29 @@ TEST(proj_load_src)
 	END;
 }
 
+TEST(proj_load_pkgs)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, ALLOC_STD);
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	fs_mkpath(&fs, STRV_NULL, STRV("pkgs/pkg"));
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+	EXPECT_EQ(proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp), 0);
+	EXPECT_EQ(proj.pkgs.pkgs.cnt, 1);
+
+	proj_free(&proj);
+	fs_free(&fs);
+
+	END;
+}
+
 TEST(proj_load_pkgs_src)
 {
 	START;
@@ -272,6 +295,7 @@ STEST(proj_loader)
 	RUN(proj_load_empty);
 	RUN(proj_load_empty_cfg);
 	RUN(proj_load_src);
+	RUN(proj_load_pkgs);
 	RUN(proj_load_pkgs_src);
 	RUN(proj_set_cfg);
 	RUN(proj_set_cfg_ext);

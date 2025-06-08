@@ -140,6 +140,70 @@ TEST(pkg_set_cfg)
 	END;
 }
 
+TEST(pkg_set_cfg_src)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("src"));
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root;
+	cfg_root(&cfg, &root);
+
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 0);
+
+	target_t *target = targets_get(&pkgs.targets, 0);
+	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(pkg_set_cfg_inc)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	pkgs_t pkgs = {0};
+	pkgs_init(&pkgs, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("include"));
+
+	pkg_t *pkg = pkgs_add(&pkgs, NULL);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root;
+	cfg_root(&cfg, &root);
+
+	EXPECT_EQ(pkg_set_cfg(pkg, &cfg, root, &pkgs, STRV_NULL, &fs), 0);
+
+	target_t *target = targets_get(&pkgs.targets, 0);
+	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
+
+	cfg_free(&cfg);
+	pkgs_free(&pkgs);
+	fs_free(&fs);
+
+	END;
+}
+
 TEST(pkg_set_cfg_src_not_found)
 {
 	START;
@@ -591,6 +655,8 @@ STEST(pkg_loader)
 	RUN(pkg_load_name);
 	RUN(pkg_load_exists);
 	RUN(pkg_set_cfg);
+	RUN(pkg_set_cfg_src);
+	RUN(pkg_set_cfg_inc);
 	RUN(pkg_set_cfg_src_not_found);
 	RUN(pkg_set_cfg_inc_not_found);
 	RUN(pkg_set_cfg_invalid_id);

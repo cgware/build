@@ -23,6 +23,10 @@ static int create_dir(fs_t *fs, strv_t proj_dir, strv_t dir)
 
 int proj_gen(const proj_t *proj, const gen_driver_t *drv, strv_t proj_dir, strv_t build_dir)
 {
+	if (drv == NULL) {
+		return 1;
+	}
+
 	create_dir(drv->fs, proj_dir, STRV("bin"));
 	create_dir(drv->fs, proj_dir, STRV("tmp"));
 
