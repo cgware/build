@@ -10,12 +10,12 @@ static int create_tmp(fs_t *fs, strv_t dir)
 	path_t path = {0};
 	path_init(&path, dir);
 
-	path_child(&path, STRV("tmp"));
+	path_push(&path, STRV("tmp"));
 	if (!fs_isdir(fs, STRVS(path))) {
 		fs_mkdir(fs, STRVS(path));
 	}
 
-	path_child(&path, STRV(".gitignore"));
+	path_push(&path, STRV(".gitignore"));
 	if (!fs_isfile(fs, STRVS(path))) {
 		void *f;
 		fs_open(fs, STRVS(path), "w", &f);
@@ -41,7 +41,7 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, all
 	cfg_init(&cfg, 4, 4, alloc);
 
 	path_t tmp = proj->dir;
-	path_child(&tmp, STRV("proj.cfg"));
+	path_push(&tmp, STRV("proj.cfg"));
 	if (fs_isfile(fs, STRVS(tmp))) {
 		if (buf) {
 			cfg_prs_t prs = {0};
@@ -61,11 +61,11 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, all
 	path_init(&proj->outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
 	tmp.len = proj->dir.len;
-	path_child(&tmp, STRV("src"));
+	path_push(&tmp, STRV("src"));
 	int is_src = fs_isdir(fs, STRVS(tmp));
 
 	path_t pkgs = proj->dir;
-	path_child(&pkgs, STRV("pkgs"));
+	path_push(&pkgs, STRV("pkgs"));
 	int is_pkgs = fs_isdir(fs, STRVS(pkgs));
 
 	if (!is_src && !is_pkgs) {
@@ -97,8 +97,8 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, all
 		size_t pkgs_len = tmp.len;
 		strbuf_foreach(&dirs, index, folder)
 		{
-			path_child(&tmp, folder);
-			path_child(&tmp, STRV(""));
+			path_push(&tmp, folder);
+			path_push(&tmp, STRV(""));
 			ret |= pkg_load(fs, dir, name, STRVS(tmp), &proj->pkgs, alloc, buf) == NULL;
 			tmp.len = pkgs_len;
 		}
@@ -123,14 +123,14 @@ int proj_set_cfg(proj_t *proj, const cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_
 	if (cfg_has_var(cfg, root, STRV("ext"), &deps)) {
 		path_t ext_dir = {0};
 		path_init(&ext_dir, STRV("tmp"));
-		path_child(&ext_dir, STRV("ext"));
+		path_push(&ext_dir, STRV("ext"));
 		path_t tmp     = proj->dir;
 		size_t ext_len = ext_dir.len;
 
 		create_tmp(fs, STRVS(proj->dir));
 
 		tmp.len = proj->dir.len;
-		path_child(&tmp, STRVS(ext_dir));
+		path_push(&tmp, STRVS(ext_dir));
 		if (!fs_isdir(fs, STRVS(tmp))) {
 			fs_mkdir(fs, STRVS(tmp));
 		}
@@ -164,10 +164,10 @@ int proj_set_cfg(proj_t *proj, const cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_
 				continue;
 			}
 
-			path_child(&tmp, name);
+			path_push(&tmp, name);
 
 			size_t git_len = tmp.len;
-			path_child(&tmp, STRV(".git"));
+			path_push(&tmp, STRV(".git"));
 			if (!fs_isdir(fs, STRVS(tmp))) {
 				tmp.len	 = git_len;
 				buf->len = 0;
@@ -181,8 +181,8 @@ int proj_set_cfg(proj_t *proj, const cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_
 				}
 			}
 
-			path_child(&ext_dir, name);
-			path_child(&ext_dir, STRV(""));
+			path_push(&ext_dir, name);
+			path_push(&ext_dir, STRV(""));
 			ret |= pkg_load(fs, STRVS(proj->dir), name, STRVS(ext_dir), &proj->pkgs, alloc, buf) == NULL;
 		}
 	}

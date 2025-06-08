@@ -9,7 +9,7 @@ pkg_t *pkg_load(fs_t *fs, strv_t proj_dir, strv_t def_name, strv_t dir, pkgs_t *
 
 	path_t path = {0};
 	path_init(&path, proj_dir);
-	path_child(&path, dir);
+	path_push(&path, dir);
 
 	size_t path_len = path.len;
 
@@ -17,7 +17,7 @@ pkg_t *pkg_load(fs_t *fs, strv_t proj_dir, strv_t def_name, strv_t dir, pkgs_t *
 	cfg_var_t root;
 	cfg_init(&cfg, 4, 4, alloc);
 
-	path_child(&path, STRV("pkg.cfg"));
+	path_push(&path, STRV("pkg.cfg"));
 	if (fs_isfile(fs, STRVS(path))) {
 		if (buf) {
 			cfg_prs_t prs = {0};
@@ -75,7 +75,7 @@ int pkg_set_cfg(pkg_t *pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, strv
 
 	path_t path = {0};
 	path_init(&path, proj_dir);
-	path_child(&path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
+	path_push(&path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
 	size_t path_len = path.len;
 
 	cfg_var_t var;
@@ -83,7 +83,7 @@ int pkg_set_cfg(pkg_t *pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, strv
 	strv_t src = {0};
 	if (cfg_has_var(cfg, root, STRV("src"), &var)) {
 		cfg_get_str(cfg, var, &src);
-		path_child(&path, src);
+		path_push(&path, src);
 		if (!fs_isdir(fs, STRVS(path))) {
 			src.len = 0;
 			log_error("cbuild", "pkg_loader", NULL, "src does not exist: '%.*s'", src.len, src.data);
@@ -91,7 +91,7 @@ int pkg_set_cfg(pkg_t *pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, strv
 		}
 	} else {
 		src = STRV("src");
-		path_child(&path, src);
+		path_push(&path, src);
 		if (!fs_isdir(fs, STRVS(path))) {
 			src.len = 0;
 		}
@@ -105,7 +105,7 @@ int pkg_set_cfg(pkg_t *pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, strv
 	strv_t inc = {0};
 	if (cfg_has_var(cfg, root, STRV("include"), &var)) {
 		cfg_get_str(cfg, var, &inc);
-		path_child(&path, inc);
+		path_push(&path, inc);
 		if (!fs_isdir(fs, STRVS(path))) {
 			inc.len = 0;
 			log_error("cbuild", "pkg_loader", NULL, "include does not exist: '%.*s'", inc.len, inc.data);
@@ -113,7 +113,7 @@ int pkg_set_cfg(pkg_t *pkg, const cfg_t *cfg, cfg_var_t root, pkgs_t *pkgs, strv
 		}
 	} else {
 		inc = STRV("include");
-		path_child(&path, inc);
+		path_push(&path, inc);
 		if (!fs_isdir(fs, STRVS(path))) {
 			inc.len = 0;
 		}

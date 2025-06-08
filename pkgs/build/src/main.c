@@ -18,6 +18,7 @@ int main(int argc, const char **argv)
 	log_add_callback(log_std_cb, DST_STD(), LOG_INFO, 1, 1);
 
 	strv_t source = STRV(".");
+	strv_t build  = STRV("tmp/build");
 
 	int gen = 0;
 
@@ -52,6 +53,7 @@ int main(int argc, const char **argv)
 
 	opt_t opts[] = {
 		OPT('s', "source", OPT_STR, "<path>", "Specify source directory", &source, {0}, OPT_OPT),
+		OPT('b', "build", OPT_STR, "<path>", "Specify build directory", &build, {0}, OPT_OPT),
 		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
 	};
 
@@ -68,18 +70,31 @@ int main(int argc, const char **argv)
 	proj_t proj = {0};
 	proj_init(&proj, 1, ALLOC_STD);
 
-	path_t path = {0};
+	str_t cwd = strz(64);
 
-	str_t dir = STRB(path.data, 0);
-	if (fs_getcwd(&fs, &dir)) {
+	if (fs_getcwd(&fs, &cwd)) {
 		return 1;
 	}
-	path.len = dir.len;
 
-	path_merge(&path, source);
+	if (cwd.data[cwd.len] != '/' && cwd.data[cwd.len] != '\\') {
+		str_cat(&cwd, STRV(SEP));
+	}
+
+	path_t source_abs = {0};
+	path_init(&source_abs, STRVS(cwd));
+	path_merge(&source_abs, source);
+
+	path_t source_rel = {0};
+	path_init(&source_rel, source);
+	path_push(&source_rel, STRV(""));
+
+	path_t build_rel = {0};
+	path_init(&build_rel, STRVS(source));
+	path_merge(&build_rel, build);
+	path_push(&build_rel, STRV(""));
 
 	strv_t l, name;
-	pathv_rsplit(STRVS(path), &l, &name);
+	pathv_rsplit(STRVS(source_abs), &l, &name);
 	if (name.len == 0) {
 		pathv_rsplit(l, NULL, &name);
 	}
@@ -93,11 +108,12 @@ int main(int argc, const char **argv)
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
 	gen_driver.fs = &fs;
-	proj_gen(&proj, &gen_driver);
+	proj_gen(&proj, &gen_driver, STRVS(source_rel), STRVS(build_rel));
 
 	proj_free(&proj);
 	proc_free(&proc);
 	fs_free(&fs);
+	str_free(&cwd);
 
 	mem_free(gens, gen_drivers_cnt * sizeof(opt_enum_val_t));
 

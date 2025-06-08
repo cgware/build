@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "mem.h"
+#include "proj_gen.h"
 #include "proj_loader.h"
 #include "test.h"
 
@@ -14,6 +15,8 @@ TEST(gen_make_empty)
 
 	fs_t fs = {0};
 	fs_init(&fs, 4, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("."));
 
 	char buf[2600] = {0};
 	str_t tmp      = STRB(buf, 0);
@@ -37,13 +40,13 @@ TEST(gen_make_empty)
 	drv.fs = &fs;
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(drv.gen(&drv, &proj), 0);
+	EXPECT_EQ(proj_gen(&proj, &drv, STRV("./"), STRV("./tmp/build/")), 0);
 	log_set_quiet(0, 0);
 
-	fs_read(&fs, STRV("tmp/build/Makefile"), 0, &tmp);
+	fs_read(&fs, STRV("./tmp/build/Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "PROJDIR := ../../\n"
-		    "BUILDDIR := $(PROJDIR)tmp/build/\n"
+		    "PROJDIR := .." SEP ".." SEP "\n"
+		    "BUILDDIR :=\n"
 		    "\n"
 		    "TCC := $(CC)\n"
 		    "\n"
@@ -166,11 +169,11 @@ TEST(gen_make_exe)
 	fs_t fs = {0};
 	fs_init(&fs, 6, 1, ALLOC_STD);
 
-	fs_mkdir(&fs, STRV("src"));
+	fs_mkpath(&fs, STRV_NULL, STRV("./src"));
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
+	proj_load(&fs, NULL, STRV("."), STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -187,9 +190,9 @@ TEST(gen_make_exe)
 
 	drv.fs = &fs;
 
-	EXPECT_EQ(drv.gen(&drv, &proj), 0);
+	EXPECT_EQ(proj_gen(&proj, &drv, STRV("."), STRV(".")), 0);
 
-	fs_read(&fs, STRV("tmp/build/pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("./pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := \n"
 		    "$(PKG)_DIR :=\n"
@@ -216,12 +219,12 @@ TEST(gen_make_lib)
 	fs_t fs = {0};
 	fs_init(&fs, 7, 1, ALLOC_STD);
 
-	fs_mkdir(&fs, STRV("src"));
-	fs_mkdir(&fs, STRV("include"));
+	fs_mkpath(&fs, STRV_NULL, STRV("./src"));
+	fs_mkpath(&fs, STRV_NULL, STRV("./include"));
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
+	proj_load(&fs, NULL, STRV("."), STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -238,9 +241,9 @@ TEST(gen_make_lib)
 
 	drv.fs = &fs;
 
-	EXPECT_EQ(drv.gen(&drv, &proj), 0);
+	EXPECT_EQ(proj_gen(&proj, &drv, STRV("."), STRV(".")), 0);
 
-	fs_read(&fs, STRV("tmp/build/pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("./pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := \n"
 		    "$(PKG)_DIR :=\n"
@@ -267,18 +270,18 @@ TEST(gen_make_exe_dep_lib)
 	fs_t fs = {0};
 	fs_init(&fs, 10, 1, ALLOC_STD);
 	// TODO: test without src and lib
-	fs_mkpath(&fs, STRV_NULL, STRV("pkgs/lib/src"));
-	fs_mkpath(&fs, STRV_NULL, STRV("pkgs/lib/include"));
-	fs_mkpath(&fs, STRV_NULL, STRV("pkgs/exe/src"));
+	fs_mkpath(&fs, STRV_NULL, STRV("./pkgs/lib/src"));
+	fs_mkpath(&fs, STRV_NULL, STRV("./pkgs/lib/include"));
+	fs_mkpath(&fs, STRV_NULL, STRV("./pkgs/exe/src"));
 
 	void *f;
-	fs_open(&fs, STRV("pkgs/exe/pkg.cfg"), "w", &f);
+	fs_open(&fs, STRV("./pkgs/exe/pkg.cfg"), "w", &f);
 	fs_write(&fs, f, STRV("deps = [lib]\n"));
 	fs_close(&fs, f);
 
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
-	proj_load(&fs, NULL, STRV_NULL, STRV_NULL, &proj, ALLOC_STD, &tmp);
+	proj_load(&fs, NULL, STRV("."), STRV_NULL, &proj, ALLOC_STD, &tmp);
 
 	gen_driver_t *drvi = NULL;
 
@@ -295,9 +298,9 @@ TEST(gen_make_exe_dep_lib)
 
 	drv.fs = &fs;
 
-	EXPECT_EQ(drv.gen(&drv, &proj), 0);
+	EXPECT_EQ(proj_gen(&proj, &drv, STRV("."), STRV(".")), 0);
 
-	fs_read(&fs, STRV("tmp/build/pkgs/lib/pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("./pkgs/lib/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := lib\n"
 		    "$(PKG)_DIR := pkgs" SEP "lib" SEP "\n"
@@ -308,7 +311,7 @@ TEST(gen_make_exe_dep_lib)
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&fs, STRV("tmp/build/pkgs/exe/pkg.mk"), 0, &tmp);
+	fs_read(&fs, STRV("./pkgs/exe/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PKG := exe\n"
 		    "$(PKG)_DIR := pkgs" SEP "exe" SEP "\n"

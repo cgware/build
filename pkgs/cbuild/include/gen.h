@@ -10,7 +10,7 @@ typedef struct gen_driver_s gen_driver_t;
 struct gen_driver_s {
 	strv_t param;
 	const char *desc;
-	int (*gen)(const gen_driver_t *drv, const proj_t *proj);
+	int (*gen)(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir, strv_t build_dir);
 	fs_t *fs;
 };
 

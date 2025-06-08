@@ -5,36 +5,13 @@
 #include "mem.h"
 #include "var.h"
 
-#include <stdio.h>
-
 typedef struct defines_s {
 	strv_t name;
 	make_act_t def;
 } defines_t;
 
-static int create_tmp(fs_t *fs, strv_t dir)
-{
-	path_t path = {0};
-	path_init(&path, dir);
-
-	path_child(&path, STRV("tmp"));
-	if (!fs_isdir(fs, STRVS(path))) {
-		fs_mkdir(fs, STRVS(path));
-	}
-
-	path_child(&path, STRV(".gitignore"));
-	if (!fs_isfile(fs, STRVS(path))) {
-		void *f;
-		fs_open(fs, STRVS(path), "w", &f);
-		fs_write(fs, f, STRV("*"));
-		fs_close(fs, f);
-	}
-
-	return 0;
-}
-
 static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const defines_t *defines, const pkgs_t *pkgs, arr_t *deps,
-		   str_t *buf, fs_t *fs, strv_t proj_dir)
+		   str_t *buf, fs_t *fs, strv_t build_dir)
 
 {
 	const pkg_t *pkg = pkgs_get(pkgs, id);
@@ -97,17 +74,11 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 		}
 	}
 
-	create_tmp(fs, proj_dir);
 	path_t make_path = {0};
-	path_init(&make_path, proj_dir);
-	path_child(&make_path, STRV("tmp"));
-	path_child(&make_path, STRV("build"));
-	if (!fs_isdir(fs, STRVS(make_path))) {
-		fs_mkdir(fs, STRVS(make_path));
-	}
+	path_init(&make_path, build_dir);
 	fs_mkpath(fs, STRVS(make_path), strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
-	path_child(&make_path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
-	path_child(&make_path, STRV("pkg.mk"));
+	path_push(&make_path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
+	path_push(&make_path, STRV("pkg.mk"));
 
 	void *file;
 	fs_open(fs, STRVS(make_path), "w", &file);
@@ -117,7 +88,7 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	return 0;
 }
 
-static int gen_make(const gen_driver_t *drv, const proj_t *proj)
+static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir, strv_t build_dir)
 {
 	strv_t values[__VAR_CNT] = {
 		[VAR_ARCH]   = STRVT("$(ARCH)"),
@@ -141,16 +112,15 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 	make_var_ext(&make, STRV("CONFIG"), &mconfig);
 	make_add_act(&make, root, mconfig);
 
-#ifdef ABS_PATH
-	#define CURDIR "$(CURDIR)/"
-#else
-	#define CURDIR ""
-#endif
 	make_var(&make, STRV("PROJDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("../../")));
+
+	path_t rel = {0};
+	path_calc_rel(build_dir, proj_dir, &rel);
+	if (rel.len > 0) {
+		make_var_add_val(&make, act, MSTR(STRVS(rel)));
+	}
 	make_add_act(&make, root, act);
 	make_var(&make, STRV("BUILDDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)tmp/build/")));
 	make_add_act(&make, root, act);
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
@@ -532,7 +502,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		make_inc(&make, STRVS(buf), &inc);
 		make_add_act(&make, root, inc);
 
-		gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, STRVS(proj->dir));
+		gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, build_dir);
 
 		make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
 	}
@@ -545,14 +515,9 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj)
 		make_add_act(&make, root, act);
 	}
 
-	create_tmp(drv->fs, STRVS(proj->dir));
-	path_t make_path = proj->dir;
-	path_child(&make_path, STRV("tmp"));
-	path_child(&make_path, STRV("build"));
-	if (!fs_isdir(drv->fs, STRVS(make_path))) {
-		fs_mkdir(drv->fs, STRVS(make_path));
-	}
-	path_child(&make_path, STRV("Makefile"));
+	path_t make_path = {0};
+	path_init(&make_path, build_dir);
+	path_push(&make_path, STRV("Makefile"));
 
 	void *file;
 	fs_open(drv->fs, STRVS(make_path), "w", &file);
