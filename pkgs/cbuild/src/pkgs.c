@@ -149,6 +149,55 @@ pkg_t *pkgs_get(const pkgs_t *pkgs, uint id)
 	return pkg;
 }
 
+pkg_t *pkgs_add_dep(pkgs_t *pkgs, list_node_t id, strv_t dep)
+{
+	if (pkgs == NULL) {
+		return NULL;
+	}
+
+	uint pkgs_cnt = pkgs->pkgs.cnt;
+
+	list_node_t dep_id;
+	pkg_t *dpkg;
+
+	if (pkgs_find(pkgs, dep, &dpkg)) {
+		dpkg = pkgs_add(pkgs, &dep_id);
+		if (dpkg == NULL) {
+			return NULL;
+		}
+	}
+
+	pkg_t *pkg = pkgs_get(pkgs, id);
+	if (pkg == NULL) {
+		list_reset(&pkgs->pkgs, pkgs_cnt);
+		log_error("cbuild", "pkgs", NULL, "package not found: %d", id);
+		return NULL;
+	}
+
+	list_node_t node;
+	uint *data = list_node(&pkgs->deps, &node);
+	if (data == NULL) {
+		list_reset(&pkgs->pkgs, pkgs_cnt);
+		log_error("cbuild", "targets", NULL, "failed to create target dependency");
+		return NULL;
+	}
+
+	if (pkg->has_deps) {
+		if (list_app(&pkgs->deps, pkg->deps, node)) {
+			list_reset(&pkgs->pkgs, pkgs_cnt);
+			log_error("cbuild", "targets", NULL, "failed to add target dependency");
+			return NULL;
+		}
+	} else {
+		pkg->deps     = node;
+		pkg->has_deps = 1;
+	}
+
+	*data = dep_id;
+
+	return dpkg;
+}
+
 pkg_t *pkgs_find(const pkgs_t *pkgs, strv_t name, list_node_t *pkg)
 {
 	if (pkgs == NULL) {
@@ -257,6 +306,20 @@ size_t pkgs_print(const pkgs_t *pkgs, dst_t dst)
 				 src.data,
 				 inc.len,
 				 inc.data);
+
+		dst.off += dputs(dst, STRV("DEPS:"));
+		if (pkg->has_deps) {
+			const list_node_t *dep;
+			list_node_t j = pkg->deps;
+			list_foreach(&pkgs->deps, j, dep)
+			{
+				const pkg_t *dpkg = pkgs_get(pkgs, *dep);
+				dst.off += dputs(dst, STRV(" "));
+				dst.off += dputs(dst, strvbuf_get(&pkgs->strs, dpkg->strs[PKG_NAME]));
+			}
+		}
+		dst.off += dputs(dst, STRV("\n"));
+
 		dst.off += pkg_print(pkg, &pkgs->targets, dst);
 		dst.off += dputs(dst, STRV("\n"));
 	}

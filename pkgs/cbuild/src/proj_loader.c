@@ -5,27 +5,6 @@
 #include "pkg_loader.h"
 #include "proc.h"
 
-static int create_tmp(fs_t *fs, strv_t dir)
-{
-	path_t path = {0};
-	path_init(&path, dir);
-
-	path_push(&path, STRV("tmp"));
-	if (!fs_isdir(fs, STRVS(path))) {
-		fs_mkdir(fs, STRVS(path));
-	}
-
-	path_push(&path, STRV(".gitignore"));
-	if (!fs_isfile(fs, STRVS(path))) {
-		void *f;
-		fs_open(fs, STRVS(path), "w", &f);
-		fs_write(fs, f, STRV("*"));
-		fs_close(fs, f);
-	}
-
-	return 0;
-}
-
 int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, alloc_t alloc, str_t *buf)
 {
 	if (proj == NULL) {
@@ -41,7 +20,7 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, all
 	cfg_init(&cfg, 4, 4, alloc);
 
 	path_t tmp = proj->dir;
-	path_push(&tmp, STRV("proj.cfg"));
+	path_push(&tmp, STRV("build.cfg"));
 	if (fs_isfile(fs, STRVS(tmp))) {
 		if (buf) {
 			cfg_prs_t prs = {0};
@@ -54,7 +33,7 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, all
 		cfg_root(&cfg, &root);
 	}
 
-	ret |= proj_set_cfg(proj, &cfg, root, fs, proc, alloc, buf);
+	ret |= pkg_set_cfg(proj, &cfg, root, fs, proc, alloc, buf);
 
 	cfg_free(&cfg);
 
@@ -104,87 +83,6 @@ int proj_load(fs_t *fs, proc_t *proc, strv_t dir, strv_t name, proj_t *proj, all
 		}
 
 		strbuf_free(&dirs);
-	}
-
-	return ret;
-}
-
-int proj_set_cfg(proj_t *proj, const cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, alloc_t alloc, str_t *buf)
-{
-	if (proj == NULL || cfg == NULL) {
-		return 1;
-	}
-
-	int ret = 0;
-	(void)fs;
-	(void)buf;
-
-	cfg_var_t deps;
-	if (cfg_has_var(cfg, root, STRV("ext"), &deps)) {
-		path_t ext_dir = {0};
-		path_init(&ext_dir, STRV("tmp"));
-		path_push(&ext_dir, STRV("ext"));
-		path_t tmp     = proj->dir;
-		size_t ext_len = ext_dir.len;
-
-		create_tmp(fs, STRVS(proj->dir));
-
-		tmp.len = proj->dir.len;
-		path_push(&tmp, STRVS(ext_dir));
-		if (!fs_isdir(fs, STRVS(tmp))) {
-			fs_mkdir(fs, STRVS(tmp));
-		}
-		size_t proj_ext_len = tmp.len;
-
-		void *data;
-		cfg_var_t dep;
-		cfg_foreach(cfg, deps, data, &dep)
-		{
-			tmp.len	    = proj_ext_len;
-			ext_dir.len = ext_len;
-
-			strv_t name = cfg_get_key(cfg, dep);
-			strv_t uri;
-			if (cfg_get_str(cfg, dep, &uri)) {
-				log_error("cbuild", "pkg_loader", NULL, "invalid extern format");
-				ret = 1;
-				continue;
-			}
-
-			pkg_t *pkg = proj_add_pkg(proj, NULL);
-			if (pkg == NULL) {
-				ret = 1;
-				continue;
-			}
-
-			pkgs_set_str(&proj->pkgs, pkg->strs[PKG_NAME], name);
-
-			if (pkgs_set_uri(&proj->pkgs, pkg, uri)) {
-				ret = 1;
-				continue;
-			}
-
-			path_push(&tmp, name);
-
-			size_t git_len = tmp.len;
-			path_push(&tmp, STRV(".git"));
-			if (!fs_isdir(fs, STRVS(tmp))) {
-				tmp.len	 = git_len;
-				buf->len = 0;
-				str_cat(buf, STRV("git clone "));
-				str_cat(buf, strvbuf_get(&proj->pkgs.strs, pkg->strs[PKG_URL]));
-				str_cat(buf, STRV(" "));
-				str_cat(buf, STRVS(tmp));
-				if (proc) {
-					log_info("cbuild", "proj_loader", NULL, "build: %.*s", buf->len, buf->data);
-					proc_cmd(proc, STRVS(*buf));
-				}
-			}
-
-			path_push(&ext_dir, name);
-			path_push(&ext_dir, STRV(""));
-			ret |= pkg_load(fs, STRVS(proj->dir), name, STRVS(ext_dir), &proj->pkgs, alloc, buf) == NULL;
-		}
 	}
 
 	return ret;

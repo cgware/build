@@ -27,6 +27,8 @@ typedef struct pkg_s {
 	size_t strs[__PKG_STR_CNT];
 	list_node_t targets;
 	pkg_url_proto_t proto;
+	list_node_t deps;
+	byte has_deps : 1;
 	byte has_targets : 1;
 	byte loaded : 1;
 } pkg_t;

@@ -6,6 +6,7 @@
 
 typedef struct pkgs_s {
 	arr_t pkgs;
+	list_t deps;
 	targets_t targets;
 	strvbuf_t strs;
 } pkgs_t;
@@ -21,6 +22,8 @@ int pkgs_set_uri(pkgs_t *pkgs, pkg_t *pkg, strv_t uri);
 
 strv_t pkgs_get_name(const pkgs_t *pkgs, uint id);
 pkg_t *pkgs_get(const pkgs_t *pkgs, uint id);
+
+pkg_t *pkgs_add_dep(pkgs_t *pkgs, list_node_t id, strv_t dep);
 
 pkg_t *pkgs_find(const pkgs_t *pkgs, strv_t name, list_node_t *pkg);
 
