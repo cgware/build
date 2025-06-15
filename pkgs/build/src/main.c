@@ -1,10 +1,10 @@
 #include "args.h"
-#include "gen.h"
 #include "log.h"
 #include "mem.h"
 #include "path.h"
 #include "proj_gen.h"
-#include "proj_loader.h"
+
+// #include "proj_loader.h"
 
 int main(int argc, const char **argv)
 {
@@ -64,11 +64,11 @@ int main(int argc, const char **argv)
 	fs_t fs = {0};
 	fs_init(&fs, 0, 0, ALLOC_STD);
 
-	proc_t proc = {0};
-	proc_init(&proc, 0, 0);
+	// proc_t proc = {0};
+	// proc_init(&proc, 0, 0);
 
 	proj_t proj = {0};
-	proj_init(&proj, 1, ALLOC_STD);
+	proj_init(&proj, 4, 4, ALLOC_STD);
 
 	str_t cwd = strz(64);
 
@@ -98,12 +98,12 @@ int main(int argc, const char **argv)
 	if (name.len == 0) {
 		pathv_rsplit(l, NULL, &name);
 	}
-	str_t buf = strz(1024);
+	/*str_t buf = strz(1024);
 	if (proj_load(&fs, &proc, source, name, &proj, ALLOC_STD, &buf)) {
 		return 1;
 	}
 
-	proj_print(&proj, DST_STD());
+	proj_print(&proj, DST_STD());*/
 
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
@@ -111,7 +111,7 @@ int main(int argc, const char **argv)
 	proj_gen(&proj, &gen_driver, STRVS(source_rel), STRVS(build_rel));
 
 	proj_free(&proj);
-	proc_free(&proc);
+	// proc_free(&proc);
 	fs_free(&fs);
 	str_free(&cwd);
 
