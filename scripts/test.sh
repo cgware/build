@@ -24,28 +24,22 @@ mk() {
 	p_arch=$1
 	p_config=$2
 	proj=$3
-	exp_res=$4
-	targets=$5
+	targets=$4
 
-	dir="./test/$proj"
-	bin="./test/$proj/bin"
-	tmp="./test/$proj/tmp"
+	dir="./examples/$proj"
+	bin="./examples/$proj/bin"
+	tmp="./examples/$proj/tmp"
 
 	printf "%s %-7s %-12s " "$p_arch" "$p_config" "$proj"
 
-	out="$(./bin/"$arch"-"$config"/exes/build -s "$dir" -g M 2>&1)"
-	act_res=$?
+	out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g M 2>&1)"
+	res=$?
 
-	if [ $act_res -ne "$exp_res" ]; then
+	if [ $res -ne "0" ]; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "Failed to generate makefiles"
 		echo "$out"
 		ret=1
-		return
-	fi
-
-	if [ "$exp_res" -ne 0 ]; then
-		printf "\033[0;32mPASS\033[0m\n"
 		return
 	fi
 
@@ -72,10 +66,10 @@ mk() {
 }
 
 test() {
-	mk "$1" "$2" ext 0 bin/ext
-	mk "$1" "$2" exe 0 bin/exe
-	mk "$1" "$2" exe_dep_lib 0 "bin/exe lib/lib.a"
-	mk "$1" "$2" lib 0 lib/lib.a
+	mk "$1" "$2" 00_exe bin/00_exe
+	mk "$1" "$2" 01_lib lib/01_lib.a
+	mk "$1" "$2" 02_depends "bin/exe lib/lib.a"
+	mk "$1" "$2" 03_extern bin/03_extern
 }
 
 test x64 Debug

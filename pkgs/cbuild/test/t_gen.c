@@ -7,7 +7,7 @@ TEST(gen_find_param)
 	START;
 
 	EXPECT_EQ(gen_find_param(STRV_NULL), NULL);
-	EXPECT_NE(gen_find_param(STRV("M")), NULL);
+	EXPECT_NE(gen_find_param(STRV("N")), NULL);
 
 	END;
 }

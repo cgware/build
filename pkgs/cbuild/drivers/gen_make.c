@@ -10,11 +10,19 @@ typedef struct defines_s {
 	make_act_t def;
 } defines_t;
 
-static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const defines_t *defines, const pkgs_t *pkgs, arr_t *deps,
-		   str_t *buf, fs_t *fs, strv_t build_dir)
+static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, strv_t name, make_act_t inc, const defines_t *defines, arr_t *deps,
+		   str_t *buf, strv_t build_dir)
 
 {
-	const pkg_t *pkg = pkgs_get(pkgs, id);
+	const pkg_t *pkg = proj_get_pkg(proj, id);
+
+	path_t make_path = {0};
+	path_init(&make_path, build_dir);
+	fs_mkpath(fs, STRVS(make_path), proj_get_str(proj, pkg->strs + PKG_DIR));
+	path_push(&make_path, proj_get_str(proj, pkg->strs + PKG_DIR));
+	path_push(&make_path, STRV("pkg.mk"));
+
+	log_info("cbuild", "gen_make", NULL, "generating package: '%.*s'", make_path.len, make_path.data);
 
 	make_act_t act;
 	make_var(make, STRV("PKG"), MAKE_VAR_INST, &act);
@@ -22,13 +30,13 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	make_inc_add_act(make, inc, act);
 
 	make_var(make, STRV("$(PKG)_DIR"), MAKE_VAR_INST, &act);
-	strv_t dir = strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]);
+	strv_t dir = proj_get_str(proj, pkg->strs + PKG_DIR);
 	if (dir.len > 0) {
 		make_var_add_val(make, act, MSTR(dir));
 	}
 	make_inc_add_act(make, inc, act);
 	make_var(make, STRV("$(PKG)_HEADERS"), MAKE_VAR_INST, &act);
-	strv_t include = strvbuf_get(&pkgs->strs, pkg->strs[PKG_INC]);
+	strv_t include = proj_get_str(proj, pkg->strs + PKG_INC);
 	if (include.len > 0) {
 		make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
 	}
@@ -44,19 +52,32 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	make_act_t libs;
 	make_var(make, STRV("$(PKG)_LIBS"), MAKE_VAR_INST, &libs);
 	make_inc_add_act(make, inc, libs);
-	if (pkg->has_targets) {
-		targets_get_deps(&pkgs->targets, pkg->targets, deps);
 
+	deps->cnt = 0;
+
+	uint i = 0;
+	const target_t *target;
+	arr_foreach(&proj->targets, i, target)
+	{
+		if (target->pkg != id) {
+			continue;
+		}
+
+		proj_get_deps(proj, i, deps);
+	}
+
+	if (deps->cnt > 0) {
 		buf->len = 0;
 
 		str_cat(buf, STRV("$("));
 		size_t buf_len = buf->len;
 
 		uint i = 0;
-		uint *dep;
+		const uint *dep;
 		arr_foreach(deps, i, dep)
 		{
-			str_cat(buf, pkgs_get_name(pkgs, *dep));
+			const pkg_t *dpkg = proj_get_pkg(proj, *dep);
+			str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_NAME));
 			str_cat(buf, STRV(")"));
 			make_var_add_val(make, libs, MSTR(STRVS(*buf)));
 			buf->len = buf_len;
@@ -66,19 +87,16 @@ static int gen_pkg(uint id, strv_t name, make_t *make, make_act_t inc, const def
 	make_var(make, STRV("$(PKG)_DRIVERS"), MAKE_VAR_INST, &act);
 	make_inc_add_act(make, inc, act);
 
-	if (pkg->has_targets) {
-		const target_t *target = targets_get(&pkgs->targets, pkg->targets);
-		if (target != NULL) {
-			make_eval_def(make, defines[target->type].def, &act);
-			make_inc_add_act(make, inc, act);
+	i = 0;
+	arr_foreach(&proj->targets, i, target)
+	{
+		if (target->pkg != id) {
+			continue;
 		}
-	}
 
-	path_t make_path = {0};
-	path_init(&make_path, build_dir);
-	fs_mkpath(fs, STRVS(make_path), strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
-	path_push(&make_path, strvbuf_get(&pkgs->strs, pkg->strs[PKG_DIR]));
-	path_push(&make_path, STRV("pkg.mk"));
+		make_eval_def(make, defines[target->type].def, &act);
+		make_inc_add_act(make, inc, act);
+	}
 
 	void *file;
 	fs_open(fs, STRVS(make_path), "w", &file);
@@ -93,6 +111,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	if (drv == NULL || proj == NULL) {
 		return 1;
 	}
+
+	path_t make_path = {0};
+	path_init(&make_path, build_dir);
+	path_push(&make_path, STRV("Makefile"));
+
+	log_info("cbuild", "gen_make", NULL, "generating project: '%.*s'", make_path.len, make_path.data);
 
 	strv_t values[__VAR_CNT] = {
 		[VAR_ARCH]   = STRVT("$(ARCH)"),
@@ -354,17 +378,28 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_add_act(&make, root, act);
 
 	defines_t defines[] = {
-		[TARGET_TYPE_EXE] = {STRVT("exe")},
-		[TARGET_TYPE_LIB] = {STRVT("lib")},
+		[TARGET_TYPE_UNKNOWN] = {STRVT("unknown")},
+		[TARGET_TYPE_EXE]     = {STRVT("exe")},
+		[TARGET_TYPE_LIB]     = {STRVT("lib")},
 	};
 
 	int types[__TARGET_TYPE_MAX] = {0};
 
 	uint i = 0;
 	target_t *target;
-	list_foreach_all(&proj->pkgs.targets.targets, i, target)
+	arr_foreach(&proj->targets, i, target)
 	{
 		types[target->type] = 1;
+	}
+
+	if (types[TARGET_TYPE_UNKNOWN]) {
+		make_act_t def;
+		make_def(&make, defines[TARGET_TYPE_UNKNOWN].name, &def);
+		make_add_act(&make, root, def);
+		defines[TARGET_TYPE_UNKNOWN].def = def;
+
+		make_empty(&make, &act);
+		make_add_act(&make, root, act);
 	}
 
 	if (types[TARGET_TYPE_EXE]) {
@@ -488,13 +523,13 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_rule_add_act(&make, cov, act);
 	make_add_act(&make, root, cov);
 
-	if (proj->pkgs.pkgs.cnt > 0) {
+	if (proj->pkgs.cnt > 0) {
 		str_t buf2 = strz(16);
 
 		arr_t order = {0};
-		arr_init(&order, proj->pkgs.pkgs.cnt, sizeof(uint), ALLOC_STD);
+		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
 
-		pkgs_get_build_order(&proj->pkgs, &order);
+		proj_get_pkg_build_order(proj, &order, ALLOC_STD);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
@@ -503,20 +538,20 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		const uint *id;
 		arr_foreach(&order, i, id)
 		{
-			const pkg_t *pkg = pkgs_get(&proj->pkgs, *id);
+			const pkg_t *pkg = proj_get_pkg(proj, *id);
 
-			strv_t name = pkgs_get_name(&proj->pkgs, *id);
+			strv_t name = proj_get_str(proj, pkg->strs + PKG_NAME);
 
 			buf.len = 0;
 			str_cat(&buf, STRV("$(BUILDDIR)"));
-			str_cat(&buf, strvbuf_get(&proj->pkgs.strs, pkg->strs[PKG_DIR]));
+			str_cat(&buf, proj_get_str(proj, pkg->strs + PKG_DIR));
 			str_cat(&buf, STRV("pkg.mk"));
 
 			make_act_t inc;
 			make_inc(&make, STRVS(buf), &inc);
 			make_add_act(&make, root, inc);
 
-			gen_pkg(*id, name, &make, inc, defines, &proj->pkgs, &deps, &buf2, drv->fs, build_dir);
+			gen_pkg(proj, &make, drv->fs, *id, name, inc, defines, &deps, &buf2, build_dir);
 
 			make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
 		}
@@ -529,10 +564,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		str_free(&buf2);
 	}
-
-	path_t make_path = {0};
-	path_init(&make_path, build_dir);
-	path_push(&make_path, STRV("Makefile"));
 
 	void *file;
 	fs_open(drv->fs, STRVS(make_path), "w", &file);

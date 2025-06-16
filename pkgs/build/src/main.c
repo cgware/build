@@ -1,10 +1,9 @@
 #include "args.h"
-#include "gen.h"
 #include "log.h"
 #include "mem.h"
 #include "path.h"
+#include "proj_fs.h"
 #include "proj_gen.h"
-#include "proj_loader.h"
 
 int main(int argc, const char **argv)
 {
@@ -17,8 +16,8 @@ int main(int argc, const char **argv)
 	log_set(&log);
 	log_add_callback(log_std_cb, DST_STD(), LOG_INFO, 1, 1);
 
-	strv_t source = STRV(".");
-	strv_t build  = STRV("tmp/build");
+	strv_t proj_dir	 = STRV(".");
+	strv_t build_dir = STRV("tmp/build");
 
 	int gen = 0;
 
@@ -41,6 +40,9 @@ int main(int argc, const char **argv)
 				.desc  = drv->desc,
 				.priv  = drv,
 			};
+			if (strv_eq(drv->param, STRV("M"))) {
+				gen = gen_drivers_cnt;
+			}
 			gen_drivers_cnt++;
 		}
 	}
@@ -52,8 +54,8 @@ int main(int argc, const char **argv)
 	};
 
 	opt_t opts[] = {
-		OPT('s', "source", OPT_STR, "<path>", "Specify source directory", &source, {0}, OPT_OPT),
-		OPT('b', "build", OPT_STR, "<path>", "Specify build directory", &build, {0}, OPT_OPT),
+		OPT('p', "project", OPT_STR, "<path>", "Specify project directory", &proj_dir, {0}, OPT_OPT),
+		OPT('b', "build", OPT_STR, "<path>", "Specify build directory", &build_dir, {0}, OPT_OPT),
 		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
 	};
 
@@ -68,7 +70,7 @@ int main(int argc, const char **argv)
 	proc_init(&proc, 0, 0);
 
 	proj_t proj = {0};
-	proj_init(&proj, 1, ALLOC_STD);
+	proj_init(&proj, 4, 4, ALLOC_STD);
 
 	str_t cwd = strz(64);
 
@@ -80,26 +82,26 @@ int main(int argc, const char **argv)
 		str_cat(&cwd, STRV(SEP));
 	}
 
-	path_t source_abs = {0};
-	path_init(&source_abs, STRVS(cwd));
-	path_merge(&source_abs, source);
+	path_t proj_abs = {0};
+	path_init(&proj_abs, STRVS(cwd));
+	path_merge(&proj_abs, proj_dir);
 
-	path_t source_rel = {0};
-	path_init(&source_rel, source);
-	path_push(&source_rel, STRV(""));
+	path_t proj_rel = {0};
+	path_init(&proj_rel, proj_dir);
+	path_push(&proj_rel, STRV(""));
 
 	path_t build_rel = {0};
-	path_init(&build_rel, STRVS(source));
-	path_merge(&build_rel, build);
+	path_init(&build_rel, STRVS(proj_dir));
+	path_merge(&build_rel, build_dir);
 	path_push(&build_rel, STRV(""));
 
 	strv_t l, name;
-	pathv_rsplit(STRVS(source_abs), &l, &name);
+	pathv_rsplit(STRVS(proj_abs), &l, &name);
 	if (name.len == 0) {
 		pathv_rsplit(l, NULL, &name);
 	}
 	str_t buf = strz(1024);
-	if (proj_load(&fs, &proc, source, name, &proj, ALLOC_STD, &buf)) {
+	if (proj_fs(&proj, &fs, &proc, STRVS(proj_rel), STRV_NULL, name, &buf, ALLOC_STD)) {
 		return 1;
 	}
 
@@ -108,7 +110,9 @@ int main(int argc, const char **argv)
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
 	gen_driver.fs = &fs;
-	proj_gen(&proj, &gen_driver, STRVS(source_rel), STRVS(build_rel));
+	if (proj_gen(&proj, &gen_driver, STRVS(proj_rel), STRVS(build_rel))) {
+		return 1;
+	}
 
 	proj_free(&proj);
 	proc_free(&proc);
