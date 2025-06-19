@@ -2,11 +2,6 @@
 
 #include "log.h"
 
-typedef struct dep_s {
-	uint from;
-	uint to;
-} dep_t;
-
 proj_t *proj_init(proj_t *proj, uint pkgs_cap, uint targets_cap, alloc_t alloc)
 {
 	if (proj == NULL) {

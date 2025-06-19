@@ -37,7 +37,7 @@ TEST(var_replace)
 		str_cat(&str, STRV("${ARCH}"));
 
 		EXPECT_EQ(var_replace(&str, values), 0);
-		EXPECT_STRN(str.data, "", str.len);
+		EXPECT_STRN(str.data, "${ARCH}", str.len);
 	}
 
 	{
@@ -61,6 +61,15 @@ TEST(var_replace)
 		mem_oom(0);
 		EXPECT_STRN(str.data, "${ARCH}", str.len);
 		str.size = size;
+	}
+	{
+		strv_t values_c[__VAR_CNT] = {
+			[VAR_ARCH] = STRVT(""),
+		};
+		str.len = 0;
+		str_cat(&str, STRV("${ARCH}"));
+		EXPECT_EQ(var_replace(&str, values_c), 0);
+		EXPECT_STRN(str.data, "", str.len);
 	}
 
 	END;

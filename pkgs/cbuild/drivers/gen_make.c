@@ -16,13 +16,13 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, strv_t n
 {
 	const pkg_t *pkg = proj_get_pkg(proj, id);
 
-	path_t make_path = {0};
-	path_init(&make_path, build_dir);
-	fs_mkpath(fs, STRVS(make_path), proj_get_str(proj, pkg->strs + PKG_DIR));
-	path_push(&make_path, proj_get_str(proj, pkg->strs + PKG_DIR));
-	path_push(&make_path, STRV("pkg.mk"));
+	path_t path = {0};
+	path_init(&path, build_dir);
+	fs_mkpath(fs, STRVS(path), proj_get_str(proj, pkg->strs + PKG_DIR));
+	path_push(&path, proj_get_str(proj, pkg->strs + PKG_DIR));
+	path_push(&path, STRV("pkg.mk"));
 
-	log_info("cbuild", "gen_make", NULL, "generating package: '%.*s'", make_path.len, make_path.data);
+	log_info("cbuild", "gen_make", NULL, "generating package: '%.*s'", path.len, path.data);
 
 	make_act_t act;
 	make_var(make, STRV("PKG"), MAKE_VAR_INST, &act);
@@ -99,7 +99,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, strv_t n
 	}
 
 	void *file;
-	fs_open(fs, STRVS(make_path), "w", &file);
+	fs_open(fs, STRVS(path), "w", &file);
 	make_inc_print(make, inc, DST_FS(fs, file));
 	fs_close(fs, file);
 
@@ -112,11 +112,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		return 1;
 	}
 
-	path_t make_path = {0};
-	path_init(&make_path, build_dir);
-	path_push(&make_path, STRV("Makefile"));
+	path_t path = {0};
+	path_init(&path, build_dir);
+	path_push(&path, STRV("Makefile"));
 
-	log_info("cbuild", "gen_make", NULL, "generating project: '%.*s'", make_path.len, make_path.data);
+	log_info("cbuild", "gen_make", NULL, "generating project: '%.*s'", path.len, path.data);
 
 	strv_t values[__VAR_CNT] = {
 		[VAR_ARCH]   = STRVT("$(ARCH)"),
@@ -566,7 +566,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	}
 
 	void *file;
-	fs_open(drv->fs, STRVS(make_path), "w", &file);
+	fs_open(drv->fs, STRVS(path), "w", &file);
 	make_print(&make, root, DST_FS(drv->fs, file));
 	fs_close(drv->fs, file);
 

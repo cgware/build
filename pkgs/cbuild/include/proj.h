@@ -44,7 +44,13 @@ typedef struct target_s {
 	byte inited : 1;
 } target_t;
 
+typedef struct dep_s {
+	uint from;
+	uint to;
+} dep_t;
+
 typedef struct proj_s {
+	strv_t name;
 	path_t dir;
 	path_t outdir;
 	arr_t pkgs;

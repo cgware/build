@@ -3,6 +3,7 @@
 #include "test.h"
 
 STEST(gen);
+STEST(gen_cmake);
 STEST(gen_make);
 STEST(gen_none);
 STEST(proj);
@@ -16,8 +17,9 @@ TEST(cbuild)
 {
 	SSTART;
 	RUN(gen);
-	RUN(gen_none);
 	RUN(gen_make);
+	RUN(gen_none);
+	RUN(gen_cmake);
 	RUN(proj);
 	RUN(proj_cfg);
 	RUN(proj_fs);

@@ -35,7 +35,8 @@ int proj_fs(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_di
 
 	log_info("cbuild", "proj_fs", NULL, "loading project: '%.*s'", proj_dir.len, proj_dir.data);
 
-	path_init(&proj->outdir, STRV("bin/$(ARCH)-$(CONFIG)/"));
+	proj->name = pkg_name;
+	path_init(&proj->outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
 	return proj_fs_child(proj, fs, proc, proj_dir, pkg_dir, pkg_name, buf, alloc);
 }

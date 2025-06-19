@@ -40,6 +40,10 @@ int var_replace(str_t *str, const strv_t *values)
 			continue;
 		}
 
+		if (values[v].data == NULL) {
+			continue;
+		}
+
 		if (str_subreplace(str, s, e + 1, values[v])) {
 			log_error("build",
 				  "var",

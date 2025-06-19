@@ -11,9 +11,10 @@ TEST(proj_fs_empty)
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
 	EXPECT_EQ(proj_fs(NULL, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-	EXPECT_EQ(proj_fs(&proj, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 0);
+	EXPECT_EQ(proj_fs(&proj, NULL, NULL, STRV_NULL, STRV_NULL, STRV("p"), NULL, ALLOC_STD), 0);
 
-	EXPECT_STRN(proj.outdir.data, "bin" SEP "$(ARCH)-$(CONFIG)" SEP, proj.outdir.len)
+	EXPECT_STRN(proj.name.data, "p", proj.name.len);
+	EXPECT_STRN(proj.outdir.data, "bin" SEP "${ARCH}-${CONFIG}" SEP, proj.outdir.len)
 
 	proj_free(&proj);
 
