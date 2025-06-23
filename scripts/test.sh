@@ -124,7 +124,8 @@ test() {
 	gen "$@" 01_lib lib/01_lib.a
 	gen "$@" 02_multi "bin/a bin/b"
 	gen "$@" 03_depends "bin/exe lib/lib.a"
-	gen "$@" 04_extern bin/04_extern
+	gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	gen "$@" 05_extern bin/05_extern
 }
 
 test x64 Debug

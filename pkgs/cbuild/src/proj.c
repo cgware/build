@@ -249,14 +249,14 @@ int proj_get_deps(const proj_t *proj, uint target, arr_t *deps)
 		*(uint8_t *)arr_add(&visited, NULL) = 0;
 	}
 
-	arr_t stack = {0};
-	arr_init(&stack, proj->targets.cnt, sizeof(uint), ALLOC_STD);
-	*(uint *)arr_add(&stack, NULL) = target;
+	arr_t queue = {0};
+	arr_init(&queue, 8, sizeof(uint), ALLOC_STD);
+	*(uint *)arr_add(&queue, NULL) = target;
 
-	while (stack.cnt > 0) {
-		uint current = *(uint *)arr_get(&stack, stack.cnt - 1);
-		stack.cnt--;
-		uint cnt   = stack.cnt;
+	uint front = 0;
+
+	while (front < queue.cnt) {
+		uint current = *(uint *)arr_get(&queue, front++);
 		uint8_t *v = arr_get(&visited, current);
 
 		if (*v) {
@@ -264,25 +264,24 @@ int proj_get_deps(const proj_t *proj, uint target, arr_t *deps)
 		}
 		*v = 1;
 
+		if (current != target) {
+			arr_addu(deps, &current, NULL);
+		}
+
 		for (uint i = 0; i < proj->deps.cnt; i++) {
 			dep_t *dep = arr_get(&proj->deps, i);
 			if (dep->to == current) {
-				uint from	      = dep->from;
-				uint8_t *visited_from = arr_get(&visited, from);
-				if (!*visited_from) {
-					*(uint *)arr_add(&stack, NULL) = from;
+				uint to		    = dep->from;
+				uint8_t *visited_to = arr_get(&visited, to);
+				if (!*visited_to) {
+					*(uint *)arr_add(&queue, NULL) = to;
 				}
 			}
-		}
-
-		if (stack.cnt == cnt && current != target) {
-			arr_addu(deps, &current, NULL);
 		}
 	}
 
 	arr_free(&visited);
-	arr_free(&stack);
-
+	arr_free(&queue);
 	return 0;
 }
 

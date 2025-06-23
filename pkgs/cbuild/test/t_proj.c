@@ -322,14 +322,49 @@ TEST(proj_get_deps)
 
 	EXPECT_EQ(proj_get_deps(&proj, t2, &deps), 0);
 	EXPECT_EQ(deps.cnt, 2);
-	EXPECT_EQ(*(uint *)arr_get(&deps, 0), t4);
-	EXPECT_EQ(*(uint *)arr_get(&deps, 1), t3);
+	EXPECT_EQ(*(uint *)arr_get(&deps, 0), t3);
+	EXPECT_EQ(*(uint *)arr_get(&deps, 1), t4);
 
+	arr_free(&deps);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_get_rdeps)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 2, 2, ALLOC_STD);
+
+	uint p1, p2, p3, p4;
+	uint t1, t2, t3, t4;
+
+	proj_add_pkg(&proj, STRV("pbase"), &p1);
+	proj_add_pkg(&proj, STRV("plib1"), &p2);
+	proj_add_pkg(&proj, STRV("plib2"), &p3);
+	proj_add_pkg(&proj, STRV("pexe"), &p4);
+
+	proj_add_target(&proj, p1, STRV("tbase"), &t1);
+	proj_add_target(&proj, p2, STRV("tlib1"), &t2);
+	proj_add_target(&proj, p3, STRV("tlib2"), &t3);
+	proj_add_target(&proj, p4, STRV("texe"), &t4);
+
+	proj_add_dep(&proj, t2, t1);
+	proj_add_dep(&proj, t3, t1);
+	proj_add_dep(&proj, t4, t2);
 	proj_add_dep(&proj, t4, t3);
-	EXPECT_EQ(proj_get_deps(&proj, t2, &deps), 0);
-	EXPECT_EQ(deps.cnt, 2);
-	EXPECT_EQ(*(uint *)arr_get(&deps, 0), t4);
+
+	arr_t deps = {0};
+	arr_init(&deps, 3, sizeof(uint), ALLOC_STD);
+
+	EXPECT_EQ(proj_get_deps(&proj, t4, &deps), 0);
+
+	EXPECT_EQ(deps.cnt, 3);
+	EXPECT_EQ(*(uint *)arr_get(&deps, 0), t2);
 	EXPECT_EQ(*(uint *)arr_get(&deps, 1), t3);
+	EXPECT_EQ(*(uint *)arr_get(&deps, 2), t1);
 
 	arr_free(&deps);
 	proj_free(&proj);
@@ -544,6 +579,7 @@ STEST(proj)
 	RUN(proj_get_str);
 	RUN(proj_add_dep);
 	RUN(proj_get_deps);
+	RUN(proj_get_rdeps);
 	RUN(proj_print_deps);
 	RUN(proj_get_pkg_build_order);
 	RUN(proj_get_target_build_order);

@@ -92,7 +92,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		fs_write(fs, f, STRV(")\n"));
 
 		switch (target->type) {
-		case TARGET_TYPE_EXE:
+		case TARGET_TYPE_EXE: {
 			fs_write(fs, f, STRV("add_executable(${PKG} ${${PKG}_src})\n"));
 			fs_write(fs, f, STRV("target_link_libraries(${PKG} PRIVATE"));
 			uint j = 0;
@@ -107,11 +107,11 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs, f, STRV(" "));
 				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 			}
-
 			fs_write(fs, f, STRV(")\n"));
 
 			break;
-		case TARGET_TYPE_LIB:
+		}
+		case TARGET_TYPE_LIB: {
 			fs_write(fs, f, STRV("add_library(${PKG} ${${PKG}_src})\n"));
 			strv_t inc = proj_get_str(proj, pkg->strs + PKG_INC);
 			if (inc.len > 0) {
@@ -120,7 +120,22 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs, f, inc);
 				fs_write(fs, f, STRV(")\n"));
 			}
+			fs_write(fs, f, STRV("target_link_libraries(${PKG} PUBLIC"));
+			uint j = 0;
+			dep_t *dep;
+			arr_foreach(&proj->deps, j, dep)
+			{
+				if (dep->to != i) {
+					continue;
+				}
+
+				target_t *dtarget = proj_get_target(proj, dep->from);
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			fs_write(fs, f, STRV(")\n"));
 			break;
+		}
 		default:
 			break;
 		}
