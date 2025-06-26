@@ -43,6 +43,16 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 			target->type = TARGET_TYPE_LIB;
 		}
 		path.len = path_len;
+
+		path_push(&path, STRV("test"));
+		if (fs_isdir(fs, STRVS(path))) {
+			uint test_target;
+			proj_set_str(proj, pkg->strs + PKG_TST, STRV("test"));
+			target	     = proj_add_target(proj, pkg_id, STRV("test"), &test_target);
+			target->type = TARGET_TYPE_TST;
+			proj_add_dep(proj, test_target, target_id);
+		}
+		path.len = path_len;
 	}
 
 	uint pkg_id, target_id;
@@ -156,6 +166,30 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 			if (inc.len > 0) {
 				proj_set_str(proj, pkg->strs + PKG_INC, inc);
 				target->type = TARGET_TYPE_LIB;
+			}
+
+			strv_t test = {0};
+			if (cfg_has_var(cfg, tbl, STRV("test"), &var)) {
+				cfg_get_str(cfg, var, &test);
+				path_push(&path, test);
+				if (!fs_isdir(fs, STRVS(path))) {
+					test.len = 0;
+					log_error("cbuild", "proj_cfg", NULL, "test does not exist: '%.*s'", path.len, path.data);
+					ret = 1;
+				}
+			} else {
+				test = STRV("test");
+				path_push(&path, test);
+				if (!fs_isdir(fs, STRVS(path))) {
+					test.len = 0;
+				}
+			}
+			path.len = path_len;
+
+			if (test.len > 0) {
+				proj_set_str(proj, pkg->strs + PKG_TST, test);
+				target	     = proj_find_target(proj, pkg_id, STRV("test"), &target_id);
+				target->type = TARGET_TYPE_TST;
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("deps"), &var)) {

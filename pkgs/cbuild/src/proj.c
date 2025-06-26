@@ -243,6 +243,10 @@ int proj_get_deps(const proj_t *proj, uint target, arr_t *deps)
 		return 1;
 	}
 
+	if (proj->deps.cnt == 0) {
+		return 0;
+	}
+
 	arr_t visited = {0};
 	arr_init(&visited, proj->targets.cnt, sizeof(uint8_t), ALLOC_STD);
 	for (uint i = 0; i < proj->targets.cnt; i++) {
@@ -250,14 +254,14 @@ int proj_get_deps(const proj_t *proj, uint target, arr_t *deps)
 	}
 
 	arr_t queue = {0};
-	arr_init(&queue, 8, sizeof(uint), ALLOC_STD);
+	arr_init(&queue, proj->deps.cnt * 2, sizeof(uint), ALLOC_STD);
 	*(uint *)arr_add(&queue, NULL) = target;
 
 	uint front = 0;
 
 	while (front < queue.cnt) {
 		uint current = *(uint *)arr_get(&queue, front++);
-		uint8_t *v = arr_get(&visited, current);
+		uint8_t *v   = arr_get(&visited, current);
 
 		if (*v) {
 			continue;

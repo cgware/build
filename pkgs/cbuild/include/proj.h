@@ -10,6 +10,7 @@ typedef enum pkg_str_e {
 	PKG_DIR,
 	PKG_SRC,
 	PKG_INC,
+	PKG_TST,
 	__PKG_STR_CNT,
 } pkg_str_t;
 
@@ -28,6 +29,7 @@ typedef enum target_type_s {
 	TARGET_TYPE_UNKNOWN,
 	TARGET_TYPE_EXE,
 	TARGET_TYPE_LIB,
+	TARGET_TYPE_TST,
 	__TARGET_TYPE_MAX,
 } target_type_t;
 

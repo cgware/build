@@ -26,6 +26,9 @@ static void resolve_dir(const proj_t *proj, strv_t *values, target_type_t type, 
 	case TARGET_TYPE_LIB:
 		path_push_s(resolved, STRV("lib"), '/');
 		break;
+	case TARGET_TYPE_TST:
+		path_push_s(resolved, STRV("test"), '/');
+		break;
 	default:       // LCOV_EXCL_LINE
 		break; // LCOV_EXCL_LINE
 	}
@@ -53,6 +56,19 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 
 	str_t buf = strz(64);
 
+	fs_write(fs, f, STRV("set(PN \""));
+	strv_t name = proj_get_str(proj, pkg->strs + PKG_NAME);
+	if (name.len > 0) {
+		fs_write(fs, f, name);
+	}
+	fs_write(fs, f, STRV("\")\n"));
+	fs_write(fs, f, STRV("set(PKGDIR \""));
+	strv_t dir = proj_get_str(proj, pkg->strs + PKG_DIR);
+	if (dir.len > 0) {
+		fs_write(fs, f, dir);
+	}
+	fs_write(fs, f, STRV("\")\n"));
+
 	uint i = 0;
 	const target_t *target;
 	arr_foreach(&proj->targets, i, target)
@@ -61,40 +77,40 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			continue;
 		}
 
-		fs_write(fs, f, STRV("set(PKG \""));
-		strv_t name = proj_get_str(proj, pkg->strs + PKG_NAME);
+		fs_write(fs, f, STRV("set(TN \""));
+		strv_t name = proj_get_str(proj, target->strs + PKG_NAME);
 		if (name.len > 0) {
 			fs_write(fs, f, name);
 		}
 		fs_write(fs, f, STRV("\")\n"));
-		fs_write(fs, f, STRV("set(PKGDIR \""));
-		strv_t dir = proj_get_str(proj, pkg->strs + PKG_DIR);
-		if (dir.len > 0) {
-			fs_write(fs, f, dir);
-		}
-		fs_write(fs, f, STRV("\")\n"));
 
-		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PKG}_src "));
-		path_t src = {0};
-		path_init_s(&src, proj_get_str(proj, pkg->strs + PKG_DIR), '/');
-		path_push_s(&src, proj_get_str(proj, pkg->strs + PKG_SRC), '/');
-		buf.len = 0;
-		str_cat(&buf, STRV("${PROJDIR}${PKGDIR}"));
-		str_cat(&buf, proj_get_str(proj, pkg->strs + PKG_SRC));
-		path_init_s(&src, STRVS(buf), '/');
-		size_t src_len = src.len;
-		path_push_s(&src, STRV("*.h"), '/');
-		fs_write(fs, f, STRVS(src));
-		fs_write(fs, f, STRV(" "));
-		src.len = src_len;
-		path_push_s(&src, STRV("*.c"), '/');
-		fs_write(fs, f, STRVS(src));
+		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}"));
+
+		path_t tmp = {0};
+
+		switch (target->type) {
+		case TARGET_TYPE_TST:
+			path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_TST), '/');
+			break;
+		default:
+			path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_SRC), '/');
+			break;
+		}
+
+		size_t src_len = tmp.len;
+		path_push_s(&tmp, STRV("*.h"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(" ${PROJDIR}${PKGDIR}"));
+		tmp.len = src_len;
+		path_push_s(&tmp, STRV("*.c"), '/');
+		fs_write(fs, f, STRVS(tmp));
 		fs_write(fs, f, STRV(")\n"));
 
 		switch (target->type) {
 		case TARGET_TYPE_EXE: {
-			fs_write(fs, f, STRV("add_executable(${PKG} ${${PKG}_src})\n"));
-			fs_write(fs, f, STRV("target_link_libraries(${PKG} PRIVATE"));
+			fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
 			uint j = 0;
 			dep_t *dep;
 			arr_foreach(&proj->deps, j, dep)
@@ -103,8 +119,11 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 					continue;
 				}
 
-				target_t *dtarget = proj_get_target(proj, dep->from);
+				const target_t *dtarget = proj_get_target(proj, dep->from);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+				fs_write(fs, f, STRV("_"));
 				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 			}
 			fs_write(fs, f, STRV(")\n"));
@@ -112,15 +131,15 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			break;
 		}
 		case TARGET_TYPE_LIB: {
-			fs_write(fs, f, STRV("add_library(${PKG} ${${PKG}_src})\n"));
+			fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 			strv_t inc = proj_get_str(proj, pkg->strs + PKG_INC);
 			if (inc.len > 0) {
-				fs_write(fs, f, STRV("target_include_directories(${PKG} PUBLIC "));
+				fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC "));
 				fs_write(fs, f, STRV("${PROJDIR}${PKGDIR}"));
 				fs_write(fs, f, inc);
 				fs_write(fs, f, STRV(")\n"));
 			}
-			fs_write(fs, f, STRV("target_link_libraries(${PKG} PUBLIC"));
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
 			uint j = 0;
 			dep_t *dep;
 			arr_foreach(&proj->deps, j, dep)
@@ -129,11 +148,36 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 					continue;
 				}
 
-				target_t *dtarget = proj_get_target(proj, dep->from);
+				const target_t *dtarget = proj_get_target(proj, dep->from);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+				fs_write(fs, f, STRV("_"));
 				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 			}
 			fs_write(fs, f, STRV(")\n"));
+			break;
+		}
+		case TARGET_TYPE_TST: {
+			fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
+			uint j = 0;
+			dep_t *dep;
+			arr_foreach(&proj->deps, j, dep)
+			{
+				if (dep->to != i) {
+					continue; // LCOV_EXCL_LINE
+				}
+
+				const target_t *dtarget = proj_get_target(proj, dep->from);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+				fs_write(fs, f, STRV("_"));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			fs_write(fs, f, STRV(")\n"));
+
 			break;
 		}
 		default:
@@ -142,7 +186,10 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 
 		strv_t values[__VAR_CNT] = {0};
 
-		fs_write(fs, f, STRV("set_target_properties(${PKG} PROPERTIES\n"));
+		fs_write(fs,
+			 f,
+			 STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"
+			      "\tOUTPUT_NAME \"${PN}\"\n"));
 
 		path_t outdir = {0};
 
@@ -161,6 +208,12 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 					{STRVT("ARCHIVE_OUTPUT_DIRECTORY"), STRVT("Debug")},
 					{STRVT("ARCHIVE_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
 					{STRVT("ARCHIVE_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
+				},
+			[TARGET_TYPE_TST] =
+				{
+					{STRVT("RUNTIME_OUTPUT_DIRECTORY"), STRVT("Debug")},
+					{STRVT("RUNTIME_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
+					{STRVT("RUNTIME_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
 				},
 		};
 
@@ -181,8 +234,6 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		}
 
 		switch (target->type) {
-		case TARGET_TYPE_EXE:
-			break;
 		case TARGET_TYPE_LIB:
 			fs_write(fs, f, STRV("\tPREFIX \"\"\n"));
 			break;

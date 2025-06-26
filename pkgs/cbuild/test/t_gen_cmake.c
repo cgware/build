@@ -164,10 +164,12 @@ TEST(gen_cmake_pkg_unknown)
 
 	fs_read(&fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"\")\n"
+		    "set(PN \"\")\n"
 		    "set(PKGDIR \"\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"pkg\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
 		    tmp.len);
 
@@ -205,12 +207,14 @@ TEST(gen_cmake_pkg_exe_empty)
 
 	fs_read(&fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"\")\n"
+		    "set(PN \"\")\n"
 		    "set(PKGDIR \"\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_executable(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PRIVATE)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"pkg\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
@@ -255,12 +259,14 @@ TEST(gen_cmake_pkg_exe)
 
 	fs_read(&fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"pkg\")\n"
+		    "set(PN \"pkg\")\n"
 		    "set(PKGDIR \"\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}src/*.h ${PROJDIR}${PKGDIR}src/*.c)\n"
-		    "add_executable(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PRIVATE)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"pkg\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}src/*.h ${PROJDIR}${PKGDIR}src/*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Release/bin/\n"
@@ -306,17 +312,87 @@ TEST(gen_cmake_pkg_lib)
 
 	fs_read(&fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"pkg\")\n"
+		    "set(PN \"pkg\")\n"
 		    "set(PKGDIR \"\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}src/*.h ${PROJDIR}${PKGDIR}src/*.c)\n"
-		    "add_library(${PKG} ${${PKG}_src})\n"
-		    "target_include_directories(${PKG} PUBLIC ${PROJDIR}${PKGDIR}include)\n"
-		    "target_link_libraries(${PKG} PUBLIC)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"pkg\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}src/*.h ${PROJDIR}${PKGDIR}src/*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${PROJDIR}${PKGDIR}include)\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Release/lib/\n"
 		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	proj_free(&proj);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_lib_test)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 2, 1, ALLOC_STD);
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	path_init(&proj.outdir, STRV("bin/${ARCH}-${CONFIG}/"));
+
+	uint pkg_id, lib, tst;
+	pkg_t *pkg;
+	target_t *target;
+
+	pkg	     = proj_add_pkg(&proj, STRV("lib"), &pkg_id);
+	target	     = proj_add_target(&proj, pkg_id, STRV("lib"), &lib);
+	target->type = TARGET_TYPE_LIB;
+
+	proj_set_str(&proj, pkg->strs + PKG_TST, STRV("test"));
+	target	     = proj_add_target(&proj, pkg_id, STRV("test"), &tst);
+	target->type = TARGET_TYPE_TST;
+
+	proj_add_dep(&proj, tst, lib);
+
+	gen_driver_t drv = *gen_find_param(STRV("C"));
+
+	drv.fs = &fs;
+
+	EXPECT_EQ(drv.gen(&drv, &proj, STRV_NULL, STRV_NULL), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"lib\")\n"
+		    "set(PKGDIR \"\")\n"
+		    "set(TN \"lib\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Release/lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n"
+		    "set(TN \"test\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}test/*.h ${PROJDIR}${PKGDIR}test/*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Release/test/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -364,12 +440,14 @@ TEST(gen_cmake_pkg_multi)
 
 	fs_read(&fs, STRV("./a/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"a\")\n"
+		    "set(PN \"a\")\n"
 		    "set(PKGDIR \"a\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_executable(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PRIVATE)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"a\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
@@ -378,12 +456,14 @@ TEST(gen_cmake_pkg_multi)
 
 	fs_read(&fs, STRV("./b/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"b\")\n"
+		    "set(PN \"b\")\n"
 		    "set(PKGDIR \"b\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_executable(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PRIVATE)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"b\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
@@ -436,12 +516,14 @@ TEST(gen_cmake_pkg_depends)
 
 	fs_read(&fs, STRV("./lib/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"lib\")\n"
+		    "set(PN \"lib\")\n"
 		    "set(PKGDIR \"lib\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_library(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PUBLIC)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"lib\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
@@ -451,12 +533,14 @@ TEST(gen_cmake_pkg_depends)
 
 	fs_read(&fs, STRV("./exe/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"exe\")\n"
+		    "set(PN \"exe\")\n"
 		    "set(PKGDIR \"exe\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_executable(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PRIVATE lib)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"exe\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
@@ -522,12 +606,14 @@ TEST(gen_cmake_pkg_rdepends)
 
 	fs_read(&fs, STRV("./base/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"base\")\n"
+		    "set(PN \"base\")\n"
 		    "set(PKGDIR \"base\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_library(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PUBLIC)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"base\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
@@ -537,12 +623,14 @@ TEST(gen_cmake_pkg_rdepends)
 
 	fs_read(&fs, STRV("./lib1/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"lib1\")\n"
+		    "set(PN \"lib1\")\n"
 		    "set(PKGDIR \"lib1\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_library(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PUBLIC base)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"lib1\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC base_base)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
@@ -552,12 +640,14 @@ TEST(gen_cmake_pkg_rdepends)
 
 	fs_read(&fs, STRV("./lib2/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"lib2\")\n"
+		    "set(PN \"lib2\")\n"
 		    "set(PKGDIR \"lib2\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_library(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PUBLIC base)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"lib2\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC base_base)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
@@ -567,12 +657,14 @@ TEST(gen_cmake_pkg_rdepends)
 
 	fs_read(&fs, STRV("./exe/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PKG \"exe\")\n"
+		    "set(PN \"exe\")\n"
 		    "set(PKGDIR \"exe\")\n"
-		    "file(GLOB_RECURSE ${PKG}_src ${PROJDIR}${PKGDIR}/*.h ${PROJDIR}${PKGDIR}/*.c)\n"
-		    "add_executable(${PKG} ${${PKG}_src})\n"
-		    "target_link_libraries(${PKG} PRIVATE lib1 lib2)\n"
-		    "set_target_properties(${PKG} PROPERTIES\n"
+		    "set(TN \"exe\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE lib1_lib1 lib2_lib2)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
@@ -597,6 +689,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_exe_empty);
 	RUN(gen_cmake_pkg_exe);
 	RUN(gen_cmake_pkg_lib);
+	RUN(gen_cmake_pkg_lib_test);
 	RUN(gen_cmake_pkg_multi);
 	RUN(gen_cmake_pkg_depends);
 	RUN(gen_cmake_pkg_rdepends);
