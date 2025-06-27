@@ -18,8 +18,11 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 
 	path_t path = {0};
 	path_init(&path, build_dir);
-	fs_mkpath(fs, STRVS(path), proj_get_str(proj, pkg->strs + PKG_DIR));
-	path_push(&path, proj_get_str(proj, pkg->strs + PKG_DIR));
+	strv_t pkg_dir = proj_get_str(proj, pkg->strs + PKG_DIR);
+	if (pkg_dir.len > 0) {
+		fs_mkpath(fs, STRVS(path), pkg_dir);
+	}
+	path_push(&path, pkg_dir);
 	path_push(&path, STRV("pkg.mk"));
 
 	log_info("cbuild", "gen_make", NULL, "generating package: '%.*s'", path.len, path.data);
