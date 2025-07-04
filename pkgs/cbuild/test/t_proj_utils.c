@@ -102,7 +102,7 @@ TEST(proj_add_dep_uri_oom)
 	END;
 }
 
-TEST(proj_set_ext_uri)
+TEST(proj_set_uri)
 {
 	START;
 
@@ -111,16 +111,18 @@ TEST(proj_set_ext_uri)
 
 	pkg_t *pkg = proj_add_pkg_target(&proj, STRV("p1"), NULL, NULL);
 
-	EXPECT_EQ(proj_set_ext_uri(NULL, NULL, STRV_NULL), 1);
+	EXPECT_EQ(proj_set_uri(NULL, NULL, STRV_NULL), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_set_ext_uri(&proj, NULL, STRV_NULL), 1);
-	EXPECT_EQ(proj_set_ext_uri(&proj, pkg, STRV_NULL), 1);
-	EXPECT_EQ(proj_set_ext_uri(&proj, pkg, STRV("invalid")), 1);
+	EXPECT_EQ(proj_set_uri(&proj, NULL, STRV_NULL), 1);
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV_NULL), 1);
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("invalid")), 1);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(proj_set_ext_uri(&proj, pkg, STRV("git:repo")), 0);
-	EXPECT_EQ(pkg->proto, PKG_URL_GIT)
-	strv_t url = proj_get_str(&proj, pkg->strs + PKG_URL);
-	EXPECT_STRN(url.data, "repo", url.len);
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("git:repo")), 0);
+	EXPECT_EQ(pkg->proto, PKG_URI_GIT);
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https:src")), 0);
+	EXPECT_EQ(pkg->proto, PKG_URI_HTTPS);
+	strv_t url = proj_get_str(&proj, pkg->strs + PKG_URI);
+	EXPECT_STRN(url.data, "src", url.len);
 
 	proj_free(&proj);
 
@@ -135,7 +137,7 @@ STEST(proj_utils)
 	RUN(proj_add_pkg_target_exists);
 	RUN(proj_add_dep_uri);
 	RUN(proj_add_dep_uri_oom);
-	RUN(proj_set_ext_uri);
+	RUN(proj_set_uri);
 
 	SEND;
 }

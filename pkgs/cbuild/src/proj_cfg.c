@@ -122,74 +122,77 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 			path_push(&path, pkg_dir);
 			size_t path_len = path.len;
 
-			strv_t src = {0};
+			strv_t val = {0};
 			if (cfg_has_var(cfg, tbl, STRV("src"), &var)) {
-				cfg_get_str(cfg, var, &src);
-				path_push(&path, src);
+				cfg_get_str(cfg, var, &val);
+				path_push(&path, val);
 				if (!fs_isdir(fs, STRVS(path))) {
-					src.len = 0;
+					val.len = 0;
 					log_error("cbuild", "proj_cfg", NULL, "src does not exist: '%.*s'", path.len, path.data);
 					ret = 1;
 				}
 			} else {
-				src = STRV("src");
-				path_push(&path, src);
+				val = STRV("src");
+				path_push(&path, val);
 				if (!fs_isdir(fs, STRVS(path))) {
-					src.len = 0;
+					val.len = 0;
 				}
 			}
 			path.len = path_len;
 
-			if (src.len > 0) {
-				proj_set_str(proj, pkg->strs + PKG_SRC, src);
+			if (val.len > 0) {
+				proj_set_str(proj, pkg->strs + PKG_SRC, val);
 				target->type = TARGET_TYPE_EXE;
 			}
 
-			strv_t inc = {0};
 			if (cfg_has_var(cfg, tbl, STRV("include"), &var)) {
-				cfg_get_str(cfg, var, &inc);
-				path_push(&path, inc);
+				cfg_get_str(cfg, var, &val);
+				path_push(&path, val);
 				if (!fs_isdir(fs, STRVS(path))) {
-					inc.len = 0;
+					val.len = 0;
 					log_error("cbuild", "proj_cfg", NULL, "include does not exist: '%.*s'", path.len, path.data);
 					ret = 1;
 				}
 			} else {
-				inc = STRV("include");
-				path_push(&path, inc);
+				val = STRV("include");
+				path_push(&path, val);
 				if (!fs_isdir(fs, STRVS(path))) {
-					inc.len = 0;
+					val.len = 0;
 				}
 			}
 			path.len = path_len;
 
-			if (inc.len > 0) {
-				proj_set_str(proj, pkg->strs + PKG_INC, inc);
+			if (val.len > 0) {
+				proj_set_str(proj, pkg->strs + PKG_INC, val);
 				target->type = TARGET_TYPE_LIB;
 			}
 
-			strv_t test = {0};
 			if (cfg_has_var(cfg, tbl, STRV("test"), &var)) {
-				cfg_get_str(cfg, var, &test);
-				path_push(&path, test);
+				cfg_get_str(cfg, var, &val);
+				path_push(&path, val);
 				if (!fs_isdir(fs, STRVS(path))) {
-					test.len = 0;
+					val.len = 0;
 					log_error("cbuild", "proj_cfg", NULL, "test does not exist: '%.*s'", path.len, path.data);
 					ret = 1;
 				}
 			} else {
-				test = STRV("test");
-				path_push(&path, test);
+				val = STRV("test");
+				path_push(&path, val);
 				if (!fs_isdir(fs, STRVS(path))) {
-					test.len = 0;
+					val.len = 0;
 				}
 			}
 			path.len = path_len;
 
-			if (test.len > 0) {
-				proj_set_str(proj, pkg->strs + PKG_TST, test);
+			if (val.len > 0) {
+				proj_set_str(proj, pkg->strs + PKG_TST, val);
 				target	     = proj_find_target(proj, pkg_id, STRV("test"), &target_id);
 				target->type = TARGET_TYPE_TST;
+			}
+
+			if (cfg_has_var(cfg, tbl, STRV("uri"), &var)) {
+				cfg_get_str(cfg, var, &val);
+				proj_set_uri(proj, pkg, val);
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("deps"), &var)) {
@@ -197,14 +200,13 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 				void *data;
 				cfg_foreach(cfg, var, data, &dep)
 				{
-					strv_t uri;
-					if (cfg_get_lit(cfg, dep, &uri)) {
+					if (cfg_get_lit(cfg, dep, &val)) {
 						log_error("cbuild", "proj_cfg", NULL, "invalid dependency");
 						ret = 1;
 						continue;
 					}
 
-					if (proj_add_dep_uri(proj, target_id, uri)) {
+					if (proj_add_dep_uri(proj, target_id, val)) {
 						log_error("cbuild", "proj_cfg", NULL, "failed to dependency");
 						ret = 1;
 					}
@@ -291,7 +293,7 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 					continue;
 				}
 
-				if (proj_set_ext_uri(proj, ext_pkg, uri)) {
+				if (proj_set_uri(proj, ext_pkg, uri)) {
 					ret = 1;
 					continue;
 				}
@@ -306,7 +308,7 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 						   proj_dir,
 						   STRVS(dir),
 						   name,
-						   proj_get_str(proj, ext_pkg->strs + PKG_URL),
+						   proj_get_str(proj, ext_pkg->strs + PKG_URI),
 						   buf,
 						   alloc);
 			}

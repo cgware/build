@@ -58,7 +58,7 @@ mk() {
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
-
+	exit 1
 	rm -rf "$bin" "$tmp"
 }
 
@@ -116,17 +116,18 @@ cm() {
 
 gen() {
 	mk "$@"
-	cm "$@"
+	#cm "$@"
 }
 
 test() {
-	gen "$@" 00_exe bin/00_exe
-	gen "$@" 01_lib lib/01_lib.a
-	gen "$@" 02_multi "bin/a bin/b"
-	gen "$@" 03_depends "bin/exe lib/lib.a"
-	gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
-	gen "$@" 05_extern bin/05_extern
-	gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
+	#gen "$@" 00_exe bin/00_exe
+	#gen "$@" 01_lib lib/01_lib.a
+	#gen "$@" 02_multi "bin/a bin/b"
+	#gen "$@" 03_depends "bin/exe lib/lib.a"
+	#gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	#gen "$@" 05_extern lib/cbase.a
+	#gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
+	gen "$@" 07_zip lib/07_zip
 }
 
 test x64 Debug

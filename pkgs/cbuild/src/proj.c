@@ -506,20 +506,20 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 	{
 		strv_t dir  = proj_get_str(proj, pkg->strs + PKG_DIR);
 		strv_t name = proj_get_str(proj, pkg->strs + PKG_NAME);
-		strv_t url  = proj_get_str(proj, pkg->strs + PKG_URL);
+		strv_t uri  = proj_get_str(proj, pkg->strs + PKG_URI);
 		strv_t src  = proj_get_str(proj, pkg->strs + PKG_SRC);
 		strv_t inc  = proj_get_str(proj, pkg->strs + PKG_INC);
 		dst.off += dputf(dst,
 				 "[package]\n"
 				 "NAME: %.*s\n"
-				 "URL: %.*s\n"
+				 "URI: %.*s\n"
 				 "DIR: %.*s\n"
 				 "SRC: %.*s\n"
 				 "INC: %.*s\n",
 				 name.len,
 				 name.data,
-				 url.len,
-				 url.data,
+				 uri.len,
+				 uri.data,
 				 dir.len,
 				 dir.data,
 				 src.len,

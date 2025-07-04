@@ -71,7 +71,7 @@ int proj_add_dep_uri(proj_t *proj, uint target, strv_t uri)
 	return proj_add_dep(proj, target, target_id);
 }
 
-int proj_set_ext_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
+int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 {
 	if (proj == NULL || pkg == NULL) {
 		return 1;
@@ -86,7 +86,9 @@ int proj_set_ext_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 	}
 
 	if (strv_eq(proto, STRV("git"))) {
-		pkg->proto = PKG_URL_GIT;
+		pkg->proto = PKG_URI_GIT;
+	} else if (strv_eq(proto, STRV("https"))) {
+		pkg->proto = PKG_URI_HTTPS;
 	} else {
 		log_error("cbuild", "proj", NULL, "not supported protocol: '%.*s'", proto.len, proto.data);
 		return 1;
@@ -96,5 +98,5 @@ int proj_set_ext_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 		return 1;
 	}
 
-	return proj_set_str(proj, pkg->strs + PKG_URL, url);
+	return proj_set_str(proj, pkg->strs + PKG_URI, url);
 }

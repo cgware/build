@@ -6,7 +6,7 @@
 
 typedef enum pkg_str_e {
 	PKG_NAME,
-	PKG_URL,
+	PKG_URI,
 	PKG_DIR,
 	PKG_SRC,
 	PKG_INC,
@@ -15,8 +15,9 @@ typedef enum pkg_str_e {
 } pkg_str_t;
 
 typedef enum pkg_url_proto_e {
-	PKG_URL_UNKNOWN,
-	PKG_URL_GIT,
+	PKG_URI_UNKNOWN,
+	PKG_URI_GIT,
+	PKG_URI_HTTPS,
 } pkg_url_proto_t;
 
 typedef struct pkg_s {
