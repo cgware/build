@@ -160,36 +160,48 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		}
 		case TARGET_TYPE_EXT: {
 			strv_t uri = proj_get_str(proj, pkg->strs + PKG_URI);
-			fs_write(fs,
-				 f,
-				 STRV("ExternalProject_Add(${PN}_${TN}\n"
-				      "\tURL "));
-
-			fs_write(fs, f, uri);
-			fs_write(fs,
-				 f,
-				 STRV("\n"
-				      //"URL_HASH MD5=SKIP\n"
-				      "DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/\n"
-				      "SOURCE_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/\n"
-				      "SOURCE_SUBDIR cbase-main\n"
-				      "UPDATE_COMMAND \"\"\n"
-				      "CONFIGURE_COMMAND \"\"\n"
-				      "BUILD_COMMAND "));
-
 			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
-			if (cmd.len > 0) {
-				fs_write(fs, f, cmd);
-			} else {
-				fs_write(fs, f, STRV("\"\""));
-			}
+
+			fs_write(fs, f, STRV("set(URL "));
+			fs_write(fs, f, uri);
+			fs_write(fs, f, STRV(")\n"));
+
+			fs_write(fs, f, STRV("set(ZIP_FILE ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/main.zip)\n"));
+			fs_write(fs, f, STRV("set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext)\n"));
+
+			fs_write(fs, f, STRV("set(CMD "));
+			fs_write(fs, f, cmd);
+			fs_write(fs, f, STRV(")\n"));
 
 			fs_write(fs,
 				 f,
-				 STRV("\n"
-				      "INSTALL_COMMAND \"\"\n"));
+				 STRV("add_custom_target(${PN}_${TN} ALL\n"
+				      "\tCOMMAND ${CMD}\n"
+				      "\tWORKING_DIRECTORY ${EXT_DIR}/cbase-main\n"
+				      ")\n"));
 
-			fs_write(fs, f, STRV(")\n"));
+			fs_write(fs,
+				 f,
+				 STRV("file(DOWNLOAD ${URL} ${ZIP_FILE}\n"
+				      "\tSHOW_PROGRESS\n"
+				      ")\n"));
+
+			fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${EXT_DIR}\")\n"));
+
+			fs_write(fs,
+				 f,
+				 STRV("execute_process(\n"
+				      "\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${ZIP_FILE}\n"
+				      "\tWORKING_DIRECTORY ${EXT_DIR}\n"
+				      ")\n"));
+
+			fs_write(fs,
+				 f,
+				 STRV("add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+				      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/x64-Debug/ext/07_zip\n"
+				      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}/cbase-main/bin/x64-Debug/libs/cbase.a "
+				      "${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/x64-Debug/ext/07_zip/\n"
+				      ")\n"));
 			break;
 		}
 		case TARGET_TYPE_TST: {
@@ -326,9 +338,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		types[target->type] = 1;
 	}
 
-	if (types[TARGET_TYPE_EXT]) {
-		fs_write(drv->fs, f, STRV("include(ExternalProject)\n"));
-	}
+	(void)types;
 
 	i = 0;
 	const pkg_t *pkg;
