@@ -1,0 +1,13 @@
+# Target labels
+ 07_zip_07_zip
+# Source files and their labels
+/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/07_zip_07_zip
+/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/07_zip_07_zip.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/07_zip_07_zip-complete.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-build.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-configure.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-download.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-install.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-mkdir.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-patch.rule
+/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-update.rule

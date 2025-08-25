@@ -7,6 +7,8 @@
 typedef enum pkg_str_e {
 	PKG_NAME,
 	PKG_URI,
+	PKG_URI_FILE,
+	PKG_URI_ROOT,
 	PKG_DIR,
 	PKG_SRC,
 	PKG_INC,
@@ -14,15 +16,27 @@ typedef enum pkg_str_e {
 	__PKG_STR_CNT,
 } pkg_str_t;
 
-typedef enum pkg_url_proto_e {
-	PKG_URI_UNKNOWN,
-	PKG_URI_GIT,
-	PKG_URI_HTTPS,
-} pkg_url_proto_t;
+typedef enum pkg_uri_proto_e {
+	PKG_URI_PROTO_UNKNOWN,
+	PKG_URI_PROTO_GIT,
+	PKG_URI_PROTO_HTTPS,
+	__PKG_URI_PROTO_MAX,
+} pkg_uri_proto_t;
+
+typedef enum pkg_uri_ext_e {
+	PKG_URI_EXT_NONE,
+	PKG_URI_EXT_ZIP,
+	__PKG_URI_EXT_MAX,
+} pkg_uri_ext_t;
+
+typedef struct pkg_uri_s {
+	pkg_uri_proto_t proto;
+	pkg_uri_ext_t ext;
+} pkg_uri_t;
 
 typedef struct pkg_s {
 	uint strs;
-	pkg_url_proto_t proto;
+	pkg_uri_t uri;
 	byte inited : 1;
 } pkg_t;
 
@@ -30,6 +44,7 @@ typedef enum target_type_s {
 	TARGET_TYPE_UNKNOWN,
 	TARGET_TYPE_EXE,
 	TARGET_TYPE_LIB,
+	TARGET_TYPE_EXT,
 	TARGET_TYPE_TST,
 	__TARGET_TYPE_MAX,
 } target_type_t;
@@ -37,6 +52,8 @@ typedef enum target_type_s {
 typedef enum target_str_e {
 	TARGET_NAME,
 	TARGET_FILE,
+	TARGET_CMD,
+	TARGET_OUT,
 	__TARGET_STR_CNT,
 } target_str_t;
 

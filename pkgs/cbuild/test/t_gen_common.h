@@ -21,6 +21,7 @@ int t_gen_pkg_lib_test(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_multi(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_depends(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_rdepends(t_gen_common_t *com, strv_t p);
+int t_gen_pkg_zip(t_gen_common_t *com, strv_t p);
 
 void t_gen_free(t_gen_common_t *com);
 

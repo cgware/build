@@ -50,6 +50,10 @@ TEST(gen_make_proj_build_dir)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "\n"
 		    "OUTDIR := \n"
 		    "INTDIR := $(OUTDIR)int\n"
 		    "LIBDIR := $(OUTDIR)lib\n"
@@ -136,6 +140,10 @@ TEST(gen_make_proj_empty)
 		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
 		    "LDFLAGS :=\n"
 		    "endif\n"
+		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "\n"
 		    "OUTDIR := \n"
 		    "INTDIR := $(OUTDIR)int\n"
@@ -224,6 +232,10 @@ TEST(gen_make_proj_name)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "\n"
 		    "OUTDIR := \n"
 		    "INTDIR := $(OUTDIR)int\n"
 		    "LIBDIR := $(OUTDIR)lib\n"
@@ -310,6 +322,10 @@ TEST(gen_make_proj_unknown)
 		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
 		    "LDFLAGS :=\n"
 		    "endif\n"
+		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "\n"
 		    "OUTDIR := \n"
 		    "INTDIR := $(OUTDIR)int\n"
@@ -412,6 +428,10 @@ TEST(gen_make_proj_exe)
 		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
 		    "LDFLAGS :=\n"
 		    "endif\n"
+		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "\n"
 		    "OUTDIR := \n"
 		    "INTDIR := $(OUTDIR)int\n"
@@ -533,6 +553,10 @@ TEST(gen_make_proj_lib)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "\n"
 		    "OUTDIR := \n"
 		    "INTDIR := $(OUTDIR)int\n"
 		    "LIBDIR := $(OUTDIR)lib\n"
@@ -650,6 +674,10 @@ TEST(gen_make_proj_test)
 		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
 		    "LDFLAGS :=\n"
 		    "endif\n"
+		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "\n"
 		    "OUTDIR := \n"
 		    "INTDIR := $(OUTDIR)int\n"
@@ -952,6 +980,32 @@ TEST(gen_make_pkg_rdepends)
 	END;
 }
 
+TEST(gen_make_pkg_zip)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_zip(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := pkg\n"
+		    "$(PN).DIR :=\n"
+		    "$(PN).URI := https:repo.zip\n"
+		    "TN := pkg\n"
+		    "$(PN).$(TN).HEADERS := $(PKGINC_H)\n"
+		    "$(PN).$(TN).INCLUDES := $(PKGDIR)include\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 STEST(gen_make)
 {
 	SSTART;
@@ -970,6 +1024,7 @@ STEST(gen_make)
 	RUN(gen_make_pkg_multi);
 	RUN(gen_make_pkg_depends);
 	RUN(gen_make_pkg_rdepends);
+	RUN(gen_make_pkg_zip);
 
 	SEND;
 }

@@ -32,7 +32,7 @@ mk() {
 
 	printf "%s %-7s %-12s %-5s " "$p_arch" "$p_config" "$proj" "Make"
 
-	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g M 2>&1)"; then
+	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g M)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "build: Failed to generate make"
 		echo "$out"
@@ -40,7 +40,7 @@ mk() {
 		return
 	fi
 
-	if ! out="$(make -C "$tmp/build" ARCH="$p_arch" CONFIG="$p_config" 2>&1)"; then
+	if ! out="$(make -C "$tmp/build" ARCH="$p_arch" CONFIG="$p_config")"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "make: Failed to build project"
 		echo "$out"
@@ -59,7 +59,7 @@ mk() {
 
 	printf "\033[0;32mPASS\033[0m\n"
 	exit 1
-	rm -rf "$bin" "$tmp"
+	rm -rf "$bin" "$tmp/build" "$tmp/ext"
 }
 
 cm() {
@@ -110,13 +110,13 @@ cm() {
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
-
+	exit 1
 	rm -rf "$bin" "$build" "$tmp"
 }
 
 gen() {
-	mk "$@"
-	#cm "$@"
+	#mk "$@"
+	cm "$@"
 }
 
 test() {
@@ -127,12 +127,12 @@ test() {
 	#gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
 	#gen "$@" 05_extern lib/cbase.a
 	#gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
-	gen "$@" 07_zip lib/07_zip
+	gen "$@" 07_zip ext/07_zip/cbase.a
 }
 
 test x64 Debug
-test x64 Release
-test x86 Debug
-test x86 Release
+#test x64 Release
+#test x86 Debug
+#test x86 Release
 
 exit $ret

@@ -58,8 +58,10 @@ pkg_t *proj_add_pkg(proj_t *proj, strv_t name, uint *id)
 		}
 	}
 
-	pkg->strs   = strs_cnt;
-	pkg->inited = 0;
+	pkg->strs      = strs_cnt;
+	pkg->uri.proto = PKG_URI_PROTO_UNKNOWN;
+	pkg->uri.ext   = PKG_URI_EXT_NONE;
+	pkg->inited    = 0;
 	proj_set_str(proj, pkg->strs + PKG_NAME, name);
 
 	return pkg;
@@ -480,6 +482,7 @@ static const char *target_type_str[] = {
 	[TARGET_TYPE_UNKNOWN] = "UNKNOWN",
 	[TARGET_TYPE_EXE]     = "EXE",
 	[TARGET_TYPE_LIB]     = "LIB",
+	[TARGET_TYPE_EXT]     = "EXT",
 };
 
 size_t proj_print(const proj_t *proj, dst_t dst)

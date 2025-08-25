@@ -1096,7 +1096,7 @@ TEST(proj_cfg_ext_uri)
 	cfg_root(&cfg, &root);
 	cfg_tbl(&cfg, STRV("ext"), &ext);
 	cfg_add_var(&cfg, root, ext);
-	cfg_str(&cfg, STRV("pkg"), STRV("git:repo"), &var);
+	cfg_str(&cfg, STRV("pkg"), STRV("https:repo.git"), &var);
 	cfg_add_var(&cfg, ext, var);
 
 	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 0);
@@ -1119,6 +1119,37 @@ STEST(proj_cfg_ext)
 	SEND;
 }
 
+TEST(proj_cfg_zip)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, cpkg, var;
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
+	cfg_add_var(&cfg, root, cpkg);
+	cfg_lit(&cfg, STRV("name"), STRV("pkg"), &var);
+	cfg_add_var(&cfg, cpkg, var);
+	cfg_str(&cfg, STRV("uri"), STRV("https:repo.zip"), &var);
+	cfg_add_var(&cfg, cpkg, var);
+
+	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 0);
+
+	pkg_t *pkg = proj_get_pkg(&proj, 0);
+	strv_t uri = proj_get_str(&proj, pkg->strs + PKG_URI);
+	EXPECT_STRN(uri.data, "https:repo.zip", uri.len);
+
+	cfg_free(&cfg);
+	proj_free(&proj);
+
+	END;
+}
+
 STEST(proj_cfg)
 {
 	SSTART;
@@ -1132,6 +1163,7 @@ STEST(proj_cfg)
 	RUN(proj_cfg_pkg);
 	RUN(proj_cfg_target);
 	RUN(proj_cfg_ext);
+	RUN(proj_cfg_zip);
 
 	SEND;
 }

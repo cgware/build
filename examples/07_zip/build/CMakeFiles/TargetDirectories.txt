@@ -1,0 +1,3 @@
+/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/07_zip_07_zip.dir
+/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/edit_cache.dir
+/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/rebuild_cache.dir

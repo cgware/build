@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/07_zip_07_zip"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/07_zip_07_zip.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/CMakeFiles/07_zip_07_zip-complete.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-build.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-configure.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-download.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-install.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-mkdir.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-patch.rule"
+		},
+		{
+			"file" : "/home/martynas/Documents/cgware/build/examples/07_zip/build/07_zip_07_zip-prefix/src/07_zip_07_zip-stamp/07_zip_07_zip-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"07_zip_07_zip"
+		],
+		"name" : "07_zip_07_zip"
+	}
+}

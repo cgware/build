@@ -4,6 +4,8 @@
 #include "proj_fs.h"
 #include "proj_utils.h"
 
+#include <stdio.h>
+
 int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_dir, strv_t pkg_name, str_t *buf,
 	     alloc_t alloc)
 {
@@ -195,6 +197,11 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 				proj_set_uri(proj, pkg, val);
 			}
 
+			if (cfg_has_var(cfg, tbl, STRV("uriroot"), &var)) {
+				cfg_get_str(cfg, var, &val);
+				proj_set_str(proj, pkg->strs + PKG_URI_ROOT, val);
+			}
+
 			if (cfg_has_var(cfg, tbl, STRV("deps"), &var)) {
 				cfg_var_t dep;
 				void *data;
@@ -260,6 +267,8 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 					target->type = TARGET_TYPE_EXE;
 				} else if (strv_eq(type, STRV("LIB"))) {
 					target->type = TARGET_TYPE_LIB;
+				} else if (strv_eq(type, STRV("EXT"))) {
+					target->type = TARGET_TYPE_EXT;
 				} else {
 					log_error("cbuild",
 						  "proj_cfg",
@@ -271,6 +280,23 @@ int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, s
 						  type.data);
 					ret = 1;
 				}
+			} else {
+				if (proj_get_str(proj, pkg->strs + PKG_URI).len > 0) {
+					printf("TARGET_TYPE=EXT\n");
+					target->type = TARGET_TYPE_EXT;
+				}
+			}
+
+			if (cfg_has_var(cfg, tbl, STRV("cmd"), &var)) {
+				strv_t cmd = {0};
+				cfg_get_str(cfg, var, &cmd);
+				proj_set_str(proj, target->strs + TARGET_CMD, cmd);
+			}
+
+			if (cfg_has_var(cfg, tbl, STRV("out"), &var)) {
+				strv_t out = {0};
+				cfg_get_str(cfg, var, &out);
+				proj_set_str(proj, target->strs + TARGET_OUT, out);
 			}
 
 			target->inited = 1;

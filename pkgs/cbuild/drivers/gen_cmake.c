@@ -158,6 +158,40 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			fs_write(fs, f, STRV(")\n"));
 			break;
 		}
+		case TARGET_TYPE_EXT: {
+			strv_t uri = proj_get_str(proj, pkg->strs + PKG_URI);
+			fs_write(fs,
+				 f,
+				 STRV("ExternalProject_Add(${PN}_${TN}\n"
+				      "\tURL "));
+
+			fs_write(fs, f, uri);
+			fs_write(fs,
+				 f,
+				 STRV("\n"
+				      //"URL_HASH MD5=SKIP\n"
+				      "DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/\n"
+				      "SOURCE_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/\n"
+				      "SOURCE_SUBDIR cbase-main\n"
+				      "UPDATE_COMMAND \"\"\n"
+				      "CONFIGURE_COMMAND \"\"\n"
+				      "BUILD_COMMAND "));
+
+			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
+			if (cmd.len > 0) {
+				fs_write(fs, f, cmd);
+			} else {
+				fs_write(fs, f, STRV("\"\""));
+			}
+
+			fs_write(fs,
+				 f,
+				 STRV("\n"
+				      "INSTALL_COMMAND \"\"\n"));
+
+			fs_write(fs, f, STRV(")\n"));
+			break;
+		}
 		case TARGET_TYPE_TST: {
 			fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
@@ -283,7 +317,20 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("\")\n\n"));
 
+	int types[__TARGET_TYPE_MAX] = {0};
+
 	uint i = 0;
+	const target_t *target;
+	arr_foreach(&proj->targets, i, target)
+	{
+		types[target->type] = 1;
+	}
+
+	if (types[TARGET_TYPE_EXT]) {
+		fs_write(drv->fs, f, STRV("include(ExternalProject)\n"));
+	}
+
+	i = 0;
 	const pkg_t *pkg;
 	arr_foreach(&proj->pkgs, i, pkg)
 	{
