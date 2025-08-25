@@ -3,6 +3,13 @@
 #include "log.h"
 #include "var.h"
 
+static void resolve_var(strv_t var, const strv_t *values, str_t *buf)
+{
+	buf->len = 0;
+	str_cat(buf, var);
+	var_replace(buf, values);
+}
+
 static void resolve_dir(const proj_t *proj, strv_t *values, target_type_t type, str_t *buf, path_t *resolved)
 {
 	buf->len = 0;
@@ -68,6 +75,11 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		fs_write(fs, f, dir);
 	}
 	fs_write(fs, f, STRV("\")\n"));
+
+	strv_t svalues[__VAR_CNT] = {
+		[VAR_ARCH]   = STRVT("${ARCH}"),
+		[VAR_CONFIG] = STRVT("${CONFIG}"),
+	};
 
 	uint i = 0;
 	const target_t *target;
@@ -160,24 +172,40 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		}
 		case TARGET_TYPE_EXT: {
 			strv_t uri = proj_get_str(proj, pkg->strs + PKG_URI);
-			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
 
 			fs_write(fs, f, STRV("set(URL "));
 			fs_write(fs, f, uri);
 			fs_write(fs, f, STRV(")\n"));
 
 			fs_write(fs, f, STRV("set(ZIP_FILE ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/main.zip)\n"));
-			fs_write(fs, f, STRV("set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext)\n"));
+			fs_write(fs, f, STRV("set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/)\n"));
 
+			strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_ROOT);
+			if (uri_root.len > 0) {
+				fs_write(fs, f, STRV("set(URI_ROOT "));
+				fs_write(fs, f, uri_root);
+				fs_write(fs, f, STRV(")\n"));
+			}
+
+			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+			resolve_var(out, svalues, &buf);
+			if (out.len > 0) {
+				fs_write(fs, f, STRV("set(OUT "));
+				fs_write(fs, f, STRVS(buf));
+				fs_write(fs, f, STRV(")\n"));
+			}
+
+			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
+			resolve_var(cmd, svalues, &buf);
 			fs_write(fs, f, STRV("set(CMD "));
-			fs_write(fs, f, cmd);
+			fs_write(fs, f, STRVS(buf));
 			fs_write(fs, f, STRV(")\n"));
 
 			fs_write(fs,
 				 f,
 				 STRV("add_custom_target(${PN}_${TN} ALL\n"
 				      "\tCOMMAND ${CMD}\n"
-				      "\tWORKING_DIRECTORY ${EXT_DIR}/cbase-main\n"
+				      "\tWORKING_DIRECTORY ${EXT_DIR}${URI_ROOT}\n"
 				      ")\n"));
 
 			fs_write(fs,
@@ -195,13 +223,14 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				      "\tWORKING_DIRECTORY ${EXT_DIR}\n"
 				      ")\n"));
 
-			fs_write(fs,
-				 f,
-				 STRV("add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
-				      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/x64-Debug/ext/07_zip\n"
-				      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}/cbase-main/bin/x64-Debug/libs/cbase.a "
-				      "${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/x64-Debug/ext/07_zip/\n"
-				      ")\n"));
+			fs_write(
+				fs,
+				f,
+				STRV("add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+				     "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/x64-Debug/ext/07_zip\n"
+				     "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}${URI_ROOT}${OUT} "
+				     "${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/x64-Debug/ext/07_zip/\n"
+				     ")\n"));
 			break;
 		}
 		case TARGET_TYPE_TST: {
@@ -327,7 +356,9 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		fs_write(drv->fs, f, STRVS(rel));
 	}
 
-	fs_write(drv->fs, f, STRV("\")\n\n"));
+	fs_write(drv->fs, f, STRV("\")\n"));
+
+	fs_write(drv->fs, f, STRV("set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n\n"));
 
 	int types[__TARGET_TYPE_MAX] = {0};
 

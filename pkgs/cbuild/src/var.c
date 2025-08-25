@@ -44,6 +44,10 @@ int var_replace(str_t *str, const strv_t *values)
 			continue;
 		}
 
+		if (strv_eq(STRVN(&str->data[s], e + 1 - s), values[v])) {
+			continue;
+		}
+
 		if (str_subreplace(str, s, e + 1, values[v])) {
 			log_error("build",
 				  "var",

@@ -10,6 +10,13 @@ typedef struct defines_s {
 	make_act_t def;
 } defines_t;
 
+static void resolve_var(strv_t var, const strv_t *values, str_t *buf)
+{
+	buf->len = 0;
+	str_cat(buf, var);
+	var_replace(buf, values);
+}
+
 static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act_t inc, const defines_t *protos_defs,
 		   const defines_t *exts_defs, const defines_t *defines, arr_t *deps, str_t *buf, strv_t build_dir)
 
@@ -63,6 +70,11 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 		make_eval_def(make, exts_defs[pkg->uri.ext].def, &act);
 		make_inc_add_act(make, inc, act);
 	}
+
+	strv_t svalues[__VAR_CNT] = {
+		[VAR_ARCH]   = STRVT("$(ARCH)"),
+		[VAR_CONFIG] = STRVT("$(CONFIG)"),
+	};
 
 	uint i = 0;
 	const target_t *target;
@@ -122,6 +134,24 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 			}
 
 			make_var(make, STRV("$(PN).$(TN).DRIVERS"), MAKE_VAR_INST, &act);
+			make_inc_add_act(make, inc, act);
+			break;
+		}
+		case TARGET_TYPE_EXT: {
+			make_var(make, STRV("$(PN).$(TN).CMD"), MAKE_VAR_INST, &act);
+			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
+			resolve_var(cmd, svalues, buf);
+			if (buf->len > 0) {
+				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			}
+			make_inc_add_act(make, inc, act);
+
+			make_var(make, STRV("$(PN).$(TN).OUT"), MAKE_VAR_INST, &act);
+			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+			resolve_var(out, svalues, buf);
+			if (buf->len > 0) {
+				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			}
 			make_inc_add_act(make, inc, act);
 			break;
 		}
@@ -682,24 +712,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
-		strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
-		if (cmd.len > 0) {
-			buf.len = 0;
-			str_cat(&buf, STRV("cd $(PKGEXTDIR)$(PKGDLROOT) && "));
-			str_cat(&buf, cmd);
-			make_cmd(&make, MCMD(STRVS(buf)), &act);
-			make_rule_add_act(&make, def_rule_target, act);
-		}
+		make_cmd(&make, MCMD(STRV("cd $(PKGEXTDIR)$(PKGDLROOT) && $($(PN).$(TN).CMD)")), &act);
+		make_rule_add_act(&make, def_rule_target, act);
 
-		strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-		if (out.len > 0) {
-			buf.len = 0;
-			str_cat(&buf, STRV("cp "));
-			str_cat(&buf, out);
-			str_cat(&buf, STRV(" $(EXTOUTDIR)$(PN)"));
-			make_cmd(&make, MCMD(STRVS(buf)), &act);
-			make_rule_add_act(&make, def_rule_target, act);
-		}
+		make_cmd(&make, MCMD(STRV("cp $(PKGEXTDIR)$(PKGDLROOT)$($(PN).$(TN).OUT) $(EXTOUTDIR)$(PN)")), &act);
+		make_rule_add_act(&make, def_rule_target, act);
 
 		make_cmd(&make, MCMD(STRV("touch $$@")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
@@ -821,7 +838,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_empty(&make, &act);
 		make_add_act(&make, root, act);
-
 		str_free(&buf2);
 	}
 
