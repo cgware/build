@@ -73,16 +73,7 @@ cm() {
 	build="$dir/build"
 
 	printf "%s %-7s %-12s %-5s " "$p_arch" "$p_config" "$proj" "CMake"
-
-	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g C 2>&1)"; then
-		printf "\033[0;31mFAIL\033[0m\n"
-		echo "build: Failed to generate cmake"
-		echo "$out"
-		ret=1
-		return
-	fi
-
-	echo "$out"
+	./bin/"$arch"-"$config"/exes/build -p "$dir" -g C
 
 	if ! out="$(cmake -S "$tmp/build" -B "$build" -G "Unix Makefiles" -DARCH="$p_arch" -DCMAKE_BUILD_TYPE="$p_config" 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
@@ -106,6 +97,7 @@ cm() {
 			printf "\033[0;31mFAIL\033[0m\n"
 			echo "Target not found: $path"
 			ret=1
+			rm -rf "$bin" "$build" "$tmp"
 			return
 		fi
 	done
@@ -127,7 +119,7 @@ test() {
 	#gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
 	gen "$@" 05_extern lib/cbase.a
 	#gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
-	#gen "$@" 07_zip ext/07_zip/cbase.a
+	gen "$@" 07_zip ext/07_zip/cbase.a
 }
 
 test x64 Debug

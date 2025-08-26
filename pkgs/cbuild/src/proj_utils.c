@@ -1,7 +1,7 @@
 #include "proj_utils.h"
 
 #include "log.h"
-
+/*
 pkg_t *proj_add_pkg_target(proj_t *proj, strv_t name, uint *pkg_id, uint *target_id)
 {
 	if (proj == NULL) {
@@ -35,8 +35,8 @@ pkg_t *proj_add_pkg_target(proj_t *proj, strv_t name, uint *pkg_id, uint *target
 	pkg_id ? *pkg_id = pid : (uint)0;
 
 	return pkg;
-}
-
+}*/
+/*
 int proj_add_dep_uri(proj_t *proj, uint target, strv_t uri)
 {
 	if (proj == NULL || proj_get_target(proj, target) == NULL) {
@@ -69,7 +69,7 @@ int proj_add_dep_uri(proj_t *proj, uint target, strv_t uri)
 	}
 
 	return proj_add_dep(proj, target, target_id);
-}
+}*/
 
 int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 {

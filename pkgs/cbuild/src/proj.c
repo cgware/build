@@ -33,7 +33,7 @@ void proj_free(proj_t *proj)
 	arr_free(&proj->deps);
 }
 
-pkg_t *proj_add_pkg(proj_t *proj, strv_t name, uint *id)
+pkg_t *proj_add_pkg(proj_t *proj, uint *id)
 {
 	if (proj == NULL) {
 		return NULL;
@@ -62,7 +62,6 @@ pkg_t *proj_add_pkg(proj_t *proj, strv_t name, uint *id)
 	pkg->uri.proto = PKG_URI_PROTO_UNKNOWN;
 	pkg->uri.ext   = PKG_URI_EXT_NONE;
 	pkg->inited    = 0;
-	proj_set_str(proj, pkg->strs + PKG_NAME, name);
 
 	return pkg;
 }
@@ -101,7 +100,7 @@ pkg_t *proj_find_pkg(const proj_t *proj, strv_t name, uint *id)
 	return NULL;
 }
 
-target_t *proj_add_target(proj_t *proj, uint pkg, strv_t name, uint *id)
+target_t *proj_add_target(proj_t *proj, uint pkg, uint *id)
 {
 	if (proj == NULL) {
 		return NULL;
@@ -136,7 +135,6 @@ target_t *proj_add_target(proj_t *proj, uint pkg, strv_t name, uint *id)
 	target->type   = TARGET_TYPE_UNKNOWN;
 	target->strs   = strs_cnt;
 	target->inited = 0;
-	proj_set_str(proj, target->strs + TARGET_NAME, name);
 
 	id ? *id = tmp : (uint)0;
 
@@ -507,15 +505,19 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 	const pkg_t *pkg;
 	arr_foreach(&proj->pkgs, i, pkg)
 	{
-		strv_t dir  = proj_get_str(proj, pkg->strs + PKG_DIR);
-		strv_t name = proj_get_str(proj, pkg->strs + PKG_NAME);
-		strv_t uri  = proj_get_str(proj, pkg->strs + PKG_URI);
-		strv_t src  = proj_get_str(proj, pkg->strs + PKG_SRC);
-		strv_t inc  = proj_get_str(proj, pkg->strs + PKG_INC);
+		strv_t dir	= proj_get_str(proj, pkg->strs + PKG_DIR);
+		strv_t name	= proj_get_str(proj, pkg->strs + PKG_NAME);
+		strv_t uri	= proj_get_str(proj, pkg->strs + PKG_URI);
+		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_FILE);
+		strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_ROOT);
+		strv_t src	= proj_get_str(proj, pkg->strs + PKG_SRC);
+		strv_t inc	= proj_get_str(proj, pkg->strs + PKG_INC);
 		dst.off += dputf(dst,
 				 "[package]\n"
 				 "NAME: %.*s\n"
 				 "URI: %.*s\n"
+				 "URI_FILE: %.*s\n"
+				 "URI_ROOT: %.*s\n"
 				 "DIR: %.*s\n"
 				 "SRC: %.*s\n"
 				 "INC: %.*s\n",
@@ -523,6 +525,10 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 				 name.data,
 				 uri.len,
 				 uri.data,
+				 uri_file.len,
+				 uri_file.data,
+				 uri_root.len,
+				 uri_root.data,
 				 dir.len,
 				 dir.data,
 				 src.len,
