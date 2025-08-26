@@ -52,12 +52,17 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 		make_var_add_val(make, act, MSTR(uri));
 		make_inc_add_act(make, inc, act);
 
-		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_FILE);
+		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_NAME);
+		buf->len	= 0;
+		str_cat(buf, uri_file);
+		if (pkg->uri.ext == PKG_URI_EXT_ZIP) {
+			str_cat(buf, STRV(".zip"));
+		}
 		make_var(make, STRV("$(PN).DLFILE"), MAKE_VAR_INST, &act);
 		make_var_add_val(make, act, MSTR(uri_file));
 		make_inc_add_act(make, inc, act);
 
-		strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_ROOT);
+		strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
 		if (uri_root.len > 0) {
 			make_var(make, STRV("$(PN).DLROOT"), MAKE_VAR_INST, &act);
 			make_var_add_val(make, act, MSTR(uri_root));

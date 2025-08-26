@@ -27,7 +27,7 @@ static int create_tmp(fs_t *fs, strv_t dir)
 	return 0;
 }
 
-int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint *pkg_id, str_t *buf, alloc_t alloc);
+int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_dir, strv_t pkg_name, str_t *buf, alloc_t alloc);
 
 int proj_fs(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_dir, strv_t pkg_name, str_t *buf, alloc_t alloc)
 {
@@ -42,10 +42,10 @@ int proj_fs(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_di
 	proj->name = pkg_name;
 	path_init(&proj->outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
-	return proj_fs_child_ng(proj, fs, proc, proj_dir, NULL, buf, alloc);
+	return proj_fs_child_ng(proj, fs, proc, proj_dir, STRV_NULL, pkg_name, buf, alloc);
 }
 
-int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint *pkg_id, str_t *buf, alloc_t alloc)
+int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_dir, strv_t pkg_name, str_t *buf, alloc_t alloc)
 {
 	if (proj == NULL) {
 		return 1;
@@ -55,10 +55,7 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint
 
 	path_t path = {0};
 	path_init(&path, proj_dir);
-	pkg_t *pkg = pkg_id ? proj_get_pkg(proj, *pkg_id) : NULL;
-	if (pkg) {
-		path_push(&path, proj_get_str(proj, pkg->strs + PKG_DIR));
-	}
+	path_push(&path, pkg_dir);
 	size_t path_len = path.len;
 
 	cfg_t scfg = {0};
@@ -78,7 +75,8 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint
 		cfg_var_t var;
 		strv_t val = {0};
 
-		cfg_print(cfg, root, DST_STD());
+		pkg_t *pkg;
+		uint pkg_id;
 
 		void *data;
 		cfg_var_t tbl;
@@ -86,16 +84,34 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint
 		{
 			strv_t key = cfg_get_key(cfg, tbl);
 			if (strv_eq(key, STRV("pkg"))) {
-				if (pkg == NULL) {
-					pkg = proj_add_pkg(proj, NULL);
-				}
+				pkg = proj_add_pkg(proj, &pkg_id);
+				proj_set_str(proj, pkg->strs + PKG_DIR, pkg_dir);
 				if (cfg_has_var(cfg, tbl, STRV("uri"), &var)) {
 					cfg_get_str(cfg, var, &val);
 					proj_set_uri(proj, pkg, val);
 				}
-				if (cfg_has_var(cfg, tbl, STRV("uriroot"), &var)) {
-					cfg_get_str(cfg, var, &val);
-					proj_set_str(proj, pkg->strs + PKG_URI_ROOT, val);
+			} else if (strv_eq(key, STRV("target"))) {
+				if (pkg == NULL) {
+					log_error("cbuild", "pkg_loader", NULL, "package is required");
+					continue;
+				}
+
+				target_t *target = proj_add_target(proj, pkg_id, NULL);
+
+				if (proj_get_str(proj, pkg->strs + PKG_URI).len > 0) {
+					target->type = TARGET_TYPE_EXT;
+				}
+
+				if (cfg_has_var(cfg, tbl, STRV("cmd"), &var)) {
+					strv_t cmd = {0};
+					cfg_get_str(cfg, var, &cmd);
+					proj_set_str(proj, target->strs + TARGET_CMD, cmd);
+				}
+
+				if (cfg_has_var(cfg, tbl, STRV("out"), &var)) {
+					strv_t out = {0};
+					cfg_get_str(cfg, var, &out);
+					proj_set_str(proj, target->strs + TARGET_OUT, out);
 				}
 			} else if (strv_eq(key, STRV("ext"))) {
 				void *data;
@@ -109,12 +125,12 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint
 						continue;
 					}
 
-					uint ext_pkg_id;
-					pkg_t *ext_pkg = proj_add_pkg(proj, &ext_pkg_id);
+					strv_t file = {0};
+					strv_t name = {0};
 
-					if (proj_set_uri(proj, ext_pkg, uri)) {
-						ret = 1;
-						continue;
+					if (strv_rsplit(uri, '/', NULL, &file) || strv_lsplit(file, '.', &name, NULL)) {
+						log_error("cbuild", "proj", NULL, "failed to parse uri: '%.*s'", uri.len, uri.data);
+						return 1;
 					}
 
 					create_tmp(fs, proj_dir);
@@ -122,10 +138,8 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint
 					path_t dir = {0};
 					path_init(&dir, STRV("tmp"));
 					path_push(&dir, STRV("ext"));
-					path_push(&dir, STRV("IDK"));
+					path_push(&dir, name);
 					path_push(&dir, STRV(""));
-
-					proj_set_str(proj, ext_pkg->strs + PKG_DIR, STRVS(dir));
 
 					path_t path = {0};
 					path_init(&path, proj_dir);
@@ -157,19 +171,26 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint
 						}
 					}
 
-					proj_fs_child_ng(proj, fs, proc, proj_dir, &ext_pkg_id, buf, alloc);
+					proj_fs_child_ng(proj, fs, proc, proj_dir, STRVS(dir), name, buf, alloc);
 				}
 			}
 		}
 		cfg_free(&scfg);
 	} else {
+		pkg_t *pkg = NULL;
+		uint pkg_id;
 		target_t *target = NULL;
 		path.len	 = path_len;
 		path_push(&path, STRV("src"));
 		if (fs_isdir(fs, STRVS(path))) {
+			if (pkg == NULL) {
+				pkg = proj_add_pkg(proj, &pkg_id);
+				proj_set_str(proj, pkg->strs + PKG_NAME, pkg_name);
+				proj_set_str(proj, pkg->strs + PKG_DIR, pkg_dir);
+			}
 			proj_set_str(proj, pkg->strs + PKG_SRC, STRV("src"));
 			if (target == NULL) {
-				target = proj_add_target(proj, *pkg_id, NULL);
+				target = proj_add_target(proj, pkg_id, NULL);
 			}
 			target->type = TARGET_TYPE_EXE;
 		}
@@ -177,9 +198,14 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, uint
 		path.len = path_len;
 		path_push(&path, STRV("include"));
 		if (fs_isdir(fs, STRVS(path))) {
+			if (pkg == NULL) {
+				pkg = proj_add_pkg(proj, &pkg_id);
+				proj_set_str(proj, pkg->strs + PKG_NAME, pkg_name);
+				proj_set_str(proj, pkg->strs + PKG_DIR, pkg_dir);
+			}
 			proj_set_str(proj, pkg->strs + PKG_INC, STRV("include"));
 			if (target == NULL) {
-				target = proj_add_target(proj, *pkg_id, NULL);
+				target = proj_add_target(proj, pkg_id, NULL);
 			}
 			target->type = TARGET_TYPE_LIB;
 		}

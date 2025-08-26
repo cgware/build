@@ -180,10 +180,10 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			fs_write(fs, f, STRV("set(ZIP_FILE ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/main.zip)\n"));
 			fs_write(fs, f, STRV("set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/)\n"));
 
-			strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_ROOT);
-			if (uri_root.len > 0) {
+			strv_t uri_dir = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
+			if (uri_dir.len > 0) {
 				fs_write(fs, f, STRV("set(URI_ROOT "));
-				fs_write(fs, f, uri_root);
+				fs_write(fs, f, uri_dir);
 				fs_write(fs, f, STRV(")\n"));
 			}
 

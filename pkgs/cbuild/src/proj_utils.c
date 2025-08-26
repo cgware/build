@@ -1,6 +1,7 @@
 #include "proj_utils.h"
 
 #include "log.h"
+
 /*
 pkg_t *proj_add_pkg_target(proj_t *proj, strv_t name, uint *pkg_id, uint *target_id)
 {
@@ -78,12 +79,53 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 	}
 
 	strv_t proto = {0};
+	strv_t host  = {0};
+	strv_t path  = {0};
 	strv_t file  = {0};
+	strv_t name  = {0};
 	strv_t ext   = {0};
 
-	if (strv_lsplit(uri, ':', &proto, NULL) || strv_rsplit(uri, '/', NULL, &file) || strv_lsplit(file, '.', NULL, &ext)) {
-		log_error("cbuild", "proj", NULL, "failed to resolve dependency: '%.*s'", uri.len, uri.data);
+	if (strv_lsplit(uri, ':', &proto, &host) || strv_rsplit(uri, '/', &path, &file) || strv_lsplit(file, '.', &name, &ext)) {
+		log_error("cbuild", "proj", NULL, "failed to resolve uri: '%.*s'", uri.len, uri.data);
 		return 1;
+	}
+
+	if (strv_cmpn(host, STRV("//github.com"), 12) == 0) {
+		strv_t repo    = {0};
+		strv_t archive = {0};
+		strv_t refs    = {0};
+		strv_t cat     = {0};
+
+		if (strv_rsplit(path, '/', &path, &cat)) {
+			log_error("cbuild", "proj", NULL, "failed to resolve uri cat: '%.*s'", uri.len, uri.data);
+			return 1;
+		}
+
+		if (strv_rsplit(path, '/', &path, &refs) || !strv_eq(refs, STRV("refs"))) {
+			log_error("cbuild", "proj", NULL, "failed to resolve uri refs: '%.*s'", uri.len, uri.data);
+			return 1;
+		}
+
+		if (strv_rsplit(path, '/', &path, &archive) || !strv_eq(archive, STRV("archive"))) {
+			log_error("cbuild", "proj", NULL, "failed to resolve uri archive: '%.*s'", uri.len, uri.data);
+			return 1;
+		}
+
+		if (strv_rsplit(path, '/', &path, &repo)) {
+			log_error("cbuild", "proj", NULL, "failed to resolve uri archive: '%.*s'", uri.len, uri.data);
+			return 1;
+		}
+
+		proj_set_str(proj, pkg->strs + PKG_NAME, repo);
+		if (strv_eq(cat, STRV("heads"))) {
+			str_t buf = strz(16);
+			str_cat(&buf, repo);
+			str_cat(&buf, STRV("-"));
+			str_cat(&buf, name);
+			str_cat(&buf, STRV(SEP));
+			proj_set_str(proj, pkg->strs + PKG_URI_DIR, STRVS(buf));
+			str_free(&buf);
+		}
 	}
 
 	if (strv_eq(proto, STRV("https"))) {
@@ -102,5 +144,5 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 		pkg->uri.ext = PKG_URI_EXT_NONE;
 	}
 
-	return proj_set_str(proj, pkg->strs + PKG_URI, uri) || proj_set_str(proj, pkg->strs + PKG_URI_FILE, file);
+	return proj_set_str(proj, pkg->strs + PKG_URI, uri) || proj_set_str(proj, pkg->strs + PKG_URI_NAME, name);
 }

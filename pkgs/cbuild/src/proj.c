@@ -508,16 +508,16 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 		strv_t dir	= proj_get_str(proj, pkg->strs + PKG_DIR);
 		strv_t name	= proj_get_str(proj, pkg->strs + PKG_NAME);
 		strv_t uri	= proj_get_str(proj, pkg->strs + PKG_URI);
-		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_FILE);
-		strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_ROOT);
+		strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_URI_NAME);
+		strv_t uri_dir	= proj_get_str(proj, pkg->strs + PKG_URI_DIR);
 		strv_t src	= proj_get_str(proj, pkg->strs + PKG_SRC);
 		strv_t inc	= proj_get_str(proj, pkg->strs + PKG_INC);
 		dst.off += dputf(dst,
 				 "[package]\n"
 				 "NAME: %.*s\n"
 				 "URI: %.*s\n"
-				 "URI_FILE: %.*s\n"
-				 "URI_ROOT: %.*s\n"
+				 "URI_NAME: %.*s\n"
+				 "URI_DIR: %.*s\n"
 				 "DIR: %.*s\n"
 				 "SRC: %.*s\n"
 				 "INC: %.*s\n",
@@ -525,10 +525,10 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 				 name.data,
 				 uri.len,
 				 uri.data,
-				 uri_file.len,
-				 uri_file.data,
-				 uri_root.len,
-				 uri_root.data,
+				 uri_name.len,
+				 uri_name.data,
+				 uri_dir.len,
+				 uri_dir.data,
 				 dir.len,
 				 dir.data,
 				 src.len,

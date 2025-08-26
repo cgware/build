@@ -6,9 +6,10 @@
 
 typedef enum pkg_str_e {
 	PKG_NAME,
+	PKG_VERSION,
 	PKG_URI,
-	PKG_URI_FILE,
-	PKG_URI_ROOT,
+	PKG_URI_NAME,
+	PKG_URI_DIR,
 	PKG_DIR,
 	PKG_SRC,
 	PKG_INC,
