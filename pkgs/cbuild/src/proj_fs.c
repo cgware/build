@@ -37,8 +37,6 @@ int proj_fs(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_di
 
 	(void)pkg_dir;
 
-	log_info("cbuild", "proj_fs", NULL, "loading project: '%.*s'", proj_dir.len, proj_dir.data);
-
 	proj->name = pkg_name;
 	path_init(&proj->outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
@@ -57,6 +55,7 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv
 	path_init(&path, proj_dir);
 	path_push(&path, pkg_dir);
 	size_t path_len = path.len;
+	log_info("cbuild", "proj_fs", NULL, "entering directory: '%.*s'", path.len, path.data);
 
 	cfg_t scfg = {0};
 	cfg_var_t root;
@@ -177,6 +176,32 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv
 		}
 		cfg_free(&scfg);
 	} else {
+		path_t pkgs_pkg_dir = {0};
+		path_push(&pkgs_pkg_dir, STRV("pkgs"));
+		size_t pkgs_len = pkgs_pkg_dir.len;
+		path.len = path_len;
+		path_push(&path, STRVS(pkgs_pkg_dir));
+		if (fs_isdir(fs, STRVS(path))) {
+			strbuf_t pkgs = {0};
+			strbuf_init(&pkgs, 8, 16, alloc);
+
+			fs_lsdir(fs, STRVS(path), &pkgs);
+
+			uint i = 0;
+			strv_t pkg;
+			strbuf_foreach(&pkgs, i, pkg)
+			{
+				pkgs_pkg_dir.len = pkgs_len;
+				path_push(&pkgs_pkg_dir, pkg);
+				path_push(&pkgs_pkg_dir, STRV(""));
+
+				ret |= proj_fs_child_ng(proj, fs, proc, proj_dir, STRVS(pkgs_pkg_dir), pkg, buf, alloc);
+			}
+
+			strbuf_free(&pkgs);
+			pkg_name = STRV_NULL;
+		}
+
 		pkg_t *pkg = NULL;
 		uint pkg_id;
 		target_t *target = NULL;
