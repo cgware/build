@@ -1,4 +1,5 @@
 #include "args.h"
+#include "config.h"
 #include "log.h"
 #include "mem.h"
 #include "path.h"
@@ -101,11 +102,20 @@ int main(int argc, const char **argv)
 		pathv_rsplit(l, NULL, &name);
 	}
 	str_t buf = strz(1024);
-	if (proj_fs(&proj, &fs, &proc, STRVS(proj_rel), STRV_NULL, name, &buf, ALLOC_STD)) {
-		return 1;
-	}
 
-	proj_print(&proj, DST_STD());
+	config_t config = {0};
+	config_init(&config, 4, 8, ALLOC_STD);
+	config_load(&config, &fs, &proc, STRVS(proj_rel), STRV_NULL, name, &buf, ALLOC_STD, DST_STD());
+	config_print(&config, DST_STD());
+	config_free(&config);
+
+	str_free(&buf);
+
+	/*if (proj_fs(&proj, &fs, &proc, STRVS(proj_rel), STRV_NULL, name, &buf, ALLOC_STD)) {
+		return 1;
+	}*/
+
+	// proj_print(&proj, DST_STD());
 
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 

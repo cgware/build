@@ -55,7 +55,7 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv
 	path_init(&path, proj_dir);
 	path_push(&path, pkg_dir);
 	size_t path_len = path.len;
-	log_info("cbuild", "proj_fs", NULL, "entering directory: '%.*s'", path.len, path.data);
+	log_info("cbuild", "proj_fs", NULL, "loading directory: '%.*s'", path.len, path.data);
 
 	cfg_t scfg = {0};
 	cfg_var_t root;
@@ -88,6 +88,8 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv
 				if (cfg_has_var(cfg, tbl, STRV("uri"), &var)) {
 					cfg_get_str(cfg, var, &val);
 					proj_set_uri(proj, pkg, val);
+				} else {
+					proj_set_str(proj, pkg->strs + PKG_NAME, pkg_name);
 				}
 			} else if (strv_eq(key, STRV("target"))) {
 				if (pkg == NULL) {
@@ -179,7 +181,7 @@ int proj_fs_child_ng(proj_t *proj, fs_t *fs, proc_t *proc, strv_t proj_dir, strv
 		path_t pkgs_pkg_dir = {0};
 		path_push(&pkgs_pkg_dir, STRV("pkgs"));
 		size_t pkgs_len = pkgs_pkg_dir.len;
-		path.len = path_len;
+		path.len	= path_len;
 		path_push(&path, STRVS(pkgs_pkg_dir));
 		if (fs_isdir(fs, STRVS(path))) {
 			strbuf_t pkgs = {0};
