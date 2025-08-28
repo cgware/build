@@ -4,15 +4,17 @@
 #include "log.h"
 #include "path.h"
 
-config_t *config_init(config_t *config, uint dirs_cap, uint pkgs_cap, alloc_t alloc)
+config_t *config_init(config_t *config, uint dirs_cap, uint pkgs_cap, uint targets_cap, alloc_t alloc)
 {
 	if (config == NULL) {
 		return NULL;
 	}
 
-	if (strvbuf_init(&config->strs, 4 * dirs_cap, 16, alloc) == NULL ||
+	if (strvbuf_init(&config->strs, 4 * dirs_cap + 1 * pkgs_cap + 1 * targets_cap, 16, alloc) == NULL ||
 	    arr_init(&config->dirs, dirs_cap, sizeof(config_dir_t), alloc) == NULL ||
-	    arr_init(&config->pkgs, pkgs_cap, sizeof(config_pkg_t), alloc) == NULL) {
+	    list_init(&config->pkgs, pkgs_cap, sizeof(config_pkg_t), alloc) == NULL ||
+	    list_init(&config->targets, targets_cap, sizeof(config_target_t), alloc) == NULL ||
+	    list_init(&config->deps, pkgs_cap, sizeof(size_t), alloc) == NULL) {
 		return NULL;
 	}
 
@@ -21,7 +23,13 @@ config_t *config_init(config_t *config, uint dirs_cap, uint pkgs_cap, alloc_t al
 
 void config_free(config_t *config)
 {
-	arr_free(&config->pkgs);
+	if (config == NULL) {
+		return;
+	}
+
+	list_free(&config->deps);
+	list_free(&config->targets);
+	list_free(&config->pkgs);
 	arr_free(&config->dirs);
 	strvbuf_free(&config->strs);
 }
@@ -29,7 +37,6 @@ void config_free(config_t *config)
 int config_load(config_t *config, fs_t *fs, proc_t *proc, strv_t base_path, strv_t dir_path, strv_t name, str_t *buf, alloc_t alloc,
 		dst_t dst)
 {
-	(void)proc;
 	if (config == NULL) {
 		return 1;
 	}
@@ -45,6 +52,7 @@ int config_load(config_t *config, fs_t *fs, proc_t *proc, strv_t base_path, strv
 
 	uint dir_id;
 	config_dir_t *dir = arr_add(&config->dirs, &dir_id);
+	dir->has_pkgs	  = 0;
 
 	strvbuf_add(&config->strs, name, &dir->name);
 	strvbuf_add(&config->strs, dir_path, &dir->path);
@@ -105,14 +113,51 @@ int config_load(config_t *config, fs_t *fs, proc_t *proc, strv_t base_path, strv
 		{
 			strv_t key = cfg_get_key(&cfg, tbl);
 			if (strv_eq(key, STRV("pkg"))) {
-				config_pkg_t *pkg = arr_add(&config->pkgs, NULL);
+				list_node_t pkg_id;
+				config_pkg_t *pkg = list_node(&config->pkgs, &pkg_id);
+				strvbuf_add(&config->strs, STRV_NULL, &pkg->name);
+				pkg->has_targets = 0;
+				pkg->has_deps	 = 0;
 
-				pkg->dir = dir_id;
+				if (dir->has_pkgs) {
+					list_app(&config->pkgs, dir->pkgs, pkg_id);
+				} else {
+					dir->pkgs     = pkg_id;
+					dir->has_pkgs = 1;
+				}
+
+				cfg_var_t var;
+				if (cfg_has_var(&cfg, tbl, STRV("deps"), &var)) {
+					cfg_var_t dep_str;
+					void *data;
+					cfg_foreach(&cfg, var, data, &dep_str)
+					{
+						strv_t val = {0};
+						if (cfg_get_lit(&cfg, dep_str, &val)) {
+							log_error("cbuild", "proj_cfg", NULL, "invalid dependency");
+							ret = 1;
+							continue;
+						}
+
+						list_node_t dep_id;
+						size_t *dep = list_node(&config->deps, &dep_id);
+
+						if (pkg->has_deps) {
+							list_app(&config->deps, pkg->deps, dep_id);
+						} else {
+							pkg->deps     = dep_id;
+							pkg->has_deps = 1;
+						}
+
+						strvbuf_add(&config->strs, val, dep);
+					}
+				}
 			}
 		}
 
 		cfg_free(&cfg);
 	}
+
 	full_path.len = dir_path_len;
 
 	return ret;
@@ -126,43 +171,53 @@ size_t config_print(const config_t *config, dst_t dst)
 
 	size_t off = dst.off;
 
-	uint i;
-
-	dst.off += dputf(dst, "[dirs]\n");
-
-	i = 0;
+	uint i = 0;
 	const config_dir_t *dir;
 	arr_foreach(&config->dirs, i, dir)
 	{
-		strv_t name = strvbuf_get(&config->strs, dir->name);
-		strv_t path = strvbuf_get(&config->strs, dir->path);
-		strv_t src  = strvbuf_get(&config->strs, dir->src);
-		strv_t inc  = strvbuf_get(&config->strs, dir->inc);
+		strv_t dir_name = strvbuf_get(&config->strs, dir->name);
+		strv_t dir_path = strvbuf_get(&config->strs, dir->path);
+		strv_t dir_src	= strvbuf_get(&config->strs, dir->src);
+		strv_t dir_inc	= strvbuf_get(&config->strs, dir->inc);
+
+		dst.off += dputf(dst, "[dir]\n");
 
 		dst.off += dputf(dst,
 				 "NAME: %.*s\n"
 				 "PATH: %.*s\n"
 				 "SRC: %.*s\n"
-				 "INC: %.*s\n\n",
-				 name.len,
-				 name.data,
-				 path.len,
-				 path.data,
-				 src.len,
-				 src.data,
-				 inc.len,
-				 inc.data);
-	}
+				 "INC: %.*s\n",
+				 dir_name.len,
+				 dir_name.data,
+				 dir_path.len,
+				 dir_path.data,
+				 dir_src.len,
+				 dir_src.data,
+				 dir_inc.len,
+				 dir_inc.data);
 
-	dst.off += dputf(dst, "[pkgs]\n");
+		dst.off += dputf(dst, "\n");
 
-	i = 0;
-	const config_pkg_t *pkg;
-	arr_foreach(&config->pkgs, i, pkg)
-	{
-		dir	    = arr_get(&config->dirs, pkg->dir);
-		strv_t path = strvbuf_get(&config->strs, dir->path);
-		dst.off += dputf(dst, "PATH: %.*s\n\n", path.len, path.data);
+		if (dir->has_pkgs) {
+			const config_pkg_t *pkg;
+			estx_node_t pkgs = dir->pkgs;
+			list_foreach(&config->pkgs, pkgs, pkg)
+			{
+				dst.off += dputf(dst, "[pkg]\n");
+				strv_t pkg_name = strvbuf_get(&config->strs, pkg->name);
+				dst.off += dputf(dst, "NAME: %.*s\n", pkg_name.len, pkg_name.data);
+				dst.off += dputf(dst, "DEPS:");
+				const size_t *dep;
+				estx_node_t deps = pkg->deps;
+				list_foreach(&config->deps, deps, dep)
+				{
+					strv_t dep_str = strvbuf_get(&config->strs, *dep);
+					dst.off += dputf(dst, " %.*s", dep_str.len, dep_str.data);
+				}
+
+				dst.off += dputf(dst, "\n\n");
+			}
+		}
 	}
 
 	return dst.off - off;

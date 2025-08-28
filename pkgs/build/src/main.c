@@ -3,8 +3,8 @@
 #include "log.h"
 #include "mem.h"
 #include "path.h"
-#include "proj_fs.h"
-#include "proj_gen.h"
+#include "proj.h"
+#include <stdio.h>
 
 int main(int argc, const char **argv)
 {
@@ -19,12 +19,13 @@ int main(int argc, const char **argv)
 
 	strv_t proj_dir	 = STRV(".");
 	strv_t build_dir = STRV("tmp/build");
+	strv_t jeb	 = STRV("tmp/build");
 
-	int gen = 0;
+	// int gen = 0;
 
-	int gen_drivers_cnt = 0;
+	// int gen_drivers_cnt = 0;
 
-	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
+	/*for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
 		if (i->type == GEN_DRIVER_TYPE) {
 			gen_drivers_cnt++;
 		}
@@ -52,12 +53,13 @@ int main(int argc, const char **argv)
 		.name	   = "Generators",
 		.vals	   = gens,
 		.vals_size = gen_drivers_cnt * sizeof(opt_enum_val_t),
-	};
+	};*/
 
 	opt_t opts[] = {
 		OPT('p', "project", OPT_STR, "<path>", "Specify project directory", &proj_dir, {0}, OPT_OPT),
 		OPT('b', "build", OPT_STR, "<path>", "Specify build directory", &build_dir, {0}, OPT_OPT),
-		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
+		OPT('g', "generator", OPT_STR, "<generator>", "Specify build system generator", &jeb, {0}, OPT_OPT),
+		// OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
 	};
 
 	if (args_parse(argc, argv, opts, sizeof(opts), DST_STD())) {
@@ -70,8 +72,8 @@ int main(int argc, const char **argv)
 	proc_t proc = {0};
 	proc_init(&proc, 0, 0);
 
-	proj_t proj = {0};
-	proj_init(&proj, 4, 4, ALLOC_STD);
+	/*proj_t proj = {0};
+	proj_init(&proj, 4, 4, ALLOC_STD);*/
 
 	str_t cwd = strz(64);
 
@@ -104,9 +106,18 @@ int main(int argc, const char **argv)
 	str_t buf = strz(1024);
 
 	config_t config = {0};
-	config_init(&config, 4, 8, ALLOC_STD);
+	config_init(&config, 4, 8, 16, ALLOC_STD);
 	config_load(&config, &fs, &proc, STRVS(proj_rel), STRV_NULL, name, &buf, ALLOC_STD, DST_STD());
 	config_print(&config, DST_STD());
+
+	printf("-------------------\n\n");
+
+	proj_t proj = {0};
+	proj_init(&proj, 8, 16, ALLOC_STD);
+	proj_config(&proj, &config);
+	proj_print(&proj, DST_STD());
+	proj_free(&proj);
+
 	config_free(&config);
 
 	str_free(&buf);
@@ -117,19 +128,19 @@ int main(int argc, const char **argv)
 
 	// proj_print(&proj, DST_STD());
 
-	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
+	// gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
-	gen_driver.fs = &fs;
+	/*gen_driver.fs = &fs;
 	if (proj_gen(&proj, &gen_driver, STRVS(proj_rel), STRVS(build_rel))) {
 		return 1;
 	}
 
-	proj_free(&proj);
+	proj_free(&proj);*/
 	proc_free(&proc);
 	fs_free(&fs);
 	str_free(&cwd);
 
-	mem_free(gens, gen_drivers_cnt * sizeof(opt_enum_val_t));
+	// mem_free(gens, gen_drivers_cnt * sizeof(opt_enum_val_t));
 
 	mem_print(DST_STD());
 	return 0;
