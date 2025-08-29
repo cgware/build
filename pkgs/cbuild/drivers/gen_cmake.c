@@ -1,0 +1,394 @@
+#include "gen.h"
+
+#include "log.h"
+#include "path.h"
+#include "var.h"
+
+static void resolve_var(strv_t var, const strv_t *values, str_t *buf)
+{
+	buf->len = 0;
+	str_cat(buf, var);
+	var_replace(buf, values);
+}
+
+static void resolve_dir(const proj_t *proj, strv_t *values, target_type_t type, str_t *buf, path_t *resolved)
+{
+	buf->len = 0;
+	str_cat(buf, strvbuf_get(&proj->strs, proj->outdir));
+	var_replace(buf, values);
+	path_t tmp = {0};
+	path_init(&tmp, STRVS(*buf));
+
+	buf->len = 0;
+	if (pathv_is_rel(STRVS(tmp))) {
+		str_cat(buf, STRV("${CMAKE_SOURCE_DIR}/${PROJDIR}"));
+	}
+	str_cat(buf, STRVS(tmp));
+
+	path_init_s(resolved, STRVS(*buf), '/');
+
+	switch (type) {
+	case TARGET_TYPE_EXE:
+		path_push_s(resolved, STRV("bin"), '/');
+		break;
+	case TARGET_TYPE_LIB:
+		path_push_s(resolved, STRV("lib"), '/');
+		break;
+	case TARGET_TYPE_TST:
+		path_push_s(resolved, STRV("test"), '/');
+		break;
+	default:       // LCOV_EXCL_LINE
+		break; // LCOV_EXCL_LINE
+	}
+
+	path_push_s(resolved, STRV(""), '/');
+}
+
+#include <stdio.h>
+
+static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
+{
+	const pkg_t *pkg = proj_get_pkg(proj, id);
+
+	path_t path = {0};
+	path_init(&path, build_dir);
+	strv_t pkg_dir = strvbuf_get(&proj->strs, pkg->path);
+	if (pkg_dir.len > 0) {
+		fs_mkpath(fs, STRVS(path), pkg_dir);
+	}
+	path_push(&path, strvbuf_get(&proj->strs, pkg->path));
+	path_push(&path, STRV("pkg.cmake"));
+
+	log_info("cbuild", "gen_make", NULL, "generating package: '%.*s'", path.len, path.data);
+
+	void *f;
+	fs_open(fs, STRVS(path), "w", &f);
+
+	str_t buf = strz(64);
+
+	fs_write(fs, f, STRV("set(PN \""));
+	strv_t name = strvbuf_get(&proj->strs, pkg->name);
+	if (name.len > 0) {
+		fs_write(fs, f, name);
+	}
+	fs_write(fs, f, STRV("\")\n"));
+	fs_write(fs, f, STRV("set(PKGDIR \""));
+	strv_t dir = strvbuf_get(&proj->strs, pkg->path);
+	if (dir.len > 0) {
+		fs_write(fs, f, dir);
+		fs_write(fs, f, STRV(SEP));
+	}
+	fs_write(fs, f, STRV("\")\n"));
+
+	strv_t svalues[__VAR_CNT] = {
+		[VAR_ARCH]   = STRVT("${ARCH}"),
+		[VAR_CONFIG] = STRVT("${CONFIG}"),
+	};
+
+	if (pkg->has_targets) {
+		const target_t *target;
+		list_node_t target_id = pkg->targets;
+		list_foreach(&proj->targets, target_id, target)
+		{
+			fs_write(fs, f, STRV("set(TN \""));
+			strv_t name = strvbuf_get(&proj->strs, target->name);
+			if (name.len > 0) {
+				fs_write(fs, f, name);
+			}
+			fs_write(fs, f, STRV("\")\n"));
+
+			fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}"));
+
+			path_t tmp = {0};
+
+			switch (target->type) {
+			case TARGET_TYPE_TST:
+				path_init_s(&tmp, strvbuf_get(&proj->strs, pkg->test), '/');
+				break;
+			default:
+				path_init_s(&tmp, strvbuf_get(&proj->strs, pkg->src), '/');
+				break;
+			}
+
+			size_t src_len = tmp.len;
+			path_push_s(&tmp, STRV("*.h"), '/');
+			fs_write(fs, f, STRVS(tmp));
+
+			fs_write(fs, f, STRV(" ${PROJDIR}${PKGDIR}"));
+			tmp.len = src_len;
+			path_push_s(&tmp, STRV("*.c"), '/');
+			fs_write(fs, f, STRVS(tmp));
+			fs_write(fs, f, STRV(")\n"));
+
+			switch (target->type) {
+			case TARGET_TYPE_EXE: {
+				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+				if (target->has_deps) {
+					fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
+					const list_node_t *dep_target_id;
+					list_node_t j = target->deps;
+					list_foreach(&proj->deps, j, dep_target_id)
+					{
+						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+						fs_write(fs, f, STRV(" "));
+						fs_write(fs, f, strvbuf_get(&proj->strs, dpkg->name));
+						fs_write(fs, f, STRV("_"));
+						fs_write(fs, f, strvbuf_get(&proj->strs, dtarget->name));
+					}
+					fs_write(fs, f, STRV(")\n"));
+				}
+				break;
+			}
+			case TARGET_TYPE_LIB: {
+				fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+				strv_t inc = strvbuf_get(&proj->strs, pkg->inc);
+				if (inc.len > 0) {
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC "));
+					fs_write(fs, f, STRV("${PROJDIR}${PKGDIR}"));
+					fs_write(fs, f, inc);
+					fs_write(fs, f, STRV(")\n"));
+				}
+				if (target->has_deps) {
+					fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
+					const list_node_t *dep_target_id;
+					list_node_t j = target->deps;
+					list_foreach(&proj->deps, j, dep_target_id)
+					{
+						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+						fs_write(fs, f, STRV(" "));
+						fs_write(fs, f, strvbuf_get(&proj->strs, dpkg->name));
+						fs_write(fs, f, STRV("_"));
+						fs_write(fs, f, strvbuf_get(&proj->strs, dtarget->name));
+					}
+					fs_write(fs, f, STRV(")\n"));
+				}
+				break;
+			}
+			case TARGET_TYPE_EXT: {
+				strv_t uri = strvbuf_get(&proj->strs, pkg->uri_str);
+
+				fs_write(fs, f, STRV("set(URL "));
+				fs_write(fs, f, uri);
+				fs_write(fs, f, STRV(")\n"));
+
+				fs_write(fs, f, STRV("set(ZIP_FILE ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/main.zip)\n"));
+				fs_write(fs, f, STRV("set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/)\n"));
+
+				strv_t uri_dir = strvbuf_get(&proj->strs, pkg->uri_dir);
+				if (uri_dir.len > 0) {
+					fs_write(fs, f, STRV("set(URI_ROOT "));
+					fs_write(fs, f, uri_dir);
+					fs_write(fs, f, STRV(")\n"));
+				}
+
+				strv_t out = strvbuf_get(&proj->strs, target->out);
+				resolve_var(out, svalues, &buf);
+				if (out.len > 0) {
+					fs_write(fs, f, STRV("set(OUT "));
+					fs_write(fs, f, STRVS(buf));
+					fs_write(fs, f, STRV(")\n"));
+				}
+
+				strv_t cmd = strvbuf_get(&proj->strs, target->cmd);
+				resolve_var(cmd, svalues, &buf);
+				fs_write(fs, f, STRV("set(CMD "));
+				fs_write(fs, f, STRVS(buf));
+				fs_write(fs, f, STRV(")\n"));
+
+				fs_write(fs,
+					 f,
+					 STRV("add_custom_target(${PN}_${TN} ALL\n"
+					      "\tCOMMAND ${CMD}\n"
+					      "\tWORKING_DIRECTORY ${EXT_DIR}${URI_ROOT}\n"
+					      ")\n"));
+
+				fs_write(fs,
+					 f,
+					 STRV("file(DOWNLOAD ${URL} ${ZIP_FILE}\n"
+					      "\tSHOW_PROGRESS\n"
+					      ")\n"));
+
+				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${EXT_DIR}\")\n"));
+
+				fs_write(fs,
+					 f,
+					 STRV("execute_process(\n"
+					      "\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${ZIP_FILE}\n"
+					      "\tWORKING_DIRECTORY ${EXT_DIR}\n"
+					      ")\n"));
+
+				fs_write(fs,
+					 f,
+					 STRV("add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory "
+					      "${CMAKE_SOURCE_DIR}/${PROJDIR}bin/x64-Debug/ext/07_zip\n"
+					      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}${URI_ROOT}${OUT} "
+					      "${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/x64-Debug/ext/07_zip/\n"
+					      ")\n"));
+				break;
+			}
+			case TARGET_TYPE_TST: {
+				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+				if (target->has_deps) {
+					fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
+					const list_node_t *dep_target_id;
+					list_node_t j = target->deps;
+					list_foreach(&proj->deps, j, dep_target_id)
+					{
+						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+						fs_write(fs, f, STRV(" "));
+						fs_write(fs, f, strvbuf_get(&proj->strs, dpkg->name));
+						fs_write(fs, f, STRV("_"));
+						fs_write(fs, f, strvbuf_get(&proj->strs, dtarget->name));
+					}
+					fs_write(fs, f, STRV(")\n"));
+				}
+				break;
+			}
+			default:
+				break;
+			}
+
+			strv_t values[__VAR_CNT] = {0};
+
+			fs_write(fs,
+				 f,
+				 STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"
+				      "\tOUTPUT_NAME \"${PN}\"\n"));
+
+			path_t outdir = {0};
+
+			struct {
+				strv_t name;
+				strv_t config;
+			} props[__TARGET_TYPE_MAX][3] = {
+				[TARGET_TYPE_EXE] =
+					{
+						{STRVT("RUNTIME_OUTPUT_DIRECTORY"), STRVT("Debug")},
+						{STRVT("RUNTIME_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
+						{STRVT("RUNTIME_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
+					},
+				[TARGET_TYPE_LIB] =
+					{
+						{STRVT("ARCHIVE_OUTPUT_DIRECTORY"), STRVT("Debug")},
+						{STRVT("ARCHIVE_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
+						{STRVT("ARCHIVE_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
+					},
+				[TARGET_TYPE_TST] =
+					{
+						{STRVT("RUNTIME_OUTPUT_DIRECTORY"), STRVT("Debug")},
+						{STRVT("RUNTIME_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
+						{STRVT("RUNTIME_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
+					},
+			};
+
+			size_t props_cnt = sizeof(props[target->type]) / sizeof(props[target->type][0]);
+
+			for (size_t i = 0; i < props_cnt; i++) {
+				if (props[target->type]->name.data == NULL) {
+					continue;
+				}
+
+				fs_write(fs, f, STRV("\t"));
+				fs_write(fs, f, props[target->type][i].name);
+				fs_write(fs, f, STRV(" "));
+				values[VAR_CONFIG] = props[target->type][i].config;
+				resolve_dir(proj, values, target->type, &buf, &outdir);
+				fs_write(fs, f, STRVS(outdir));
+				fs_write(fs, f, STRV("\n"));
+			}
+
+			switch (target->type) {
+			case TARGET_TYPE_LIB:
+				fs_write(fs, f, STRV("\tPREFIX \"\"\n"));
+				break;
+			default:
+				break;
+			}
+
+			fs_write(fs, f, STRV(")\n"));
+		}
+	}
+
+	str_free(&buf);
+	fs_close(fs, f);
+
+	return 0;
+}
+
+static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir, strv_t build_dir)
+{
+	if (drv == NULL || proj == NULL) {
+		return 1;
+	}
+
+	path_t path = {0};
+	path_init(&path, build_dir);
+	path_push(&path, STRV("CMakeLists.txt"));
+
+	log_info("cbuild", "gen_make", NULL, "generating project: '%.*s'", path.len, path.data);
+
+	void *f;
+	fs_open(drv->fs, STRVS(path), "w", &f);
+
+	fs_write(drv->fs, f, STRV("cmake_minimum_required(VERSION 3.10)\n\n"));
+
+	fs_write(drv->fs, f, STRV("project("));
+	strv_t proj_name = strvbuf_get(&proj->strs, proj->name);
+	if (proj_name.len > 0) {
+		fs_write(drv->fs, f, proj_name);
+	}
+	fs_write(drv->fs, f, STRV(" LANGUAGES C)\n\n"));
+
+	fs_write(drv->fs, f, STRV("set(PROJDIR \""));
+
+	path_t rel = {0};
+	path_calc_rel_s(build_dir, proj_dir, '/', &rel);
+	if (rel.len > 0) {
+		fs_write(drv->fs, f, STRVS(rel));
+	}
+
+	fs_write(drv->fs, f, STRV("\")\n"));
+
+	fs_write(drv->fs, f, STRV("set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n\n"));
+
+	int types[__TARGET_TYPE_MAX] = {0};
+
+	uint i = 0;
+	const target_t *target;
+	arr_foreach(&proj->targets, i, target)
+	{
+		types[target->type] = 1;
+	}
+
+	(void)types;
+
+	i = 0;
+	const pkg_t *pkg;
+	arr_foreach(&proj->pkgs, i, pkg)
+	{
+		path_t dir = {0};
+		path_init_s(&dir, strvbuf_get(&proj->strs, pkg->path), '/');
+		path_push_s(&dir, STRV("pkg.cmake"), '/');
+		fs_write(drv->fs, f, STRV("include("));
+		fs_write(drv->fs, f, STRVS(dir));
+		fs_write(drv->fs, f, STRV(")\n"));
+
+		gen_pkg(proj, drv->fs, i, build_dir);
+	}
+
+	fs_close(drv->fs, f);
+
+	return 0;
+}
+
+static gen_driver_t cmake = {
+	.param = STRVT("C"),
+	.desc  = "CMake",
+	.gen   = gen_cmake,
+};
+
+GEN_DRIVER(cmake, &cmake);

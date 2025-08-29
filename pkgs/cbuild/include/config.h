@@ -8,12 +8,16 @@
 
 typedef struct config_target_s {
 	size_t name;
+	size_t cmd;
+	size_t out;
 } config_target_t;
 
 typedef struct config_pkg_s {
 	size_t name;
 	list_node_t targets;
 	list_node_t deps;
+	uint pkg;
+	size_t uri;
 	uint has_targets : 1;
 	uint has_deps : 1;
 } config_pkg_t;
@@ -23,6 +27,7 @@ typedef struct config_dir_s {
 	size_t path;
 	size_t src;
 	size_t inc;
+	size_t test;
 	list_node_t pkgs;
 	uint has_pkgs;
 } config_dir_t;

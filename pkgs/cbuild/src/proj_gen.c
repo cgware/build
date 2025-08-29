@@ -1,5 +1,7 @@
 #include "proj_gen.h"
 
+#include "path.h"
+
 static int create_dir(fs_t *fs, strv_t proj_dir, strv_t dir)
 {
 	path_t path = {0};

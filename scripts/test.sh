@@ -31,16 +31,9 @@ mk() {
 	tmp="$dir/tmp"
 
 	printf "%s %-7s %-12s %-5s " "$p_arch" "$p_config" "$proj" "Make"
+	./bin/"$arch"-"$config"/exes/build -p "$dir" -g M
 
-	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g M 2>&1)"; then
-		printf "\033[0;31mFAIL\033[0m\n"
-		echo "build: Failed to generate make"
-		echo "$out"
-		ret=1
-		return
-	fi
-
-	if ! out="$(make -C "$tmp/build" ARCH="$p_arch" CONFIG="$p_config" 2>&1)"; then
+	if ! out="$(make -C "$tmp/build" ARCH="$p_arch" CONFIG="$p_config")"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "make: Failed to build project"
 		echo "$out"
@@ -97,7 +90,6 @@ cm() {
 			printf "\033[0;31mFAIL\033[0m\n"
 			echo "Target not found: $path"
 			ret=1
-			rm -rf "$bin" "$build" "$tmp"
 			return
 		fi
 	done
@@ -107,8 +99,8 @@ cm() {
 }
 
 gen() {
-	#mk "$@"
-	cm "$@"
+	mk "$@"
+	#cm "$@"
 }
 
 test() {
