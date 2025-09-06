@@ -35,11 +35,11 @@ TEST(proj_add_pkg)
 	proj_init(&proj, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(proj_add_pkg(NULL, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_pkg(NULL, NULL), NULL);
 	mem_oom(1);
-	EXPECT_EQ(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_pkg(&proj, NULL), NULL);
 	mem_oom(0);
-	EXPECT_NE(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_NE(proj_add_pkg(&proj, NULL), NULL);
 
 	proj_free(&proj);
 
@@ -57,7 +57,7 @@ TEST(proj_add_pkg_oom_strs)
 
 	proj.strs.off.cnt = proj.strs.off.cap;
 	mem_oom(1);
-	EXPECT_EQ(proj_add_pkg(&proj, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_pkg(&proj, NULL), NULL);
 	mem_oom(0);
 
 	proj_free(&proj);
@@ -75,7 +75,7 @@ TEST(proj_get_pkg)
 	log_set_quiet(0, 0);
 
 	uint id;
-	pkg_t *pkg = proj_add_pkg(&proj, STRV_NULL, &id);
+	pkg_t *pkg = proj_add_pkg(&proj, &id);
 
 	EXPECT_EQ(proj_get_pkg(NULL, id), NULL);
 	log_set_quiet(0, 1);
@@ -98,7 +98,7 @@ TEST(proj_find_pkg)
 	log_set_quiet(0, 0);
 
 	uint pkg, found;
-	pkg_t *data = proj_add_pkg(&proj, STRV_NULL, &pkg);
+	pkg_t *data = proj_add_pkg(&proj, &pkg);
 
 	EXPECT_EQ(proj_find_pkg(NULL, STRV_NULL, NULL), NULL);
 	EXPECT_EQ(proj_find_pkg(&proj, STRV_NULL, NULL), NULL);
@@ -121,16 +121,16 @@ TEST(proj_add_target)
 	log_set_quiet(0, 0);
 
 	uint pkg;
-	proj_add_pkg(&proj, STRV_NULL, &pkg);
+	proj_add_pkg(&proj, &pkg);
 
-	EXPECT_EQ(proj_add_target(NULL, proj.pkgs.cnt, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_target(NULL, proj.pkgs.cnt, NULL), NULL);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_add_target(&proj, proj.pkgs.cnt, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_target(&proj, proj.pkgs.cnt, NULL), NULL);
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(proj_add_target(&proj, pkg, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_target(&proj, pkg, NULL), NULL);
 	mem_oom(0);
-	EXPECT_NE(proj_add_target(&proj, pkg, STRV_NULL, NULL), NULL);
+	EXPECT_NE(proj_add_target(&proj, pkg, NULL), NULL);
 
 	proj_free(&proj);
 
@@ -145,11 +145,11 @@ TEST(proj_add_target_oom_strs)
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
 	uint pkg;
-	proj_add_pkg(&proj, STRV_NULL, &pkg);
+	proj_add_pkg(&proj, &pkg);
 
 	proj.strs.off.cnt = proj.strs.off.cap;
 	mem_oom(1);
-	EXPECT_EQ(proj_add_target(&proj, pkg, STRV_NULL, NULL), NULL);
+	EXPECT_EQ(proj_add_target(&proj, pkg, NULL), NULL);
 	mem_oom(0);
 
 	proj_free(&proj);
@@ -165,10 +165,10 @@ TEST(proj_get_target)
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
 	uint pkg;
-	proj_add_pkg(&proj, STRV_NULL, &pkg);
+	proj_add_pkg(&proj, &pkg);
 
 	uint id;
-	target_t *target = proj_add_target(&proj, pkg, STRV_NULL, &id);
+	target_t *target = proj_add_target(&proj, pkg, &id);
 
 	EXPECT_EQ(proj_get_target(NULL, id), NULL);
 	log_set_quiet(0, 1);
@@ -189,18 +189,20 @@ TEST(proj_find_target)
 	proj_init(&proj, 2, 2, ALLOC_STD);
 
 	uint pkg1, pkg2;
-	proj_add_pkg(&proj, STRV_NULL, &pkg1);
-	proj_add_pkg(&proj, STRV_NULL, &pkg2);
-
-	proj_add_target(&proj, pkg1, STRV_NULL, NULL);
-
-	uint target, found;
-	target_t *data = proj_add_target(&proj, pkg2, STRV_NULL, &target);
+	proj_add_pkg(&proj, &pkg1);
+	proj_add_pkg(&proj, &pkg2);
 
 	EXPECT_EQ(proj_find_target(NULL, proj.pkgs.cnt, STRV_NULL, NULL), NULL);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(proj_find_target(&proj, proj.pkgs.cnt, STRV_NULL, NULL), NULL);
 	log_set_quiet(0, 0);
+	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV_NULL, NULL), NULL);
+
+	proj_add_target(&proj, pkg1, NULL);
+
+	uint target, found;
+	target_t *data = proj_add_target(&proj, pkg2, &target);
+
 	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV_NULL, NULL), NULL);
 	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV("asd"), NULL), NULL);
 	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV(""), &found), data);
@@ -218,7 +220,7 @@ TEST(proj_set_str)
 	proj_t proj = {0};
 	proj_init(&proj, 2, 2, ALLOC_STD);
 
-	pkg_t *pkg = proj_add_pkg(&proj, STRV_NULL, NULL);
+	pkg_t *pkg = proj_add_pkg(&proj, NULL);
 
 	EXPECT_EQ(proj_set_str(NULL, proj.strs.off.cnt, STRV_NULL), 1);
 	log_set_quiet(0, 1);
@@ -238,14 +240,14 @@ TEST(proj_get_str)
 	proj_t proj = {0};
 	proj_init(&proj, 2, 2, ALLOC_STD);
 
-	pkg_t *pkg = proj_add_pkg(&proj, STRV("p"), NULL);
+	pkg_t *pkg = proj_add_pkg(&proj, NULL);
 
 	EXPECT_EQ(proj_get_str(NULL, proj.strs.off.cnt).data, NULL);
 	log_set_quiet(0, 1);
 	EXPECT_EQ(proj_get_str(&proj, proj.strs.off.cnt).data, NULL);
 	log_set_quiet(0, 0);
 	strv_t name = proj_get_str(&proj, pkg->strs + PKG_NAME);
-	EXPECT_STRN(name.data, "p", name.len);
+	EXPECT_STRN(name.data, "", name.len);
 
 	proj_free(&proj);
 
@@ -260,12 +262,12 @@ TEST(proj_add_dep)
 	proj_init(&proj, 2, 2, ALLOC_STD);
 
 	uint pkg1, pkg2;
-	proj_add_pkg(&proj, STRV_NULL, &pkg1);
-	proj_add_pkg(&proj, STRV_NULL, &pkg2);
+	proj_add_pkg(&proj, &pkg1);
+	proj_add_pkg(&proj, &pkg2);
 
 	uint target1, target2;
-	proj_add_target(&proj, pkg1, STRV_NULL, &target1);
-	proj_add_target(&proj, pkg2, STRV_NULL, &target2);
+	proj_add_target(&proj, pkg1, &target1);
+	proj_add_target(&proj, pkg2, &target2);
 
 	EXPECT_EQ(proj_add_dep(NULL, proj.targets.cnt, proj.targets.cnt), 1);
 	log_set_quiet(0, 1);
@@ -292,25 +294,27 @@ TEST(proj_get_deps)
 	uint p1, p2, p3, p4, p5;
 	uint t1, t2, t3, t4, t5;
 
-	proj_add_pkg(&proj, STRV("p1"), &p1);
-	proj_add_pkg(&proj, STRV("p2"), &p2);
-	proj_add_pkg(&proj, STRV("p3"), &p3);
-	proj_add_pkg(&proj, STRV("p4"), &p4);
-	proj_add_pkg(&proj, STRV("p5"), &p5);
+	proj_add_pkg(&proj, &p1);
+	proj_add_pkg(&proj, &p2);
+	proj_add_pkg(&proj, &p3);
+	proj_add_pkg(&proj, &p4);
+	proj_add_pkg(&proj, &p5);
 
-	proj_add_target(&proj, p1, STRV("t1"), &t1);
-	proj_add_target(&proj, p2, STRV("t2"), &t2);
-	proj_add_target(&proj, p3, STRV("t3"), &t3);
-	proj_add_target(&proj, p4, STRV("t4"), &t4);
-	proj_add_target(&proj, p5, STRV("t5"), &t5);
+	proj_add_target(&proj, p1, &t1);
+	proj_add_target(&proj, p2, &t2);
+	proj_add_target(&proj, p3, &t3);
+	proj_add_target(&proj, p4, &t4);
+	proj_add_target(&proj, p5, &t5);
+
+	arr_t deps = {0};
+	arr_init(&deps, 5, sizeof(uint), ALLOC_STD);
+
+	EXPECT_EQ(proj_get_deps(&proj, t2, &deps), 0);
 
 	proj_add_dep(&proj, t1, t2);
 	proj_add_dep(&proj, t2, t3);
 	proj_add_dep(&proj, t2, t4);
 	proj_add_dep(&proj, t3, t4);
-
-	arr_t deps = {0};
-	arr_init(&deps, 5, sizeof(uint), ALLOC_STD);
 
 	EXPECT_EQ(proj_get_deps(NULL, proj.targets.cnt, NULL), 1);
 	log_set_quiet(0, 1);
@@ -341,15 +345,15 @@ TEST(proj_get_rdeps)
 	uint p1, p2, p3, p4;
 	uint t1, t2, t3, t4;
 
-	proj_add_pkg(&proj, STRV("pbase"), &p1);
-	proj_add_pkg(&proj, STRV("plib1"), &p2);
-	proj_add_pkg(&proj, STRV("plib2"), &p3);
-	proj_add_pkg(&proj, STRV("pexe"), &p4);
+	proj_add_pkg(&proj, &p1);
+	proj_add_pkg(&proj, &p2);
+	proj_add_pkg(&proj, &p3);
+	proj_add_pkg(&proj, &p4);
 
-	proj_add_target(&proj, p1, STRV("tbase"), &t1);
-	proj_add_target(&proj, p2, STRV("tlib1"), &t2);
-	proj_add_target(&proj, p3, STRV("tlib2"), &t3);
-	proj_add_target(&proj, p4, STRV("texe"), &t4);
+	proj_add_target(&proj, p1, &t1);
+	proj_add_target(&proj, p2, &t2);
+	proj_add_target(&proj, p3, &t3);
+	proj_add_target(&proj, p4, &t4);
 
 	proj_add_dep(&proj, t2, t1);
 	proj_add_dep(&proj, t3, t1);
@@ -372,56 +376,26 @@ TEST(proj_get_rdeps)
 	END;
 }
 
-TEST(proj_print_deps)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 2, 2, ALLOC_STD);
-
-	uint pkg1, pkg2;
-	proj_add_pkg(&proj, STRV("p1"), &pkg1);
-	proj_add_pkg(&proj, STRV("p2"), &pkg2);
-
-	uint target1, target2;
-	proj_add_target(&proj, pkg1, STRV("t1"), &target1);
-	proj_add_target(&proj, pkg2, STRV("t2"), &target2);
-
-	proj_add_dep(&proj, target1, target2);
-
-	char buf[32] = {0};
-	EXPECT_EQ(proj_print_deps(NULL, DST_BUF(buf)), 0);
-	EXPECT_EQ(proj_print_deps(&proj, DST_BUF(buf)), 24);
-	EXPECT_STR(buf,
-		   "p1\n"
-		   "  t1: p2:t2\n"
-		   "p2\n"
-		   "  t2:\n");
-
-	proj_free(&proj);
-
-	END;
-}
-
 TEST(proj_get_pkg_build_order)
 {
 	START;
 
 	proj_t proj = {0};
-	proj_init(&proj, 2, 2, ALLOC_STD);
+	proj_init(&proj, 3, 4, ALLOC_STD);
 
 	uint p1, p2, p3;
-	proj_add_pkg(&proj, STRV("p1"), &p1);
-	proj_add_pkg(&proj, STRV("p2"), &p2);
-	proj_add_pkg(&proj, STRV("p3"), &p3);
+	proj_add_pkg(&proj, &p1);
+	proj_add_pkg(&proj, &p2);
+	proj_add_pkg(&proj, &p3);
 
 	uint t1, t2, t3, t4;
-	proj_add_target(&proj, p1, STRV("p1t1"), &t1);
-	proj_add_target(&proj, p1, STRV("p2t1"), &t2);
-	proj_add_target(&proj, p2, STRV("p3t1"), &t3);
-	proj_add_target(&proj, p3, STRV("p3t1"), &t4);
+	proj_add_target(&proj, p1, &t1);
+	proj_add_target(&proj, p1, &t2);
+	proj_add_target(&proj, p2, &t3);
+	proj_add_target(&proj, p3, &t4);
 
 	proj_add_dep(&proj, t1, t3);
+	proj_add_dep(&proj, t1, t2);
 	proj_add_dep(&proj, t2, t3);
 	proj_add_dep(&proj, t3, t4);
 
@@ -447,63 +421,6 @@ TEST(proj_get_pkg_build_order)
 	END;
 }
 
-TEST(proj_get_target_build_order)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 2, 2, ALLOC_STD);
-
-	uint p1, p2, p3, p4, p5;
-	uint t1, t2, t3, t4, t5;
-
-	proj_add_pkg(&proj, STRV("p1"), &p1);
-	proj_add_pkg(&proj, STRV("p2"), &p2);
-
-	proj_add_target(&proj, p1, STRV("t1"), &t1);
-	proj_add_target(&proj, p2, STRV("t2"), &t2);
-
-	arr_t order = {0};
-	arr_init(&order, 5, sizeof(uint), ALLOC_STD);
-
-	EXPECT_EQ(proj_get_target_build_order(&proj, &order, ALLOC_STD), 0);
-	EXPECT_EQ(order.cnt, 2);
-	EXPECT_EQ(*(uint *)arr_get(&order, 0), 0);
-	EXPECT_EQ(*(uint *)arr_get(&order, 1), 1);
-
-	proj_add_pkg(&proj, STRV("p3"), &p3);
-	proj_add_pkg(&proj, STRV("p4"), &p4);
-	proj_add_pkg(&proj, STRV("p5"), &p5);
-
-	proj_add_target(&proj, p3, STRV("t3"), &t3);
-	proj_add_target(&proj, p4, STRV("t4"), &t4);
-	proj_add_target(&proj, p5, STRV("t5"), &t5);
-
-	proj_add_dep(&proj, t1, t2);
-	proj_add_dep(&proj, t2, t3);
-	proj_add_dep(&proj, t2, t4);
-	proj_add_dep(&proj, t3, t4);
-
-	EXPECT_EQ(proj_get_target_build_order(NULL, NULL, ALLOC_STD), 1);
-	EXPECT_EQ(proj_get_target_build_order(&proj, &order, ALLOC_STD), 0);
-	EXPECT_EQ(order.cnt, 5);
-	EXPECT_EQ(*(uint *)arr_get(&order, 0), 3);
-	EXPECT_EQ(*(uint *)arr_get(&order, 1), 4);
-	EXPECT_EQ(*(uint *)arr_get(&order, 2), 2);
-	EXPECT_EQ(*(uint *)arr_get(&order, 3), 1);
-	EXPECT_EQ(*(uint *)arr_get(&order, 4), 0);
-
-	proj_add_dep(&proj, t2, t1);
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_get_target_build_order(&proj, &order, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	arr_free(&order);
-	proj_free(&proj);
-
-	END;
-}
-
 TEST(proj_print)
 {
 	START;
@@ -514,48 +431,55 @@ TEST(proj_print)
 	uint p1, p2;
 	uint t1, t2;
 
-	proj_add_pkg(&proj, STRV("p1"), &p1);
-	proj_add_pkg(&proj, STRV("p2"), &p2);
+	proj_add_pkg(&proj, &p1);
+	proj_add_pkg(&proj, &p2);
 
-	proj_add_target(&proj, p1, STRV("t1"), &t1);
-	proj_add_target(&proj, p2, STRV("t2"), &t2);
+	proj_add_target(&proj, p1, &t1);
+	proj_add_target(&proj, p2, &t2);
 
 	proj_add_dep(&proj, t1, t2);
 
-	char buf[256] = {0};
+	char buf[512] = {0};
 	EXPECT_EQ(proj_print(NULL, DST_BUF(buf)), 0);
-	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 212);
+	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 268);
 	EXPECT_STR(buf,
 		   "[project]\n"
-		   "DIR: \n"
+		   "NAME: \n"
 		   "OUTDIR: \n"
 		   "\n"
-		   "[package]\n"
-		   "NAME: p1\n"
-		   "URL: \n"
-		   "DIR: \n"
+		   "[pkg]\n"
+		   "NAME: \n"
+		   "PATH: \n"
 		   "SRC: \n"
 		   "INC: \n"
+		   "TEST: \n"
+		   "URI_STR: \n"
+		   "URI_NAME: \n"
+		   "URI_DIR: \n"
 		   "\n"
 		   "[target]\n"
+		   "NAME: \n"
 		   "TYPE: UNKNOWN\n"
-		   "NAME: t1\n"
-		   "FILE: \n"
-		   "DEPS: p2:t2\n"
+		   "CMD: \n"
+		   "OUT: \n"
+		   "DEPS: :\n"
 		   "\n"
-		   "[package]\n"
-		   "NAME: p2\n"
-		   "URL: \n"
-		   "DIR: \n"
+		   "[pkg]\n"
+		   "NAME: \n"
+		   "PATH: \n"
 		   "SRC: \n"
 		   "INC: \n"
+		   "TEST: \n"
+		   "URI_STR: \n"
+		   "URI_NAME: \n"
+		   "URI_DIR: \n"
 		   "\n"
 		   "[target]\n"
+		   "NAME: \n"
 		   "TYPE: UNKNOWN\n"
-		   "NAME: t2\n"
-		   "FILE: \n"
-		   "DEPS:\n"
-		   "\n")
+		   "CMD: \n"
+		   "OUT: \n"
+		   "DEPS:\n")
 
 	proj_free(&proj);
 
@@ -580,9 +504,7 @@ STEST(proj)
 	RUN(proj_add_dep);
 	RUN(proj_get_deps);
 	RUN(proj_get_rdeps);
-	RUN(proj_print_deps);
 	RUN(proj_get_pkg_build_order);
-	RUN(proj_get_target_build_order);
 	RUN(proj_print);
 
 	SEND;

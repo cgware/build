@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "mem.h"
+#include "path.h"
 #include "test.h"
 
 TEST(gen_cmake_null)
@@ -32,6 +33,7 @@ TEST(gen_cmake_proj_build_dir)
 		    "project( LANGUAGES C)\n"
 		    "\n"
 		    "set(PROJDIR \"../../\")\n"
+		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
 		    "\n",
 		    tmp.len);
 
@@ -57,6 +59,7 @@ TEST(gen_cmake_proj_empty)
 		    "project( LANGUAGES C)\n"
 		    "\n"
 		    "set(PROJDIR \"\")\n"
+		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
 		    "\n",
 		    tmp.len);
 
@@ -82,6 +85,7 @@ TEST(gen_cmake_proj_name)
 		    "project(proj LANGUAGES C)\n"
 		    "\n"
 		    "set(PROJDIR \"\")\n"
+		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
 		    "\n",
 		    tmp.len);
 
@@ -107,6 +111,7 @@ TEST(gen_cmake_proj_unknown)
 		    "project( LANGUAGES C)\n"
 		    "\n"
 		    "set(PROJDIR \"\")\n"
+		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
 		    "\n"
 		    "include(pkg.cmake)\n",
 		    tmp.len);
@@ -182,6 +187,52 @@ TEST(gen_cmake_proj_lib)
 		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_proj_ext)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_proj_ext(&com, STRV("C")), 0);
+
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(PKGDIR \"\")\n"
+		    "set(TN \"pkg\")\n"
+		    "set(URL url)\n"
+		    "set(ZIP_FILE ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/main.zip)\n"
+		    "set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/)\n"
+		    "set(CMD )\n"
+		    "add_custom_target(${PN}_${TN} ALL\n"
+		    "\tCOMMAND ${CMD}\n"
+		    "\tWORKING_DIRECTORY ${EXT_DIR}${URI_ROOT}\n"
+		    ")\n"
+		    "file(DOWNLOAD ${URL} ${ZIP_FILE}\n"
+		    "\tSHOW_PROGRESS\n"
+		    ")\n"
+		    "file(MAKE_DIRECTORY \"${EXT_DIR}\")\n"
+		    "execute_process(\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${ZIP_FILE}\n"
+		    "\tWORKING_DIRECTORY ${EXT_DIR}\n"
+		    ")\n"
+		    "add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-${CONFIG}/ext/${PN}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}${URI_ROOT}${OUT} "
+		    "${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/${ARCH}-${CONFIG}/ext/${PN}/\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
 		    tmp.len);
 
@@ -340,7 +391,7 @@ TEST(gen_cmake_pkg_multi)
 	fs_read(&com.fs, STRV("./a/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"a\")\n"
-		    "set(PKGDIR \"a\")\n"
+		    "set(PKGDIR \"a" SEP "\")\n"
 		    "set(TN \"a\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -356,7 +407,7 @@ TEST(gen_cmake_pkg_multi)
 	fs_read(&com.fs, STRV("./b/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"b\")\n"
-		    "set(PKGDIR \"b\")\n"
+		    "set(PKGDIR \"b" SEP "\")\n"
 		    "set(TN \"b\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -387,7 +438,7 @@ TEST(gen_cmake_pkg_depends)
 	fs_read(&com.fs, STRV("./lib/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib\")\n"
-		    "set(PKGDIR \"lib\")\n"
+		    "set(PKGDIR \"lib" SEP "\")\n"
 		    "set(TN \"lib\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -404,7 +455,7 @@ TEST(gen_cmake_pkg_depends)
 	fs_read(&com.fs, STRV("./exe/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"exe\")\n"
-		    "set(PKGDIR \"exe\")\n"
+		    "set(PKGDIR \"exe" SEP "\")\n"
 		    "set(TN \"exe\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -435,7 +486,7 @@ TEST(gen_cmake_pkg_rdepends)
 	fs_read(&com.fs, STRV("./base/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"base\")\n"
-		    "set(PKGDIR \"base\")\n"
+		    "set(PKGDIR \"base" SEP "\")\n"
 		    "set(TN \"base\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -452,7 +503,7 @@ TEST(gen_cmake_pkg_rdepends)
 	fs_read(&com.fs, STRV("./lib1/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib1\")\n"
-		    "set(PKGDIR \"lib1\")\n"
+		    "set(PKGDIR \"lib1" SEP "\")\n"
 		    "set(TN \"lib1\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -469,7 +520,7 @@ TEST(gen_cmake_pkg_rdepends)
 	fs_read(&com.fs, STRV("./lib2/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib2\")\n"
-		    "set(PKGDIR \"lib2\")\n"
+		    "set(PKGDIR \"lib2" SEP "\")\n"
 		    "set(TN \"lib2\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -486,7 +537,7 @@ TEST(gen_cmake_pkg_rdepends)
 	fs_read(&com.fs, STRV("./exe/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"exe\")\n"
-		    "set(PKGDIR \"exe\")\n"
+		    "set(PKGDIR \"exe" SEP "\")\n"
 		    "set(TN \"exe\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -496,6 +547,54 @@ TEST(gen_cmake_pkg_rdepends)
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_zip)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_zip(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"pkg\")\n"
+		    "set(PKGDIR \"\")\n"
+		    "set(TN \"pkg\")\n"
+		    "set(URL url)\n"
+		    "set(ZIP_FILE ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/main.zip)\n"
+		    "set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/)\n"
+		    "set(URI_ROOT main)\n"
+		    "set(OUT out)\n"
+		    "set(CMD cmd)\n"
+		    "add_custom_target(${PN}_${TN} ALL\n"
+		    "\tCOMMAND ${CMD}\n"
+		    "\tWORKING_DIRECTORY ${EXT_DIR}${URI_ROOT}\n"
+		    ")\n"
+		    "file(DOWNLOAD ${URL} ${ZIP_FILE}\n"
+		    "\tSHOW_PROGRESS\n"
+		    ")\n"
+		    "file(MAKE_DIRECTORY \"${EXT_DIR}\")\n"
+		    "execute_process(\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${ZIP_FILE}\n"
+		    "\tWORKING_DIRECTORY ${EXT_DIR}\n"
+		    ")\n"
+		    "add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-${CONFIG}/ext/${PN}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}${URI_ROOT}${OUT} "
+		    "${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/${ARCH}-${CONFIG}/ext/${PN}/\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
 		    tmp.len);
 
@@ -515,6 +614,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_proj_unknown);
 	RUN(gen_cmake_proj_exe);
 	RUN(gen_cmake_proj_lib);
+	RUN(gen_cmake_proj_ext);
 	RUN(gen_cmake_proj_test);
 	RUN(gen_cmake_pkg_exe);
 	RUN(gen_cmake_pkg_lib);
@@ -522,6 +622,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_multi);
 	RUN(gen_cmake_pkg_depends);
 	RUN(gen_cmake_pkg_rdepends);
+	RUN(gen_cmake_pkg_zip);
 
 	SEND;
 }

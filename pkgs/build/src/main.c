@@ -1,8 +1,9 @@
 #include "args.h"
+#include "config_fs.h"
 #include "log.h"
 #include "mem.h"
 #include "path.h"
-#include "proj_fs.h"
+#include "proj_cfg.h"
 #include "proj_gen.h"
 
 int main(int argc, const char **argv)
@@ -69,9 +70,6 @@ int main(int argc, const char **argv)
 	proc_t proc = {0};
 	proc_init(&proc, 0, 0);
 
-	proj_t proj = {0};
-	proj_init(&proj, 4, 4, ALLOC_STD);
-
 	str_t cwd = strz(64);
 
 	if (fs_getcwd(&fs, &cwd)) {
@@ -101,11 +99,18 @@ int main(int argc, const char **argv)
 		pathv_rsplit(l, NULL, &name);
 	}
 	str_t buf = strz(1024);
-	if (proj_fs(&proj, &fs, &proc, STRVS(proj_rel), STRV_NULL, name, &buf, ALLOC_STD)) {
-		return 1;
-	}
 
-	proj_print(&proj, DST_STD());
+	config_t config = {0};
+	config_init(&config, 4, 8, 16, ALLOC_STD);
+	config_fs(&config, &fs, &proc, STRVS(proj_rel), STRV_NULL, name, &buf, ALLOC_STD, DST_STD());
+	config_print(&config, DST_STD());
+	proj_t proj = {0};
+	proj_init(&proj, 8, 16, ALLOC_STD);
+	proj_set_str(&proj, proj.name, name);
+	proj_cfg(&proj, &config);
+
+	config_free(&config);
+	str_free(&buf);
 
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 

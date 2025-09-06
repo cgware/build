@@ -58,8 +58,7 @@ mk() {
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
-
-	rm -rf "$bin" "$tmp"
+	rm -rf "$bin" "$tmp/build" "$tmp/ext"
 }
 
 cm() {
@@ -110,7 +109,6 @@ cm() {
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
-
 	rm -rf "$bin" "$build" "$tmp"
 }
 
@@ -125,8 +123,9 @@ test() {
 	gen "$@" 02_multi "bin/a bin/b"
 	gen "$@" 03_depends "bin/exe lib/lib.a"
 	gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
-	gen "$@" 05_extern bin/05_extern
+	gen "$@" 05_extern lib/cbase.a
 	gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
+	gen "$@" 07_zip ext/cbase/cbase.a
 }
 
 test x64 Debug

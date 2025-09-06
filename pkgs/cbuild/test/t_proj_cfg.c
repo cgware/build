@@ -1,17 +1,7 @@
 #include "proj_cfg.h"
 
 #include "log.h"
-#include "mem.h"
 #include "test.h"
-
-TEST(proj_cfg_null)
-{
-	START;
-
-	EXPECT_EQ(proj_cfg(NULL, NULL, 0, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-
-	END;
-}
 
 TEST(proj_cfg_empty)
 {
@@ -20,33 +10,34 @@ TEST(proj_cfg_empty)
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
 
-	cfg_var_t root;
-	cfg_root(&cfg, &root);
+	EXPECT_EQ(proj_cfg(NULL, NULL), 1);
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
 
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 0);
-
-	cfg_free(&cfg);
+	config_free(&config);
 	proj_free(&proj);
 
 	END;
 }
 
-TEST(proj_cfg_oom)
+TEST(proj_cfg_dir_empty)
 {
 	START;
 
 	proj_t proj = {0};
-	log_set_quiet(0, 1);
-	proj_init(&proj, 0, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
+	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	mem_oom(1);
-	EXPECT_EQ(proj_cfg(&proj, NULL, 0, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	mem_oom(0);
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
 
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	config_free(&config);
 	proj_free(&proj);
 
 	END;
@@ -56,32 +47,28 @@ TEST(proj_cfg_src)
 {
 	START;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("src"));
-
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
 
-	cfg_var_t root;
-	cfg_root(&cfg, &root);
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
 
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, &fs, NULL, STRV_NULL, STRV_NULL, STRV(""), &buf, ALLOC_STD), 0);
-	pkg_t *pkg = proj_get_pkg(&proj, 0);
-	strv_t src = proj_get_str(&proj, pkg->strs + PKG_SRC);
-	EXPECT_STRN(src.data, "src", src.len);
-	target_t *target = proj_get_target(&proj, 0);
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
+	const target_t *target = proj_get_target(&proj, 0);
+
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_SRC);
+	EXPECT_STRN(val.data, "src", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
 
-	cfg_free(&cfg);
+	config_free(&config);
 	proj_free(&proj);
-	fs_free(&fs);
 
 	END;
 }
@@ -90,32 +77,32 @@ TEST(proj_cfg_include)
 {
 	START;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("include"));
-
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
 
-	cfg_var_t root;
-	cfg_root(&cfg, &root);
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
 
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, &fs, NULL, STRV_NULL, STRV_NULL, STRV(""), &buf, ALLOC_STD), 0);
-	pkg_t *pkg = proj_get_pkg(&proj, 0);
-	strv_t inc = proj_get_str(&proj, pkg->strs + PKG_INC);
-	EXPECT_STRN(inc.data, "include", inc.len);
-	target_t *target = proj_get_target(&proj, 0);
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+	config_set_str(&config, d->strs + CONFIG_DIR_INC, STRV("include"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
+	const target_t *target = proj_get_target(&proj, 0);
+
+	strv_t val;
+	val = proj_get_str(&proj, pkg->strs + PKG_SRC);
+	EXPECT_STRN(val.data, "src", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_INC);
+	EXPECT_STRN(val.data, "include", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
 
-	cfg_free(&cfg);
+	config_free(&config);
 	proj_free(&proj);
-	fs_free(&fs);
 
 	END;
 }
@@ -124,507 +111,27 @@ TEST(proj_cfg_test)
 {
 	START;
 
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("test"));
-
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
 
-	cfg_var_t root;
-	cfg_root(&cfg, &root);
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
 
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, &fs, NULL, STRV_NULL, STRV_NULL, STRV(""), &buf, ALLOC_STD), 0);
-	pkg_t *pkg  = proj_get_pkg(&proj, 0);
-	strv_t test = proj_get_str(&proj, pkg->strs + PKG_TST);
-	EXPECT_STRN(test.data, "test", test.len);
-	target_t *target = proj_get_target(&proj, 1);
+	config_set_str(&config, d->strs + CONFIG_DIR_TEST, STRV("test"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
+	const target_t *target = proj_get_target(&proj, 0);
+
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_TST);
+	EXPECT_STRN(val.data, "test", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_TST);
 
-	cfg_free(&cfg);
-	proj_free(&proj);
-	fs_free(&fs);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_empty)
-{
-	START;
-
-	proj_t proj = {0};
-	log_set_quiet(0, 1);
-	proj_init(&proj, 0, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, pkg;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &pkg);
-	cfg_add_var(&cfg, root, pkg);
-
-	mem_oom(1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-	mem_oom(0);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV("p"), NULL, ALLOC_STD), 0);
-	EXPECT_NE(proj_find_pkg(&proj, STRV("p"), NULL), NULL);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_add)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_lit(&cfg, STRV("name"), STRV(""), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_oom)
-{
-	START;
-
-	proj_t proj = {0};
-	log_set_quiet(0, 1);
-	proj_init(&proj, 0, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_lit(&cfg, STRV("name"), STRV(""), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	mem_oom(1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-	mem_oom(0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_exist)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	proj_add_pkg(&proj, STRV(""), NULL)->inited = 1;
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_lit(&cfg, STRV("name"), STRV(""), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_not_inited)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	proj_add_pkg(&proj, STRV("p"), NULL);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_lit(&cfg, STRV("name"), STRV("p"), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 0);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_rename)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_lit(&cfg, STRV("name"), STRV("p"), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	pkg_t *pkg  = proj_get_pkg(&proj, 0);
-	strv_t name = proj_get_str(&proj, pkg->strs + PKG_NAME);
-	EXPECT_STRN(name.data, "p", name.len);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_no_name)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_no_src)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, pkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &pkg);
-	cfg_add_var(&cfg, root, pkg);
-	cfg_str(&cfg, STRV("src"), STRV("src"), &var);
-	cfg_add_var(&cfg, pkg, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_src)
-{
-	START;
-
-	fs_t fs = {0};
-	fs_init(&fs, 10, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("src"));
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_str(&cfg, STRV("src"), STRV("src"), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, &fs, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	pkg_t *pkg = proj_get_pkg(&proj, 0);
-	strv_t src = proj_get_str(&proj, pkg->strs + PKG_SRC);
-	EXPECT_STRN(src.data, "src", src.len);
-	target_t *target = proj_get_target(&proj, 0);
-	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-	fs_free(&fs);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_no_inc)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, pkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &pkg);
-	cfg_add_var(&cfg, root, pkg);
-	cfg_str(&cfg, STRV("include"), STRV("include"), &var);
-	cfg_add_var(&cfg, pkg, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_inc)
-{
-	START;
-
-	fs_t fs = {0};
-	fs_init(&fs, 10, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("include"));
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_str(&cfg, STRV("include"), STRV("include"), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, &fs, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	pkg_t *pkg = proj_get_pkg(&proj, 0);
-	strv_t inc = proj_get_str(&proj, pkg->strs + PKG_INC);
-	EXPECT_STRN(inc.data, "include", inc.len);
-	target_t *target = proj_get_target(&proj, 0);
-	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-	fs_free(&fs);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_no_test)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, pkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &pkg);
-	cfg_add_var(&cfg, root, pkg);
-	cfg_str(&cfg, STRV("test"), STRV("test"), &var);
-	cfg_add_var(&cfg, pkg, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_test)
-{
-	START;
-
-	fs_t fs = {0};
-	fs_init(&fs, 10, 1, ALLOC_STD);
-
-	fs_mkdir(&fs, STRV("test"));
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, cpkg, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &cpkg);
-	cfg_add_var(&cfg, root, cpkg);
-	cfg_str(&cfg, STRV("test"), STRV("test"), &var);
-	cfg_add_var(&cfg, cpkg, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, &fs, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	pkg_t *pkg  = proj_get_pkg(&proj, 0);
-	strv_t test = proj_get_str(&proj, pkg->strs + PKG_TST);
-	EXPECT_STRN(test.data, "test", test.len);
-	target_t *target = proj_get_target(&proj, 1);
-	EXPECT_EQ(target->type, TARGET_TYPE_TST);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-	fs_free(&fs);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_deps_type)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, pkg, deps, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &pkg);
-	cfg_add_var(&cfg, root, pkg);
-	cfg_arr(&cfg, STRV("deps"), &deps);
-	cfg_add_var(&cfg, pkg, deps);
-	cfg_str(&cfg, STRV_NULL, STRV("p"), &var);
-	cfg_add_var(&cfg, deps, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_deps_oom)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, pkg, deps, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &pkg);
-	cfg_add_var(&cfg, root, pkg);
-	cfg_arr(&cfg, STRV("deps"), &deps);
-	cfg_add_var(&cfg, pkg, deps);
-	cfg_lit(&cfg, STRV_NULL, STRV("p"), &var);
-	cfg_add_var(&cfg, deps, var);
-
-	mem_oom(1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	mem_oom(0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_pkg_deps)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, pkg, deps, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &pkg);
-	cfg_add_var(&cfg, root, pkg);
-	cfg_arr(&cfg, STRV("deps"), &deps);
-	cfg_add_var(&cfg, pkg, deps);
-	cfg_lit(&cfg, STRV_NULL, STRV("p"), &var);
-	cfg_add_var(&cfg, deps, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-
-	char buf[64] = {0};
-	proj_print_deps(&proj, DST_BUF(buf));
-	EXPECT_STR(buf,
-		   "\n"
-		   "  : p:p\n"
-		   "p\n"
-		   "  p:\n");
-
-	cfg_free(&cfg);
+	config_free(&config);
 	proj_free(&proj);
 
 	END;
@@ -632,506 +139,274 @@ TEST(proj_cfg_pkg_deps)
 
 TEST(proj_cfg_pkg)
 {
-	SSTART;
+	START;
 
-	RUN(proj_cfg_pkg_empty);
-	RUN(proj_cfg_pkg_add);
-	RUN(proj_cfg_pkg_oom);
-	RUN(proj_cfg_pkg_exist);
-	RUN(proj_cfg_pkg_not_inited);
-	RUN(proj_cfg_pkg_rename);
-	RUN(proj_cfg_pkg_no_name);
-	RUN(proj_cfg_pkg_no_src);
-	RUN(proj_cfg_pkg_src);
-	RUN(proj_cfg_pkg_no_inc);
-	RUN(proj_cfg_pkg_inc);
-	RUN(proj_cfg_pkg_no_test);
-	RUN(proj_cfg_pkg_test);
-	RUN(proj_cfg_pkg_deps_type);
-	RUN(proj_cfg_pkg_deps_oom);
-	RUN(proj_cfg_pkg_deps);
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	SEND;
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_DIR_NAME, STRV("name"));
+
+	list_node_t cpkg;
+	config_add_pkg(&config, dir, &cpkg);
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const pkg_t *pkg = proj_get_pkg(&proj, 0);
+
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_NAME);
+	EXPECT_STRN(val.data, "name", val.len);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
 }
 
-TEST(proj_cfg_target_no_pkg)
+TEST(proj_cfg_uri)
 {
 	START;
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
 
-	cfg_var_t root, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	list_node_t cpkg;
+	config_pkg_t *p = config_add_pkg(&config, dir, &cpkg);
+
+	config_set_str(&config, p->strs + CONFIG_PKG_URI, STRV("https://host.com/file.zip"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const pkg_t *pkg = proj_get_pkg(&proj, 0);
+
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_URI_STR);
+	EXPECT_STRN(val.data, "https://host.com/file.zip", val.len);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_target)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_DIR_NAME, STRV("name"));
+
+	list_node_t cpkg;
+	config_add_pkg(&config, dir, &cpkg);
+
+	config_add_target(&config, cpkg, NULL);
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const target_t *target = proj_get_target(&proj, 0);
+
+	strv_t val = proj_get_str(&proj, target->strs + PKG_NAME);
+	EXPECT_STRN(val.data, "name", val.len);
+	EXPECT_EQ(target->type, TARGET_TYPE_UNKNOWN);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_target_mod)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	list_node_t cpkg;
+	config_add_pkg(&config, dir, &cpkg);
+	config_add_target(&config, cpkg, NULL);
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+	EXPECT_EQ(proj.targets.cnt, 1);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_target_ext)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	list_node_t cpkg;
+	config_pkg_t *p = config_add_pkg(&config, dir, &cpkg);
+
+	config_set_str(&config, p->strs + CONFIG_PKG_URI, STRV("https://host.com/file.zip"));
+
+	list_node_t ctarget;
+	config_add_target(&config, cpkg, &ctarget);
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const target_t *target = proj_get_target(&proj, 0);
+
+	EXPECT_EQ(target->type, TARGET_TYPE_EXT);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_pkg_dep)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_PKG_NAME, STRV("dep"));
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	list_node_t cpkg;
+	config_add_pkg(&config, dir, &cpkg);
+
+	d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	list_node_t cpkg2;
+	config_add_pkg(&config, dir, &cpkg2);
+	config_add_dep(&config, cpkg2, STRV("dep"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	arr_t deps = {0};
+	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
+	proj_get_deps(&proj, 1, &deps);
+	EXPECT_EQ(deps.cnt, 1);
+	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 0);
+	arr_free(&deps);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_pkg_dep_not_found)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	list_node_t cpkg;
+	config_add_pkg(&config, dir, &cpkg);
+	config_add_dep(&config, cpkg, STRV("dep"));
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
 	log_set_quiet(0, 0);
 
-	cfg_free(&cfg);
+	config_free(&config);
 	proj_free(&proj);
 
 	END;
 }
 
-TEST(proj_cfg_target_empty)
+TEST(proj_cfg_pkg_dep_test)
 {
 	START;
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
 
-	cfg_var_t root, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+	config_set_str(&config, d->strs + CONFIG_DIR_INC, STRV("include"));
+	config_set_str(&config, d->strs + CONFIG_DIR_TEST, STRV("test"));
 
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
 
-	cfg_free(&cfg);
+	arr_t deps = {0};
+	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
+	proj_get_deps(&proj, 1, &deps);
+	EXPECT_EQ(deps.cnt, 1);
+	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 0);
+	arr_free(&deps);
+
+	config_free(&config);
 	proj_free(&proj);
 
 	END;
-}
-
-TEST(proj_cfg_target_add)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, ctarget;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &ctarget);
-	cfg_add_var(&cfg, root, ctarget);
-	cfg_lit(&cfg, STRV("name"), STRV("target"), &var);
-	cfg_add_var(&cfg, ctarget, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	target_t *target = proj_get_target(&proj, 0);
-	strv_t name	 = proj_get_str(&proj, target->strs + TARGET_NAME);
-	EXPECT_STRN(name.data, "", name.len);
-	target = proj_get_target(&proj, 1);
-	name   = proj_get_str(&proj, target->strs + TARGET_NAME);
-	EXPECT_STRN(name.data, "target", name.len);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_oom)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, ctarget;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &ctarget);
-	cfg_add_var(&cfg, root, ctarget);
-	cfg_lit(&cfg, STRV("name"), STRV("target"), &var);
-	cfg_add_var(&cfg, ctarget, var);
-
-	mem_oom(1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	mem_oom(0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_exist)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, target;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &target);
-	cfg_add_var(&cfg, root, target);
-	cfg_lit(&cfg, STRV("name"), STRV(""), &var);
-	cfg_add_var(&cfg, target, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_not_inited)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	proj_add_pkg(&proj, STRV("p"), NULL);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, target;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &target);
-	cfg_add_var(&cfg, root, target);
-	cfg_lit(&cfg, STRV("name"), STRV("p"), &var);
-	cfg_add_var(&cfg, target, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_rename)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, ctarget;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &ctarget);
-	cfg_add_var(&cfg, root, ctarget);
-	cfg_lit(&cfg, STRV("name"), STRV("target"), &var);
-	cfg_add_var(&cfg, ctarget, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	target_t *target = proj_get_target(&proj, 0);
-	strv_t name	 = proj_get_str(&proj, target->strs + TARGET_NAME);
-	EXPECT_STRN(name.data, "target", name.len);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_no_name)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &var);
-	cfg_add_var(&cfg, root, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_type_exe)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, ctarget;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &ctarget);
-	cfg_add_var(&cfg, root, ctarget);
-	cfg_lit(&cfg, STRV("type"), STRV("EXE"), &var);
-	cfg_add_var(&cfg, ctarget, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	target_t *target = proj_get_target(&proj, 0);
-	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_type_lib)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, ctarget;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &ctarget);
-	cfg_add_var(&cfg, root, ctarget);
-	cfg_lit(&cfg, STRV("type"), STRV("LIB"), &var);
-	cfg_add_var(&cfg, ctarget, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 0);
-	target_t *target = proj_get_target(&proj, 0);
-	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_target_type_unknown)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, var, ctarget;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("pkg"), &var);
-	cfg_add_var(&cfg, root, var);
-	cfg_tbl(&cfg, STRV("target"), &ctarget);
-	cfg_add_var(&cfg, root, ctarget);
-	cfg_lit(&cfg, STRV("type"), STRV("UNKNOWN"), &var);
-	cfg_add_var(&cfg, ctarget, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV(""), NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-STEST(proj_cfg_target)
-{
-	SSTART;
-
-	RUN(proj_cfg_target_no_pkg);
-	RUN(proj_cfg_target_empty);
-	RUN(proj_cfg_target_add);
-	RUN(proj_cfg_target_oom);
-	RUN(proj_cfg_target_exist);
-	RUN(proj_cfg_target_not_inited);
-	RUN(proj_cfg_target_rename);
-	RUN(proj_cfg_target_no_name);
-	RUN(proj_cfg_target_type_exe);
-	RUN(proj_cfg_target_type_lib);
-	RUN(proj_cfg_target_type_unknown);
-
-	SEND;
-}
-
-TEST(proj_cfg_ext_type)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, ext, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("ext"), &ext);
-	cfg_add_var(&cfg, root, ext);
-	cfg_lit(&cfg, STRV("pkg"), STRV("url"), &var);
-	cfg_add_var(&cfg, ext, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_ext_oom)
-{
-	START;
-
-	proj_t proj = {0};
-	log_set_quiet(0, 1);
-	proj_init(&proj, 0, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, ext, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("ext"), &ext);
-	cfg_add_var(&cfg, root, ext);
-	cfg_str(&cfg, STRV("pkg"), STRV("git:repo"), &var);
-	cfg_add_var(&cfg, ext, var);
-
-	mem_oom(1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-	mem_oom(0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_ext_format)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, ext, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("ext"), &ext);
-	cfg_add_var(&cfg, root, ext);
-	cfg_str(&cfg, STRV("pkg"), STRV("git"), &var);
-	cfg_add_var(&cfg, ext, var);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 1);
-	log_set_quiet(0, 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-TEST(proj_cfg_ext_uri)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	cfg_t cfg = {0};
-	cfg_init(&cfg, 1, 1, ALLOC_STD);
-
-	cfg_var_t root, ext, var;
-	cfg_root(&cfg, &root);
-	cfg_tbl(&cfg, STRV("ext"), &ext);
-	cfg_add_var(&cfg, root, ext);
-	cfg_str(&cfg, STRV("pkg"), STRV("git:repo"), &var);
-	cfg_add_var(&cfg, ext, var);
-
-	EXPECT_EQ(proj_cfg(&proj, &cfg, root, NULL, NULL, STRV_NULL, STRV_NULL, STRV_NULL, NULL, ALLOC_STD), 0);
-
-	cfg_free(&cfg);
-	proj_free(&proj);
-
-	END;
-}
-
-STEST(proj_cfg_ext)
-{
-	SSTART;
-
-	RUN(proj_cfg_ext_type);
-	RUN(proj_cfg_ext_oom);
-	RUN(proj_cfg_ext_format);
-	RUN(proj_cfg_ext_uri);
-
-	SEND;
 }
 
 STEST(proj_cfg)
 {
 	SSTART;
 
-	RUN(proj_cfg_null);
 	RUN(proj_cfg_empty);
-	RUN(proj_cfg_oom);
+	RUN(proj_cfg_dir_empty);
 	RUN(proj_cfg_src);
 	RUN(proj_cfg_include);
 	RUN(proj_cfg_test);
 	RUN(proj_cfg_pkg);
+	RUN(proj_cfg_uri);
 	RUN(proj_cfg_target);
-	RUN(proj_cfg_ext);
+	RUN(proj_cfg_target_mod);
+	RUN(proj_cfg_target_ext);
+	RUN(proj_cfg_pkg_dep);
+	RUN(proj_cfg_pkg_dep_not_found);
+	RUN(proj_cfg_pkg_dep_test);
 
 	SEND;
 }

@@ -2,13 +2,15 @@
 #include "mem.h"
 #include "test.h"
 
+STEST(config);
+STEST(config_cfg);
+STEST(config_fs);
 STEST(gen);
 STEST(gen_cmake);
 STEST(gen_make);
 STEST(gen_none);
 STEST(proj);
 STEST(proj_cfg);
-STEST(proj_fs);
 STEST(proj_gen);
 STEST(proj_utils);
 STEST(var);
@@ -16,13 +18,15 @@ STEST(var);
 TEST(cbuild)
 {
 	SSTART;
+	RUN(config);
+	RUN(config_cfg);
+	RUN(config_fs);
 	RUN(gen);
 	RUN(gen_make);
 	RUN(gen_none);
 	RUN(gen_cmake);
 	RUN(proj);
 	RUN(proj_cfg);
-	RUN(proj_fs);
 	RUN(proj_gen);
 	RUN(proj_utils);
 	RUN(var);

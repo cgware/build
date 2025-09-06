@@ -1,314 +1,196 @@
 #include "proj_cfg.h"
 
 #include "log.h"
-#include "proj_fs.h"
 #include "proj_utils.h"
 
-int proj_cfg(proj_t *proj, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc, strv_t proj_dir, strv_t pkg_dir, strv_t pkg_name, str_t *buf,
-	     alloc_t alloc)
+int proj_cfg(proj_t *proj, const config_t *config)
 {
 	if (proj == NULL) {
 		return 1;
 	}
 
 	int ret = 0;
+	uint i;
 
-	if (pkg_name.data) {
-		uint pkg_id, target_id;
+	proj_set_str(proj, proj->outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
-		pkg_t *pkg = pkg = proj_add_pkg_target(proj, pkg_name, &pkg_id, &target_id);
-		if (pkg == NULL) {
-			log_error("cbuild", "proj_cfg", NULL, "failed to add package: '%.*s'", pkg_name.len, pkg_name.data);
-			return 1;
-		}
-		target_t *target = proj_get_target(proj, target_id);
-
-		proj_set_str(proj, pkg->strs + PKG_DIR, pkg_dir);
-
-		path_t path = {0};
-		path_init(&path, proj_dir);
-		path_push(&path, pkg_dir);
-		size_t path_len = path.len;
-
-		path_push(&path, STRV("src"));
-		if (fs_isdir(fs, STRVS(path))) {
-			proj_set_str(proj, pkg->strs + PKG_SRC, STRV("src"));
-			target->type = TARGET_TYPE_EXE;
-		}
-		path.len = path_len;
-
-		path_push(&path, STRV("include"));
-		if (fs_isdir(fs, STRVS(path))) {
-			proj_set_str(proj, pkg->strs + PKG_INC, STRV("include"));
-			target->type = TARGET_TYPE_LIB;
-		}
-		path.len = path_len;
-
-		path_push(&path, STRV("test"));
-		if (fs_isdir(fs, STRVS(path))) {
-			uint test_target;
-			proj_set_str(proj, pkg->strs + PKG_TST, STRV("test"));
-			target	     = proj_add_target(proj, pkg_id, STRV("test"), &test_target);
-			target->type = TARGET_TYPE_TST;
-			proj_add_dep(proj, test_target, target_id);
-		}
-		path.len = path_len;
-	}
-
-	uint pkg_id, target_id;
-	pkg_t *pkg	 = NULL;
-	target_t *target = NULL;
-	cfg_var_t var;
-
-	void *data;
-	cfg_var_t tbl;
-	cfg_foreach(cfg, root, data, &tbl)
+	i = 0;
+	const config_dir_t *dir;
+	arr_foreach(&config->dirs, i, dir)
 	{
-		strv_t key = cfg_get_key(cfg, tbl);
-		if (strv_eq(key, STRV("pkg"))) {
-			strv_t name = {0};
-			if (cfg_has_var(cfg, tbl, STRV("name"), &var)) {
-				cfg_get_lit(cfg, var, &name);
-			} else {
-				name = pkg_name;
-			}
+		strv_t name = config_get_str(config, dir->strs + CONFIG_DIR_NAME);
+		strv_t path = config_get_str(config, dir->strs + CONFIG_DIR_PATH);
+		strv_t src  = config_get_str(config, dir->strs + CONFIG_DIR_SRC);
+		strv_t inc  = config_get_str(config, dir->strs + CONFIG_DIR_INC);
+		strv_t test = config_get_str(config, dir->strs + CONFIG_DIR_TEST);
 
-			pkg = proj_find_pkg(proj, pkg_name, &pkg_id);
-			if (pkg) {
-				target = proj_find_target(proj, pkg_id, pkg_name, &target_id);
-			}
+		uint pkg_id;
+		pkg_t *pkg	 = NULL;
+		target_t *target = NULL;
 
-			if (cfg_has_var(cfg, tbl, STRV("name"), &var)) {
-				cfg_get_lit(cfg, var, &name);
-				if (pkg == NULL || pkg->inited) {
-					pkg = proj_find_pkg(proj, name, &pkg_id);
-					if (pkg == NULL) {
-						pkg = proj_add_pkg_target(proj, name, &pkg_id, &target_id);
-						if (pkg == NULL) {
-							log_error("cbuild",
-								  "proj_cfg",
-								  NULL,
-								  "failed to add package: '%.*s'",
-								  name.len,
-								  name.data);
-							ret = 1;
-							continue;
-						}
-						target = proj_get_target(proj, target_id);
-					} else if (pkg->inited) {
-						log_error(
-							"cbuild", "proj_cfg", NULL, "package already exists: '%.*s'", name.len, name.data);
-						ret    = 1;
-						target = proj_find_target(proj, pkg_id, name, &target_id);
-					} else {
-						target = proj_find_target(proj, pkg_id, name, &target_id);
-					}
-				} else {
-					proj_set_str(proj, pkg->strs + PKG_NAME, name);
-					proj_set_str(proj, target->strs + TARGET_NAME, name);
+		if (src.len > 0 || inc.len > 0 || test.len > 0) {
+			pkg = proj_add_pkg(proj, &pkg_id);
+
+			proj_set_str(proj, pkg->strs + PKG_NAME, name);
+			proj_set_str(proj, pkg->strs + PKG_PATH, path);
+			proj_set_str(proj, pkg->strs + PKG_SRC, src);
+			proj_set_str(proj, pkg->strs + PKG_INC, inc);
+			proj_set_str(proj, pkg->strs + PKG_TST, test);
+
+			if (src.len > 0 || inc.len > 0) {
+				list_node_t target_id;
+				target = proj_add_target(proj, pkg_id, &target_id);
+				proj_set_str(proj, target->strs + TARGET_NAME, name);
+
+				if (src.len > 0) {
+					target->type = TARGET_TYPE_EXE;
 				}
-			} else {
-				if (pkg == NULL || pkg->inited) {
-					log_error("cbuild", "proj_cfg", NULL, "package name is required");
-					ret = 1;
-					continue;
+
+				if (inc.len > 0) {
+					target->type = TARGET_TYPE_LIB;
 				}
 			}
-
-			proj_set_str(proj, pkg->strs + PKG_DIR, pkg_dir);
-
-			path_t path = {0};
-			path_init(&path, proj_dir);
-			path_push(&path, pkg_dir);
-			size_t path_len = path.len;
-
-			strv_t src = {0};
-			if (cfg_has_var(cfg, tbl, STRV("src"), &var)) {
-				cfg_get_str(cfg, var, &src);
-				path_push(&path, src);
-				if (!fs_isdir(fs, STRVS(path))) {
-					src.len = 0;
-					log_error("cbuild", "proj_cfg", NULL, "src does not exist: '%.*s'", path.len, path.data);
-					ret = 1;
-				}
-			} else {
-				src = STRV("src");
-				path_push(&path, src);
-				if (!fs_isdir(fs, STRVS(path))) {
-					src.len = 0;
-				}
-			}
-			path.len = path_len;
-
-			if (src.len > 0) {
-				proj_set_str(proj, pkg->strs + PKG_SRC, src);
-				target->type = TARGET_TYPE_EXE;
-			}
-
-			strv_t inc = {0};
-			if (cfg_has_var(cfg, tbl, STRV("include"), &var)) {
-				cfg_get_str(cfg, var, &inc);
-				path_push(&path, inc);
-				if (!fs_isdir(fs, STRVS(path))) {
-					inc.len = 0;
-					log_error("cbuild", "proj_cfg", NULL, "include does not exist: '%.*s'", path.len, path.data);
-					ret = 1;
-				}
-			} else {
-				inc = STRV("include");
-				path_push(&path, inc);
-				if (!fs_isdir(fs, STRVS(path))) {
-					inc.len = 0;
-				}
-			}
-			path.len = path_len;
-
-			if (inc.len > 0) {
-				proj_set_str(proj, pkg->strs + PKG_INC, inc);
-				target->type = TARGET_TYPE_LIB;
-			}
-
-			strv_t test = {0};
-			if (cfg_has_var(cfg, tbl, STRV("test"), &var)) {
-				cfg_get_str(cfg, var, &test);
-				path_push(&path, test);
-				if (!fs_isdir(fs, STRVS(path))) {
-					test.len = 0;
-					log_error("cbuild", "proj_cfg", NULL, "test does not exist: '%.*s'", path.len, path.data);
-					ret = 1;
-				}
-			} else {
-				test = STRV("test");
-				path_push(&path, test);
-				if (!fs_isdir(fs, STRVS(path))) {
-					test.len = 0;
-				}
-			}
-			path.len = path_len;
 
 			if (test.len > 0) {
-				proj_set_str(proj, pkg->strs + PKG_TST, test);
-				target	     = proj_find_target(proj, pkg_id, STRV("test"), &target_id);
+				list_node_t target_id;
+				target = proj_add_target(proj, pkg_id, &target_id);
+				proj_set_str(proj, target->strs + TARGET_NAME, name);
+				strbuf_app(&proj->strs, target->strs + TARGET_NAME, STRV("_test"));
 				target->type = TARGET_TYPE_TST;
 			}
+		}
 
-			if (cfg_has_var(cfg, tbl, STRV("deps"), &var)) {
-				cfg_var_t dep;
-				void *data;
-				cfg_foreach(cfg, var, data, &dep)
-				{
-					strv_t uri;
-					if (cfg_get_lit(cfg, dep, &uri)) {
-						log_error("cbuild", "proj_cfg", NULL, "invalid dependency");
-						ret = 1;
-						continue;
-					}
-
-					if (proj_add_dep_uri(proj, target_id, uri)) {
-						log_error("cbuild", "proj_cfg", NULL, "failed to dependency");
-						ret = 1;
-					}
-				}
-			}
-
-			pkg->inited = 1;
-		} else if (strv_eq(key, STRV("target"))) {
-			if (pkg == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target must be defined in a package");
-				ret = 1;
-				continue;
-			}
-
-			strv_t name = {0};
-			if (cfg_has_var(cfg, tbl, STRV("name"), &var)) {
-				cfg_get_lit(cfg, var, &name);
-				if (target == NULL || target->inited) {
-					target = proj_find_target(proj, pkg_id, name, &target_id);
-					if (target == NULL) {
-						target = proj_add_target(proj, pkg_id, name, &target_id);
-						if (target == NULL) {
-							log_error("cbuild",
-								  "proj_cfg",
-								  NULL,
-								  "failed to add target: '%.*s'",
-								  name.len,
-								  name.data);
-							ret = 1;
-							continue;
-						}
-					} else if (target->inited) {
-						log_error("cbuild", "proj_cfg", NULL, "target already exists: '%.*s'", name.len, name.data);
-						ret = 1;
-					}
-				} else {
-					proj_set_str(proj, target->strs + TARGET_NAME, name);
-				}
-			} else {
-				if (target == NULL || target->inited) {
-					log_error("cbuild", "proj_cfg", NULL, "target name is required");
-					ret = 1;
-					continue;
-				}
-			}
-
-			if (cfg_has_var(cfg, tbl, STRV("type"), &var)) {
-				strv_t type = {0};
-				cfg_get_lit(cfg, var, &type);
-				if (strv_eq(type, STRV("EXE"))) {
-					target->type = TARGET_TYPE_EXE;
-				} else if (strv_eq(type, STRV("LIB"))) {
-					target->type = TARGET_TYPE_LIB;
-				} else {
-					log_error("cbuild",
-						  "proj_cfg",
-						  NULL,
-						  "unknown target type: '%.*s': '%.*s'",
-						  name.len,
-						  name.data,
-						  type.len,
-						  type.data);
-					ret = 1;
-				}
-			}
-
-			target->inited = 1;
-		} else if (strv_eq(key, STRV("ext"))) {
-			void *data;
-			cfg_var_t ext;
-			cfg_foreach(cfg, tbl, data, &ext)
+		if (dir->has_pkgs) {
+			config_pkg_t *cfg_pkg;
+			list_node_t pkgs = dir->pkgs;
+			list_foreach(&config->pkgs, pkgs, cfg_pkg)
 			{
-				strv_t name = cfg_get_key(cfg, ext);
-				strv_t uri;
-				if (cfg_get_str(cfg, ext, &uri)) {
-					log_error("cbuild", "pkg_loader", NULL, "invalid extern format");
-					ret = 1;
+				strv_t uri = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_URI);
+
+				if (pkg == NULL || uri.len > 0) {
+					pkg = proj_add_pkg(proj, &pkg_id);
+
+					proj_set_str(proj, pkg->strs + PKG_PATH, path);
+					proj_set_str(proj, pkg->strs + PKG_SRC, src);
+					proj_set_str(proj, pkg->strs + PKG_INC, inc);
+					proj_set_str(proj, pkg->strs + PKG_TST, test);
+
+					if (uri.len > 0) {
+						ret |= proj_set_uri(proj, pkg, uri);
+						name = proj_get_str(proj, pkg->strs + PKG_NAME);
+					} else {
+						proj_set_str(proj, pkg->strs + PKG_NAME, name);
+					}
+				}
+
+				cfg_pkg->pkg = pkg_id;
+
+				if (cfg_pkg->has_targets) {
+					config_target_t *cfg_target;
+					list_node_t targets = cfg_pkg->targets;
+
+					list_node_t target_id = pkg->targets;
+
+					target = pkg->has_targets ? list_get(&proj->targets, pkg->targets) : NULL;
+
+					int created = 0;
+
+					list_foreach(&config->targets, targets, cfg_target)
+					{
+						strv_t cmd = config_get_str(config, cfg_target->strs + CONFIG_TARGET_CMD);
+						strv_t out = config_get_str(config, cfg_target->strs + CONFIG_TARGET_OUT);
+
+						if (target == NULL || uri.len > 0) {
+							target = proj_add_target(proj, pkg_id, &target_id);
+							proj_set_str(proj, target->strs + TARGET_NAME, name);
+							created = 1;
+						}
+
+						proj_set_str(proj, target->strs + TARGET_CMD, cmd);
+						proj_set_str(proj, target->strs + TARGET_OUT, out);
+
+						if (uri.len > 0) {
+							target->type = TARGET_TYPE_EXT;
+						}
+
+						if (!created) {
+							target = list_get_next(&proj->targets, target_id, &target_id);
+						}
+					}
+				}
+
+				pkg = NULL;
+			}
+		}
+	}
+
+	i = 0;
+	config_pkg_t *cfg_pkg;
+	list_foreach_all(&config->pkgs, i, cfg_pkg)
+	{
+		if (cfg_pkg->has_deps) {
+			const uint *dep;
+			list_node_t deps = cfg_pkg->deps;
+			list_foreach(&config->deps, deps, dep)
+			{
+				strv_t dep_str = config_get_str(config, *dep);
+				uint dep_pkg_id;
+				pkg_t *dep_pkg = proj_find_pkg(proj, dep_str, &dep_pkg_id);
+				if (dep_pkg == NULL) {
+					log_error("cbuild", "proj_cfg", NULL, "package not found: %.*s", dep_str.len, dep_str.data);
 					continue;
 				}
 
-				pkg_t *ext_pkg = proj_add_pkg_target(proj, name, NULL, NULL);
-				if (ext_pkg == NULL) {
-					ret = 1;
+				uint dep_target_id;
+				uint found = 0;
+				if (dep_pkg->has_targets) {
+					target_t *target;
+					list_node_t j = dep_pkg->targets;
+					list_foreach(&proj->targets, j, target)
+					{
+						dep_target_id = j;
+						found	      = 1;
+						break;
+					}
+				}
+
+				if (found) {
+					pkg_t *pkg = arr_get(&proj->pkgs, cfg_pkg->pkg);
+					if (pkg->has_targets) {
+						target_t *target;
+						list_node_t j = pkg->targets;
+						list_foreach(&proj->targets, j, target)
+						{
+							proj_add_dep(proj, j, dep_target_id);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	i = 0;
+	const pkg_t *pkg;
+	arr_foreach(&proj->pkgs, i, pkg)
+	{
+		if (pkg->has_targets) {
+			target_t *target;
+			list_node_t j = pkg->targets;
+			list_foreach(&proj->targets, j, target)
+			{
+				if (target->type != TARGET_TYPE_TST) {
 					continue;
 				}
 
-				if (proj_set_ext_uri(proj, ext_pkg, uri)) {
-					ret = 1;
-					continue;
+				const target_t *dep_target;
+				list_node_t k = pkg->targets;
+				list_foreach(&proj->targets, k, dep_target)
+				{
+					if (dep_target->type == TARGET_TYPE_LIB) {
+						proj_add_dep(proj, j, k);
+						break;
+					}
 				}
-
-				path_t dir = {0};
-				path_init(&dir, name);
-				path_push(&dir, STRV(""));
-
-				ret |= proj_fs_git(proj,
-						   fs,
-						   proc,
-						   proj_dir,
-						   STRVS(dir),
-						   name,
-						   proj_get_str(proj, ext_pkg->strs + PKG_URL),
-						   buf,
-						   alloc);
 			}
 		}
 	}

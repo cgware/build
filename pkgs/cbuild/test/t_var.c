@@ -5,7 +5,16 @@
 #include "str.h"
 #include "test.h"
 
-TEST(var_replace)
+TEST(var_replace_null)
+{
+	START;
+
+	EXPECT_EQ(var_replace(NULL, NULL), 1);
+
+	END;
+}
+
+TEST(var_replace_none)
 {
 	START;
 
@@ -13,64 +22,112 @@ TEST(var_replace)
 
 	char buf[16] = {0};
 	str_t str    = STRB(buf, 0);
+	str_cat(&str, STRV("bin"));
 
-	EXPECT_EQ(var_replace(NULL, NULL), 1);
+	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_STRN(str.data, "bin", str.len);
 
-	{
-		str.len = 0;
-		str_cat(&str, STRV("bin"));
+	END;
+}
 
-		EXPECT_EQ(var_replace(&str, values), 0);
-		EXPECT_STRN(str.data, "bin", str.len);
-	}
+TEST(var_replace_no_end)
+{
+	START;
 
-	{
-		str.len = 0;
-		str_cat(&str, STRV("${aaaaa"));
+	strv_t values[__VAR_CNT] = {0};
 
-		EXPECT_EQ(var_replace(&str, values), 0);
-		EXPECT_STRN(str.data, "${aaaaa", str.len);
-	}
+	char buf[16] = {0};
+	str_t str    = STRB(buf, 0);
+	str_cat(&str, STRV("${aaaaa"));
 
-	{
-		str.len = 0;
-		str_cat(&str, STRV("${ARCH}"));
+	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_STRN(str.data, "${aaaaa", str.len);
 
-		EXPECT_EQ(var_replace(&str, values), 0);
-		EXPECT_STRN(str.data, "${ARCH}", str.len);
-	}
+	END;
+}
 
-	{
-		str.len = 0;
-		str_cat(&str, STRV("${NOT_EXISTS}"));
+TEST(var_replace_not_set)
+{
+	START;
 
-		EXPECT_EQ(var_replace(&str, values), 0);
-		EXPECT_STRN(str.data, "${NOT_EXISTS}", str.len);
-	}
+	strv_t values[__VAR_CNT] = {0};
 
-	{
-		strv_t values_c[__VAR_CNT] = {
-			[VAR_ARCH] = STRVT("123456789"),
-		};
-		size_t size = str.size;
-		str.size    = 8;
-		str.len	    = 0;
-		str_cat(&str, STRV("${ARCH}"));
-		mem_oom(1);
-		EXPECT_EQ(var_replace(&str, values_c), 1);
-		mem_oom(0);
-		EXPECT_STRN(str.data, "${ARCH}", str.len);
-		str.size = size;
-	}
-	{
-		strv_t values_c[__VAR_CNT] = {
-			[VAR_ARCH] = STRVT(""),
-		};
-		str.len = 0;
-		str_cat(&str, STRV("${ARCH}"));
-		EXPECT_EQ(var_replace(&str, values_c), 0);
-		EXPECT_STRN(str.data, "", str.len);
-	}
+	char buf[16] = {0};
+	str_t str    = STRB(buf, 0);
+	str_cat(&str, STRV("${ARCH}"));
+
+	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_STRN(str.data, "${ARCH}", str.len);
+
+	END;
+}
+
+TEST(var_replace_not_exists)
+{
+	START;
+
+	strv_t values[__VAR_CNT] = {0};
+
+	char buf[16] = {0};
+	str_t str    = STRB(buf, 0);
+	str_cat(&str, STRV("${NOT_EXISTS}"));
+
+	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_STRN(str.data, "${NOT_EXISTS}", str.len);
+
+	END;
+}
+
+TEST(var_replace_oom)
+{
+	START;
+
+	strv_t values[__VAR_CNT] = {
+		[VAR_ARCH] = STRVT("123456789"),
+	};
+
+	char buf[8] = {0};
+	str_t str   = STRB(buf, 0);
+	str_cat(&str, STRV("${ARCH}"));
+
+	mem_oom(1);
+	EXPECT_EQ(var_replace(&str, values), 1);
+	mem_oom(0);
+	EXPECT_STRN(str.data, "${ARCH}", str.len);
+
+	END;
+}
+
+TEST(var_replace_empty)
+{
+	START;
+
+	strv_t values[__VAR_CNT] = {
+		[VAR_ARCH] = STRVT(""),
+	};
+
+	char buf[16] = {0};
+	str_t str    = STRB(buf, 0);
+	str_cat(&str, STRV("${ARCH}"));
+	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_STRN(str.data, "", str.len);
+
+	END;
+}
+
+TEST(var_replace_same)
+{
+	START;
+
+	strv_t values[__VAR_CNT] = {
+		[VAR_ARCH] = STRVT("${ARCH}"),
+	};
+
+	char buf[16] = {0};
+	str_t str    = STRB(buf, 0);
+	str_cat(&str, STRV("${ARCH}"));
+	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_STRN(str.data, "${ARCH}", str.len);
 
 	END;
 }
@@ -79,7 +136,14 @@ STEST(var)
 {
 	SSTART;
 
-	RUN(var_replace);
+	RUN(var_replace_null);
+	RUN(var_replace_none);
+	RUN(var_replace_no_end);
+	RUN(var_replace_not_set);
+	RUN(var_replace_not_exists);
+	RUN(var_replace_oom);
+	RUN(var_replace_empty);
+	RUN(var_replace_same);
 
 	SEND;
 }

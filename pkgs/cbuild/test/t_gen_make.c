@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "mem.h"
+#include "path.h"
 #include "test.h"
 
 TEST(gen_make_null)
@@ -50,11 +51,20 @@ TEST(gen_make_proj_build_dir)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
 		    "OUTDIR := \n"
-		    "INTDIR := $(OUTDIR)int\n"
-		    "LIBDIR := $(OUTDIR)lib\n"
-		    "BINDIR := $(OUTDIR)bin\n"
-		    "TSTDIR := $(OUTDIR)test\n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
 		    "\n"
 		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
@@ -80,9 +90,10 @@ TEST(gen_make_proj_build_dir)
 		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n"
-		    "PKGEXE = $(BINDIR)/$(PN)\n"
-		    "PKGLIB = $(LIBDIR)/$(PN).a\n"
-		    "PKGTST = $(TSTDIR)/$(PN)\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
 		    ".PHONY: all\n"
 		    "\n"
@@ -137,11 +148,20 @@ TEST(gen_make_proj_empty)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
 		    "OUTDIR := \n"
-		    "INTDIR := $(OUTDIR)int\n"
-		    "LIBDIR := $(OUTDIR)lib\n"
-		    "BINDIR := $(OUTDIR)bin\n"
-		    "TSTDIR := $(OUTDIR)test\n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
 		    "\n"
 		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
@@ -167,9 +187,10 @@ TEST(gen_make_proj_empty)
 		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n"
-		    "PKGEXE = $(BINDIR)/$(PN)\n"
-		    "PKGLIB = $(LIBDIR)/$(PN).a\n"
-		    "PKGTST = $(TSTDIR)/$(PN)\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
 		    ".PHONY: all\n"
 		    "\n"
@@ -224,11 +245,20 @@ TEST(gen_make_proj_name)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
 		    "OUTDIR := \n"
-		    "INTDIR := $(OUTDIR)int\n"
-		    "LIBDIR := $(OUTDIR)lib\n"
-		    "BINDIR := $(OUTDIR)bin\n"
-		    "TSTDIR := $(OUTDIR)test\n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
 		    "\n"
 		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
@@ -254,9 +284,10 @@ TEST(gen_make_proj_name)
 		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n"
-		    "PKGEXE = $(BINDIR)/$(PN)\n"
-		    "PKGLIB = $(LIBDIR)/$(PN).a\n"
-		    "PKGTST = $(TSTDIR)/$(PN)\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
 		    ".PHONY: all\n"
 		    "\n"
@@ -311,11 +342,20 @@ TEST(gen_make_proj_unknown)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
 		    "OUTDIR := \n"
-		    "INTDIR := $(OUTDIR)int\n"
-		    "LIBDIR := $(OUTDIR)lib\n"
-		    "BINDIR := $(OUTDIR)bin\n"
-		    "TSTDIR := $(OUTDIR)test\n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
 		    "\n"
 		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
@@ -341,9 +381,10 @@ TEST(gen_make_proj_unknown)
 		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n"
-		    "PKGEXE = $(BINDIR)/$(PN)\n"
-		    "PKGLIB = $(LIBDIR)/$(PN).a\n"
-		    "PKGTST = $(TSTDIR)/$(PN)\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
 		    ".PHONY: all\n"
 		    "\n"
@@ -413,11 +454,20 @@ TEST(gen_make_proj_exe)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
 		    "OUTDIR := \n"
-		    "INTDIR := $(OUTDIR)int\n"
-		    "LIBDIR := $(OUTDIR)lib\n"
-		    "BINDIR := $(OUTDIR)bin\n"
-		    "TSTDIR := $(OUTDIR)test\n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
 		    "\n"
 		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
@@ -443,9 +493,10 @@ TEST(gen_make_proj_exe)
 		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n"
-		    "PKGEXE = $(BINDIR)/$(PN)\n"
-		    "PKGLIB = $(LIBDIR)/$(PN).a\n"
-		    "PKGTST = $(TSTDIR)/$(PN)\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
 		    ".PHONY: all\n"
 		    "\n"
@@ -533,11 +584,20 @@ TEST(gen_make_proj_lib)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
 		    "OUTDIR := \n"
-		    "INTDIR := $(OUTDIR)int\n"
-		    "LIBDIR := $(OUTDIR)lib\n"
-		    "BINDIR := $(OUTDIR)bin\n"
-		    "TSTDIR := $(OUTDIR)test\n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
 		    "\n"
 		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
@@ -563,9 +623,10 @@ TEST(gen_make_proj_lib)
 		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n"
-		    "PKGEXE = $(BINDIR)/$(PN)\n"
-		    "PKGLIB = $(LIBDIR)/$(PN).a\n"
-		    "PKGTST = $(TSTDIR)/$(PN)\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
 		    ".PHONY: all\n"
 		    "\n"
@@ -616,6 +677,150 @@ TEST(gen_make_proj_lib)
 	END;
 }
 
+TEST(gen_make_proj_ext)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_proj_ext(&com, STRV("M")), 0);
+
+	char buf[2600] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PROJDIR :=\n"
+		    "BUILDDIR :=\n"
+		    "\n"
+		    "TCC := $(CC)\n"
+		    "\n"
+		    "ARCH := x64\n"
+		    "ifeq ($(ARCH),x64)\n"
+		    "BITS := 64\n"
+		    "endif\n"
+		    "ifeq ($(ARCH),x86)\n"
+		    "BITS := 32\n"
+		    "endif\n"
+		    "\n"
+		    "CONFIG := Debug\n"
+		    "ifeq ($(CONFIG),Debug)\n"
+		    "CFLAGS := -Wall -Wextra -Werror -pedantic -O0 -ggdb -coverage\n"
+		    "LDFLAGS := -coverage\n"
+		    "endif\n"
+		    "ifeq ($(CONFIG),Release)\n"
+		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
+		    "LDFLAGS :=\n"
+		    "endif\n"
+		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
+		    "OUTDIR := \n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
+		    "\n"
+		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
+		    "PKGDIR_SRC = $(PKGDIR)src/\n"
+		    "PKGDIR_INC = $(PKGDIR)include/\n"
+		    "PKGDIR_DRV = $(PKGDIR)drivers/\n"
+		    "PKGDIR_TST = $(PKGDIR)test/\n"
+		    "\n"
+		    "PKGSRC_C = $(shell find $(PKGDIR_SRC) -type f -name '*.c')\n"
+		    "PKGSRC_H = $(shell find $(PKGDIR_SRC) -type f -name '*.h')\n"
+		    "PKGDRV_C = $(shell find $(PKGDIR_DRV) -type f -name '*.c')\n"
+		    "PKGTST_C = $(shell find $(PKGDIR_TST) -type f -name '*.c')\n"
+		    "PKGTST_H = $(shell find $(PKGDIR_TST) -type f -name '*.h')\n"
+		    "PKGINC_H = $(shell find $(PKGDIR_INC) -type f -name '*.h')\n"
+		    "\n"
+		    "INTDIR_SRC = $(INTDIR)/$(PN)/src/\n"
+		    "INTDIR_DRV = $(INTDIR)/$(PN)/drivers/\n"
+		    "INTDIR_TST = $(INTDIR)/$(PN)/test/\n"
+		    "\n"
+		    "PKGSRC_OBJ = $(patsubst $(PKGDIR_SRC)%.c,$(INTDIR_SRC)%.o,$(PKGSRC_C))\n"
+		    "PKGSRC_GCDA = $(patsubst %.o,%.gcda,$(PKGSRC_OBJ))\n"
+		    "PKGDRV_OBJ = $(patsubst $(PKGDIR_DRV)%.c,$(INTDIR_DRV)%.o,$(PKGDRV_C))\n"
+		    "PKGDRV_GCDA = $(patsubst %.o,%.gcda,$(PKGDRV_OBJ))\n"
+		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
+		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
+		    "\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
+		    "\n"
+		    ".PHONY: all\n"
+		    "\n"
+		    "all:\n"
+		    "\n"
+		    "define fetch_wget\n"
+		    "$(PKGDLDIR)$(PKGDLFILE):\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\twget $($(PN).URI) -O $$@\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "define ext_zip\n"
+		    "$(PKGEXTDIR): $(PKGDLDIR)$(PKGDLFILE)\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\tunzip $$< -d $$@\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "define ext\n"
+		    "$(PN).$(TN) := $(PKGEXT)\n"
+		    "\n"
+		    "all: $(PN).$(TN)/compile\n"
+		    "\n"
+		    ".PHONY: $(PN).$(TN)/compile\n"
+		    "\n"
+		    "$(PN).$(TN)/compile: $(PKGEXT)\n"
+		    "\n"
+		    "$(PKGEXT): $(PKGEXTDIR)\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\tcd $(PKGEXTDIR)$(PKGDLROOT) && $($(PN).$(TN).CMD)\n"
+		    "\tcp $(PKGEXTDIR)$(PKGDLROOT)$($(PN).$(TN).OUT) $(EXTOUTDIR)$(PN)\n"
+		    "\ttouch $$@\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    ".PHONY: test coverage\n"
+		    "\n"
+		    "test: /test\n"
+		    "\n"
+		    "coverage: test\n"
+		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "\n"
+		    "include $(BUILDDIR)pkg.mk\n"
+		    "\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN).DIR :=\n"
+		    "$(PN).URI := url\n"
+		    "$(PN).DLFILE := \n"
+		    "$(eval $(call fetch_wget))\n"
+		    "$(eval $(call ext_zip))\n"
+		    "TN := pkg\n"
+		    "$(PN).$(TN).CMD :=\n"
+		    "$(PN).$(TN).OUT :=\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_make_proj_test)
 {
 	START;
@@ -651,11 +856,20 @@ TEST(gen_make_proj_test)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "DLDIR := $(PROJDIR)tmp/dl/\n"
+		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "\n"
+		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
+		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
+		    "PKGDLFILE = $($(PN).DLFILE)\n"
+		    "PKGDLROOT = $($(PN).DLROOT)\n"
+		    "\n"
 		    "OUTDIR := \n"
-		    "INTDIR := $(OUTDIR)int\n"
-		    "LIBDIR := $(OUTDIR)lib\n"
-		    "BINDIR := $(OUTDIR)bin\n"
-		    "TSTDIR := $(OUTDIR)test\n"
+		    "INTDIR := $(OUTDIR)int/\n"
+		    "LIBDIR := $(OUTDIR)lib/\n"
+		    "BINDIR := $(OUTDIR)bin/\n"
+		    "EXTOUTDIR := $(OUTDIR)ext/\n"
+		    "TSTDIR := $(OUTDIR)test/\n"
 		    "\n"
 		    "PKGDIR = $(PROJDIR)$($(PN).DIR)\n"
 		    "PKGDIR_SRC = $(PKGDIR)src/\n"
@@ -681,9 +895,10 @@ TEST(gen_make_proj_test)
 		    "PKGTST_OBJ = $(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n"
-		    "PKGEXE = $(BINDIR)/$(PN)\n"
-		    "PKGLIB = $(LIBDIR)/$(PN).a\n"
-		    "PKGTST = $(TSTDIR)/$(PN)\n"
+		    "PKGEXE = $(BINDIR)$(PN)\n"
+		    "PKGLIB = $(LIBDIR)$(PN).a\n"
+		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
+		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
 		    ".PHONY: all\n"
 		    "\n"
@@ -832,7 +1047,7 @@ TEST(gen_make_pkg_multi)
 	fs_read(&com.fs, STRV("./a/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := a\n"
-		    "$(PN).DIR := a\n"
+		    "$(PN).DIR := a" SEP "\n"
 		    "TN := a\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
@@ -844,7 +1059,7 @@ TEST(gen_make_pkg_multi)
 	fs_read(&com.fs, STRV("./b/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := b\n"
-		    "$(PN).DIR := b\n"
+		    "$(PN).DIR := b" SEP "\n"
 		    "TN := b\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
@@ -871,7 +1086,7 @@ TEST(gen_make_pkg_depends)
 	fs_read(&com.fs, STRV("./lib/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib\n"
-		    "$(PN).DIR := lib\n"
+		    "$(PN).DIR := lib" SEP "\n"
 		    "TN := lib\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
@@ -881,7 +1096,7 @@ TEST(gen_make_pkg_depends)
 	fs_read(&com.fs, STRV("./exe/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := exe\n"
-		    "$(PN).DIR := exe\n"
+		    "$(PN).DIR := exe" SEP "\n"
 		    "TN := exe\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
@@ -908,7 +1123,7 @@ TEST(gen_make_pkg_rdepends)
 	fs_read(&com.fs, STRV("./base/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := base\n"
-		    "$(PN).DIR := base\n"
+		    "$(PN).DIR := base" SEP "\n"
 		    "TN := base\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
@@ -918,7 +1133,7 @@ TEST(gen_make_pkg_rdepends)
 	fs_read(&com.fs, STRV("./lib1/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib1\n"
-		    "$(PN).DIR := lib1\n"
+		    "$(PN).DIR := lib1" SEP "\n"
 		    "TN := lib1\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
@@ -928,7 +1143,7 @@ TEST(gen_make_pkg_rdepends)
 	fs_read(&com.fs, STRV("./lib2/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib2\n"
-		    "$(PN).DIR := lib2\n"
+		    "$(PN).DIR := lib2" SEP "\n"
 		    "TN := lib2\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
@@ -938,13 +1153,43 @@ TEST(gen_make_pkg_rdepends)
 	fs_read(&com.fs, STRV("./exe/pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := exe\n"
-		    "$(PN).DIR := exe\n"
+		    "$(PN).DIR := exe" SEP "\n"
 		    "TN := exe\n"
 		    "$(PN).$(TN).HEADERS :=\n"
 		    "$(PN).$(TN).INCLUDES :=\n"
 		    "$(PN).$(TN).LIBS := $(lib1.lib1) $(lib2.lib2) $(base.base)\n"
 		    "$(PN).$(TN).DRIVERS :=\n"
 		    "$(eval $(call exe))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_zip)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_zip(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := pkg\n"
+		    "$(PN).DIR :=\n"
+		    "$(PN).URI := url\n"
+		    "$(PN).DLFILE := \n"
+		    "$(PN).DLROOT := main\n"
+		    "$(eval $(call fetch_wget))\n"
+		    "$(eval $(call ext_zip))\n"
+		    "TN := pkg\n"
+		    "$(PN).$(TN).CMD := cmd\n"
+		    "$(PN).$(TN).OUT := out\n"
+		    "$(eval $(call ext))\n",
 		    tmp.len);
 
 	t_gen_free(&com);
@@ -963,6 +1208,7 @@ STEST(gen_make)
 	RUN(gen_make_proj_unknown);
 	RUN(gen_make_proj_exe);
 	RUN(gen_make_proj_lib);
+	RUN(gen_make_proj_ext);
 	RUN(gen_make_proj_test);
 	RUN(gen_make_pkg_exe);
 	RUN(gen_make_pkg_lib);
@@ -970,6 +1216,7 @@ STEST(gen_make)
 	RUN(gen_make_pkg_multi);
 	RUN(gen_make_pkg_depends);
 	RUN(gen_make_pkg_rdepends);
+	RUN(gen_make_pkg_zip);
 
 	SEND;
 }
