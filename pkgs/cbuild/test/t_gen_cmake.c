@@ -23,8 +23,8 @@ TEST(gen_cmake_proj_build_dir)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_build_dir(&com, STRV("C")), 0);
 
-	char buf[256] = {0};
-	str_t tmp     = STRB(buf, 0);
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("tmp/build/CMakeLists.txt"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -32,8 +32,29 @@ TEST(gen_cmake_proj_build_dir)
 		    "\n"
 		    "project( LANGUAGES C)\n"
 		    "\n"
+		    "enable_testing()\n"
+		    "\n"
+		    "option(OPEN \"Open HTML coverage report\" ON)\n"
 		    "set(PROJDIR \"../../\")\n"
 		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
+		    "\n"
+		    "set(OUTDIR \"\")\n"
+		    "\n"
+		    "set(INTDIR \"${CMAKE_BINARY_DIR}\")\n"
+		    "\n"
+		    "set(REPDIR \"${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/report/\")\n"
+		    "set(COVDIR \"${REPDIR}cov/\")\n"
+		    "\n"
+		    "add_custom_target(cov\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${COVDIR}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target test\n"
+		    "\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\tlcov -q -c -o ${COVDIR}lcov.info -d ${INTDIR}\\;\n"
+		    "\t\tgenhtml -q -o ${COVDIR} ${COVDIR}lcov.info\\;\n"
+		    "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${COVDIR}index.html || true\\;\n"
+		    "\tfi\n"
+		    "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    ")\n"
 		    "\n",
 		    tmp.len);
 
@@ -49,8 +70,8 @@ TEST(gen_cmake_proj_empty)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_empty(&com, STRV("C")), 0);
 
-	char buf[256] = {0};
-	str_t tmp     = STRB(buf, 0);
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -58,8 +79,29 @@ TEST(gen_cmake_proj_empty)
 		    "\n"
 		    "project( LANGUAGES C)\n"
 		    "\n"
+		    "enable_testing()\n"
+		    "\n"
+		    "option(OPEN \"Open HTML coverage report\" ON)\n"
 		    "set(PROJDIR \"\")\n"
 		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
+		    "\n"
+		    "set(OUTDIR \"\")\n"
+		    "\n"
+		    "set(INTDIR \"${CMAKE_BINARY_DIR}\")\n"
+		    "\n"
+		    "set(REPDIR \"${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/report/\")\n"
+		    "set(COVDIR \"${REPDIR}cov/\")\n"
+		    "\n"
+		    "add_custom_target(cov\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${COVDIR}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target test\n"
+		    "\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\tlcov -q -c -o ${COVDIR}lcov.info -d ${INTDIR}\\;\n"
+		    "\t\tgenhtml -q -o ${COVDIR} ${COVDIR}lcov.info\\;\n"
+		    "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${COVDIR}index.html || true\\;\n"
+		    "\tfi\n"
+		    "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    ")\n"
 		    "\n",
 		    tmp.len);
 
@@ -75,8 +117,8 @@ TEST(gen_cmake_proj_name)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_name(&com, STRV("C")), 0);
 
-	char buf[256] = {0};
-	str_t tmp     = STRB(buf, 0);
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -84,8 +126,29 @@ TEST(gen_cmake_proj_name)
 		    "\n"
 		    "project(proj LANGUAGES C)\n"
 		    "\n"
+		    "enable_testing()\n"
+		    "\n"
+		    "option(OPEN \"Open HTML coverage report\" ON)\n"
 		    "set(PROJDIR \"\")\n"
 		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
+		    "\n"
+		    "set(OUTDIR \"\")\n"
+		    "\n"
+		    "set(INTDIR \"${CMAKE_BINARY_DIR}\")\n"
+		    "\n"
+		    "set(REPDIR \"${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/report/\")\n"
+		    "set(COVDIR \"${REPDIR}cov/\")\n"
+		    "\n"
+		    "add_custom_target(cov\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${COVDIR}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target test\n"
+		    "\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\tlcov -q -c -o ${COVDIR}lcov.info -d ${INTDIR}\\;\n"
+		    "\t\tgenhtml -q -o ${COVDIR} ${COVDIR}lcov.info\\;\n"
+		    "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${COVDIR}index.html || true\\;\n"
+		    "\tfi\n"
+		    "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    ")\n"
 		    "\n",
 		    tmp.len);
 
@@ -101,8 +164,8 @@ TEST(gen_cmake_proj_unknown)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_unknown(&com, STRV("C")), 0);
 
-	char buf[256] = {0};
-	str_t tmp     = STRB(buf, 0);
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -110,8 +173,29 @@ TEST(gen_cmake_proj_unknown)
 		    "\n"
 		    "project( LANGUAGES C)\n"
 		    "\n"
+		    "enable_testing()\n"
+		    "\n"
+		    "option(OPEN \"Open HTML coverage report\" ON)\n"
 		    "set(PROJDIR \"\")\n"
 		    "set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n"
+		    "\n"
+		    "set(OUTDIR \"\")\n"
+		    "\n"
+		    "set(INTDIR \"${CMAKE_BINARY_DIR}\")\n"
+		    "\n"
+		    "set(REPDIR \"${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/report/\")\n"
+		    "set(COVDIR \"${REPDIR}cov/\")\n"
+		    "\n"
+		    "add_custom_target(cov\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${COVDIR}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target test\n"
+		    "\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\tlcov -q -c -o ${COVDIR}lcov.info -d ${INTDIR}\\;\n"
+		    "\t\tgenhtml -q -o ${COVDIR} ${COVDIR}lcov.info\\;\n"
+		    "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${COVDIR}index.html || true\\;\n"
+		    "\tfi\n"
+		    "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    ")\n"
 		    "\n"
 		    "include(pkg.cmake)\n",
 		    tmp.len);
@@ -149,6 +233,14 @@ TEST(gen_cmake_proj_exe)
 		    "set(TN \"pkg\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -180,6 +272,14 @@ TEST(gen_cmake_proj_lib)
 		    "set(TN \"pkg\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -258,7 +358,21 @@ TEST(gen_cmake_proj_test)
 		    "set(TN \"pkg\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
+		    "add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target ${PN}_${TN})\n"
+		    "add_test(${PN} ${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/${ARCH}-${CONFIG}/test/${PN})\n"
+		    "set_tests_properties(${PN} PROPERTIES\n"
+		    "\tDEPENDS ${PN}_${TN}_build\n"
+		    "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
+		    ")\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
@@ -289,6 +403,14 @@ TEST(gen_cmake_pkg_exe)
 		    "set(TN \"pkg\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}src/*.h ${PROJDIR}${PKGDIR}src/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -321,6 +443,14 @@ TEST(gen_cmake_pkg_lib)
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}src/*.h ${PROJDIR}${PKGDIR}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
 		    "target_include_directories(${PN}_${TN} PUBLIC ${PROJDIR}${PKGDIR}include)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -353,6 +483,14 @@ TEST(gen_cmake_pkg_lib_test)
 		    "set(TN \"lib\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -364,7 +502,21 @@ TEST(gen_cmake_pkg_lib_test)
 		    "set(TN \"test\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}test/*.h ${PROJDIR}${PKGDIR}test/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target ${PN}_${TN})\n"
+		    "add_test(${PN} ${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/${ARCH}-${CONFIG}/test/${PN})\n"
+		    "set_tests_properties(${PN} PROPERTIES\n"
+		    "\tDEPENDS ${PN}_${TN}_build\n"
+		    "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
+		    ")\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-Debug/test/\n"
@@ -385,8 +537,8 @@ TEST(gen_cmake_pkg_multi)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_pkg_multi(&com, STRV("C")), 0);
 
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
+	char buf[1024] = {0};
+	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("./a/pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -395,6 +547,14 @@ TEST(gen_cmake_pkg_multi)
 		    "set(TN \"a\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -411,6 +571,14 @@ TEST(gen_cmake_pkg_multi)
 		    "set(TN \"b\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -442,6 +610,14 @@ TEST(gen_cmake_pkg_depends)
 		    "set(TN \"lib\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -459,6 +635,14 @@ TEST(gen_cmake_pkg_depends)
 		    "set(TN \"exe\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -490,6 +674,14 @@ TEST(gen_cmake_pkg_rdepends)
 		    "set(TN \"base\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -507,6 +699,14 @@ TEST(gen_cmake_pkg_rdepends)
 		    "set(TN \"lib1\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PUBLIC base_base)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -524,6 +724,14 @@ TEST(gen_cmake_pkg_rdepends)
 		    "set(TN \"lib2\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PUBLIC base_base)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
@@ -541,6 +749,14 @@ TEST(gen_cmake_pkg_rdepends)
 		    "set(TN \"exe\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}*.h ${PROJDIR}${PKGDIR}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
 		    "target_link_libraries(${PN}_${TN} PRIVATE lib1_lib1 lib2_lib2)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"

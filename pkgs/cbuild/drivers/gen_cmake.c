@@ -123,6 +123,16 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			switch (target->type) {
 			case TARGET_TYPE_EXE: {
 				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+				fs_write(fs,
+					 f,
+					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+					      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+					      "\t)\n"
+					      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+					      "\t)\n"
+					      "endif()\n"));
 				fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
 				if (target->has_deps) {
 					const list_node_t *dep_target_id;
@@ -144,11 +154,20 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 				strv_t inc = proj_get_str(proj, pkg->strs + PKG_INC);
 				if (inc.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC "));
-					fs_write(fs, f, STRV("${PROJDIR}${PKGDIR}"));
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC ${PROJDIR}${PKGDIR}"));
 					fs_write(fs, f, inc);
 					fs_write(fs, f, STRV(")\n"));
 				}
+				fs_write(fs,
+					 f,
+					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+					      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+					      "\t)\n"
+					      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+					      "\t)\n"
+					      "endif()\n"));
 				fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
 				if (target->has_deps) {
 					const list_node_t *dep_target_id;
@@ -231,6 +250,16 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			}
 			case TARGET_TYPE_TST: {
 				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+				fs_write(fs,
+					 f,
+					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+					      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+					      "\t)\n"
+					      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+					      "\t)\n"
+					      "endif()\n"));
 				fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
 				if (target->has_deps) {
 					const list_node_t *dep_target_id;
@@ -246,6 +275,15 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 					}
 				}
 				fs_write(fs, f, STRV(")\n"));
+				fs_write(fs,
+					 f,
+					 STRV("add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config "
+					      "${CONFIG} --target ${PN}_${TN})\n"
+					      "add_test(${PN} ${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/${ARCH}-${CONFIG}/test/${PN})\n"
+					      "set_tests_properties(${PN} PROPERTIES\n"
+					      "\tDEPENDS ${PN}_${TN}_build\n"
+					      "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
+					      ")\n"));
 				break;
 			}
 			default:
@@ -343,6 +381,10 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	}
 	fs_write(drv->fs, f, STRV(" LANGUAGES C)\n\n"));
 
+	fs_write(drv->fs, f, STRV("enable_testing()\n\n"));
+
+	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n"));
+
 	fs_write(drv->fs, f, STRV("set(PROJDIR \""));
 
 	path_t rel = {0};
@@ -354,6 +396,45 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	fs_write(drv->fs, f, STRV("\")\n"));
 
 	fs_write(drv->fs, f, STRV("set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n\n"));
+
+	strv_t values[__VAR_CNT] = {
+		[VAR_ARCH]   = STRVT("${ARCH}"),
+		[VAR_CONFIG] = STRVT("${CONFIG}"),
+	};
+
+	strv_t poutdir = proj_get_str(proj, proj->outdir);
+	str_t outdir   = strn(poutdir.data, poutdir.len, 256);
+	if (var_replace(&outdir, values)) {
+		// return 1;
+	}
+
+	str_t buf = strz(16);
+	if (pathv_is_rel(STRVS(outdir))) {
+		str_cat(&buf, STRV("${PROJDIR}"));
+	}
+	str_cat(&buf, STRVN(outdir.data, outdir.len));
+
+	fs_write(drv->fs, f, STRV("set(OUTDIR \""));
+	fs_write(drv->fs, f, STRVS(buf));
+	fs_write(drv->fs, f, STRV("\")\n\n"));
+
+	fs_write(drv->fs, f, STRV("set(INTDIR \"${CMAKE_BINARY_DIR}\")\n\n"));
+
+	fs_write(drv->fs, f, STRV("set(REPDIR \"${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/report/\")\n"));
+	fs_write(drv->fs, f, STRV("set(COVDIR \"${REPDIR}cov/\")\n\n"));
+
+	fs_write(drv->fs,
+		 f,
+		 STRV("add_custom_target(cov\n"
+		      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${COVDIR}\n"
+		      "\tCOMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target test\n"
+		      "\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		      "\t\tlcov -q -c -o ${COVDIR}lcov.info -d ${INTDIR}\\;\n"
+		      "\t\tgenhtml -q -o ${COVDIR} ${COVDIR}lcov.info\\;\n"
+		      "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${COVDIR}index.html || true\\;\n"
+		      "\tfi\n"
+		      "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		      ")\n\n"));
 
 	int types[__TARGET_TYPE_MAX] = {0};
 
@@ -381,6 +462,9 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	}
 
 	fs_close(drv->fs, f);
+
+	str_free(&outdir);
+	str_free(&buf);
 
 	return 0;
 }

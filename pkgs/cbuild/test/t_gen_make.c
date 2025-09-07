@@ -23,7 +23,7 @@ TEST(gen_make_proj_build_dir)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_build_dir(&com, STRV("M")), 0);
 
-	char buf[2048] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("tmp/build/Makefile"), 0, &tmp);
@@ -51,8 +51,12 @@ TEST(gen_make_proj_build_dir)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -95,16 +99,22 @@ TEST(gen_make_proj_build_dir)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test:\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n",
 		    tmp.len);
 
@@ -120,7 +130,7 @@ TEST(gen_make_proj_empty)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_empty(&com, STRV("M")), 0);
 
-	char buf[2048] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -148,8 +158,12 @@ TEST(gen_make_proj_empty)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -192,16 +206,22 @@ TEST(gen_make_proj_empty)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test:\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n",
 		    tmp.len);
 
@@ -217,7 +237,7 @@ TEST(gen_make_proj_name)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_name(&com, STRV("M")), 0);
 
-	char buf[2048] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -245,8 +265,12 @@ TEST(gen_make_proj_name)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -289,16 +313,22 @@ TEST(gen_make_proj_name)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test:\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n",
 		    tmp.len);
 
@@ -342,8 +372,12 @@ TEST(gen_make_proj_unknown)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -386,19 +420,25 @@ TEST(gen_make_proj_unknown)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
 		    "define unknown\n"
 		    "endef\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test: /test\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n"
 		    "include $(BUILDDIR)pkg.mk\n"
 		    "\n",
@@ -426,7 +466,7 @@ TEST(gen_make_proj_exe)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_exe(&com, STRV("M")), 0);
 
-	char buf[2400] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -454,8 +494,12 @@ TEST(gen_make_proj_exe)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -498,12 +542,16 @@ TEST(gen_make_proj_exe)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
 		    "define exe\n"
 		    "$(PN).$(TN) := $(PKGEXE)\n"
+		    "\n"
+		    "GCDA += $(PKGSRC_GCDA)\n"
 		    "\n"
 		    "all: $(PN).$(TN)/compile\n"
 		    "\n"
@@ -521,12 +569,16 @@ TEST(gen_make_proj_exe)
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test: /test\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n"
 		    "include $(BUILDDIR)pkg.mk\n"
 		    "\n",
@@ -556,7 +608,7 @@ TEST(gen_make_proj_lib)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_lib(&com, STRV("M")), 0);
 
-	char buf[2400] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -584,8 +636,12 @@ TEST(gen_make_proj_lib)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -628,12 +684,16 @@ TEST(gen_make_proj_lib)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
 		    "define lib\n"
 		    "$(PN).$(TN) := $(PKGLIB)\n"
+		    "\n"
+		    "GCDA += $(PKGSRC_GCDA)\n"
 		    "\n"
 		    "all: $(PN).$(TN)/compile\n"
 		    "\n"
@@ -651,12 +711,16 @@ TEST(gen_make_proj_lib)
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test: /test\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n"
 		    "include $(BUILDDIR)pkg.mk\n"
 		    "\n",
@@ -684,7 +748,7 @@ TEST(gen_make_proj_ext)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_ext(&com, STRV("M")), 0);
 
-	char buf[2600] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -712,8 +776,12 @@ TEST(gen_make_proj_ext)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -756,7 +824,9 @@ TEST(gen_make_proj_ext)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
@@ -791,12 +861,16 @@ TEST(gen_make_proj_ext)
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test: /test\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n"
 		    "include $(BUILDDIR)pkg.mk\n"
 		    "\n",
@@ -828,7 +902,7 @@ TEST(gen_make_proj_test)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_test(&com, STRV("M")), 0);
 
-	char buf[2400] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -856,8 +930,12 @@ TEST(gen_make_proj_test)
 		    "LDFLAGS :=\n"
 		    "endif\n"
 		    "\n"
+		    "OPEN := 1\n"
+		    "\n"
 		    "DLDIR := $(PROJDIR)tmp/dl/\n"
 		    "EXTDIR := $(PROJDIR)tmp/ext/\n"
+		    "REPDIR := $(PROJDIR)tmp/report/\n"
+		    "COVDIR := $(REPDIR)cov/\n"
 		    "\n"
 		    "PKGDLDIR = $(DLDIR)$($(PN).DIR)\n"
 		    "PKGEXTDIR = $(EXTDIR)$($(PN).DIR)\n"
@@ -900,18 +978,32 @@ TEST(gen_make_proj_test)
 		    "PKGEXT = $(EXTOUTDIR)$(PN)/$(TN)\n"
 		    "PKGTST = $(TSTDIR)$(PN)\n"
 		    "\n"
-		    ".PHONY: all\n"
+		    "GCDA :=\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
 		    "\n"
 		    "all:\n"
 		    "\n"
 		    "define test\n"
 		    "$(PN).$(TN) := $(PKGTST)\n"
 		    "\n"
+		    "GCDA += $(PKGTST_GCDA)\n"
+		    "\n"
 		    "all: $(PN).$(TN)/compile\n"
 		    "\n"
-		    ".PHONY: $(PN).$(TN)/compile\n"
+		    "test: $(PN).$(TN)/test\n"
+		    "\n"
+		    "cov: $(PN).$(TN)/cov\n"
+		    "\n"
+		    ".PHONY: $(PN).$(TN)/compile $(PN).$(TN)/test $(PN).$(TN)/cov\n"
 		    "\n"
 		    "$(PN).$(TN)/compile: $(PKGTST)\n"
+		    "\n"
+		    "$(PN).$(TN)/test: $(PKGTST)\n"
+		    "\t$(PKGTST)\n"
+		    "\n"
+		    "$(PN).$(TN)/cov: precov $(PKGTST)\n"
+		    "\t$(PKGTST)\n"
 		    "\n"
 		    "$(PKGTST): $($(PN).$(TN).DRIVERS) $(PKGTST_OBJ) $($(PN).$(TN).LIBS)\n"
 		    "	@mkdir -pv $$(@D)\n"
@@ -923,12 +1015,16 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    ".PHONY: test coverage\n"
+		    "precov:\n"
+		    "\t@rm -fv $(GCDA)\n"
 		    "\n"
-		    "test: /test\n"
-		    "\n"
-		    "coverage: test\n"
-		    "	lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)\n"
+		    "cov:\n"
+		    "\t@if [ -n \"$(GCDA)\" ]; then \\\n"
+		    "\t\tmkdir -pv $(COVDIR); \\\n"
+		    "\t\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\\n"
+		    "\t\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\\n"
+		    "\tfi\n"
 		    "\n"
 		    "include $(BUILDDIR)pkg.mk\n"
 		    "\n",

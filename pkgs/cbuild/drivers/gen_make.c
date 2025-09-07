@@ -205,7 +205,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_t make = {0};
 	make_init(&make, 32, 32, 2, 32, ALLOC_STD);
 
-	make_act_t root, mcurdir, march, mconfig, act;
+	make_act_t root, mcurdir, march, mconfig, mopen, act;
 	make_var_ext(&make, STRV("CURDIR"), &mcurdir);
 	make_ext_set_val(&make, mcurdir, MSTR(STRV(".")));
 	root = mcurdir;
@@ -213,6 +213,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_add_act(&make, root, march);
 	make_var_ext(&make, STRV("CONFIG"), &mconfig);
 	make_add_act(&make, root, mconfig);
+	make_var_ext(&make, STRV("OPEN"), &mopen);
+	make_add_act(&make, root, mopen);
 
 	make_var(&make, STRV("PROJDIR"), MAKE_VAR_INST, &act);
 
@@ -237,12 +239,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_var_var(&make, march, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("x64")));
 	make_add_act(&make, root, act);
-	make_if(&make, MVAR(march), MSTR(STRV("x64")), &if_x64);
+	make_ifeq(&make, MVAR(march), MSTR(STRV("x64")), &if_x64);
 	make_add_act(&make, root, if_x64);
 	make_var(&make, STRV("BITS"), MAKE_VAR_INST, &mbits);
 	make_var_add_val(&make, mbits, MSTR(STRV("64")));
 	make_if_add_true_act(&make, if_x64, mbits);
-	make_if(&make, MVAR(march), MSTR(STRV("x86")), &if_x86);
+	make_ifeq(&make, MVAR(march), MSTR(STRV("x86")), &if_x86);
 	make_add_act(&make, root, if_x86);
 	make_var_var(&make, mbits, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("32")));
@@ -255,7 +257,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_add_act(&make, root, act);
 
 	make_act_t mcflags, mldflags, if_debug, if_release;
-	make_if(&make, MVAR(mconfig), MSTR(STRV("Debug")), &if_debug);
+	make_ifeq(&make, MVAR(mconfig), MSTR(STRV("Debug")), &if_debug);
 	make_add_act(&make, root, if_debug);
 	make_var(&make, STRV("CFLAGS"), MAKE_VAR_INST, &mcflags);
 	make_var_add_val(&make, mcflags, MSTR(STRV("-Wall -Wextra -Werror -pedantic -O0 -ggdb -coverage")));
@@ -263,13 +265,19 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_var(&make, STRV("LDFLAGS"), MAKE_VAR_INST, &mldflags);
 	make_var_add_val(&make, mldflags, MSTR(STRV("-coverage")));
 	make_if_add_true_act(&make, if_debug, mldflags);
-	make_if(&make, MVAR(mconfig), MSTR(STRV("Release")), &if_release);
+	make_ifeq(&make, MVAR(mconfig), MSTR(STRV("Release")), &if_release);
 	make_add_act(&make, root, if_release);
 	make_var_var(&make, mcflags, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("-Wall -Wextra -Werror -pedantic")));
 	make_if_add_true_act(&make, if_release, act);
 	make_var_var(&make, mldflags, MAKE_VAR_INST, &act);
 	make_if_add_true_act(&make, if_release, act);
+	make_empty(&make, &act);
+	make_add_act(&make, root, act);
+
+	make_var_var(&make, mopen, MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("1")));
+	make_add_act(&make, root, act);
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
@@ -285,6 +293,14 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	make_var(&make, STRV("EXTDIR"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)tmp/ext/")));
+	make_add_act(&make, root, act);
+
+	make_var(&make, STRV("REPDIR"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)tmp/report/")));
+	make_add_act(&make, root, act);
+
+	make_var(&make, STRV("COVDIR"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("$(REPDIR)cov/")));
 	make_add_act(&make, root, act);
 
 	make_empty(&make, &act);
@@ -481,10 +497,20 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
-	make_act_t phony_all;
-	make_phony(&make, &phony_all);
-	make_add_act(&make, root, phony_all);
-	make_rule_add_depend(&make, phony_all, MRULE(MSTR(STRV("all"))));
+	make_act_t gcda;
+	make_var(&make, STRV("GCDA"), MAKE_VAR_INST, &gcda);
+	make_add_act(&make, root, gcda);
+
+	make_empty(&make, &act);
+	make_add_act(&make, root, act);
+
+	make_act_t phony;
+	make_phony(&make, &phony);
+	make_add_act(&make, root, phony);
+	make_rule_add_depend(&make, phony, MRULE(MSTR(STRV("all"))));
+	make_rule_add_depend(&make, phony, MRULE(MSTR(STRV("test"))));
+	make_rule_add_depend(&make, phony, MRULE(MSTR(STRV("cov"))));
+
 	make_rule(&make, MRULE(MSTR(STRV("all"))), 1, &act);
 	make_add_act(&make, root, act);
 
@@ -588,6 +614,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
 
+		make_var(&make, STRV("GCDA"), MAKE_VAR_APP, &act);
+		make_var_add_val(&make, act, MVAR(objs[PKGSRC_GCDA].var));
+		make_def_add_act(&make, def, act);
+		make_empty(&make, &act);
+		make_def_add_act(&make, def, act);
+
 		make_act_t def_all;
 		make_rule(&make, MRULE(MSTR(STRV("all"))), 1, &def_all);
 		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
@@ -641,6 +673,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		defines[TARGET_TYPE_LIB].def = def;
 		make_var(&make, STRV("$(PN).$(TN)"), MAKE_VAR_INST, &act);
 		make_var_add_val(&make, act, MVAR(targets[PKGLIB].var));
+		make_def_add_act(&make, def, act);
+		make_empty(&make, &act);
+		make_def_add_act(&make, def, act);
+
+		make_var(&make, STRV("GCDA"), MAKE_VAR_APP, &act);
+		make_var_add_val(&make, act, MVAR(objs[PKGSRC_GCDA].var));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -745,10 +783,26 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
 
+		make_var(&make, STRV("GCDA"), MAKE_VAR_APP, &act);
+		make_var_add_val(&make, act, MVAR(objs[PKGTST_GCDA].var));
+		make_def_add_act(&make, def, act);
+		make_empty(&make, &act);
+		make_def_add_act(&make, def, act);
+
 		make_act_t def_all;
 		make_rule(&make, MRULE(MSTR(STRV("all"))), 1, &def_all);
 		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
 		make_def_add_act(&make, def, def_all);
+
+		make_act_t def_test;
+		make_rule(&make, MRULE(MSTR(STRV("test"))), 1, &def_test);
+		make_rule_add_depend(&make, def_test, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/test")));
+		make_def_add_act(&make, def, def_test);
+
+		make_act_t def_cov;
+		make_rule(&make, MRULE(MSTR(STRV("cov"))), 1, &def_cov);
+		make_rule_add_depend(&make, def_cov, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/cov")));
+		make_def_add_act(&make, def, def_cov);
 
 		make_act_t def_phony;
 		make_phony(&make, &def_phony);
@@ -759,6 +813,23 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")), 1, &def_compile);
 		make_rule_add_depend(&make, def_compile, MRULE(MVAR(targets[PKGTST].var)));
 		make_def_add_act(&make, def, def_compile);
+
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/test")));
+		make_act_t def_run_test;
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/test")), 1, &def_run_test);
+		make_rule_add_depend(&make, def_run_test, MRULE(MVAR(targets[PKGTST].var)));
+		make_cmd(&make, MCMD(STRV("$(PKGTST)")), &act);
+		make_rule_add_act(&make, def_run_test, act);
+		make_def_add_act(&make, def, def_run_test);
+
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/cov")));
+		make_act_t def_run_cov;
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/cov")), 1, &def_run_cov);
+		make_rule_add_depend(&make, def_run_cov, MRULE(MSTR(STRV("precov"))));
+		make_rule_add_depend(&make, def_run_cov, MRULE(MVAR(targets[PKGTST].var)));
+		make_cmd(&make, MCMD(STRV("$(PKGTST)")), &act);
+		make_rule_add_act(&make, def_run_cov, act);
+		make_def_add_act(&make, def, def_run_cov);
 
 		make_act_t def_rule_target;
 		make_rule(&make, MRULE(MVAR(targets[PKGTST].var)), 1, &def_rule_target);
@@ -791,21 +862,28 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, act);
 	}
 
-	make_act_t phony;
-	make_phony(&make, &phony);
-	make_add_act(&make, root, phony);
+	make_act_t precov;
+	make_rule(&make, MRULE(MSTR(STRV("precov"))), 1, &precov);
+	make_cmd(&make, MCMD(STRV("@rm -fv $(GCDA)")), &act);
+	make_rule_add_act(&make, precov, act);
+	make_add_act(&make, root, precov);
 
-	make_rule_add_depend(&make, phony, MRULE(MSTR(STRV("test"))));
-	make_act_t test;
-	make_rule(&make, MRULE(MSTR(STRV("test"))), 1, &test);
-	make_add_act(&make, root, test);
-
-	make_rule_add_depend(&make, phony, MRULE(MSTR(STRV("coverage"))));
 	make_act_t cov;
-	make_rule(&make, MRULE(MSTR(STRV("coverage"))), 1, &cov);
-	make_rule_add_depend(&make, cov, MRULE(MSTR(STRV("test"))));
-	make_cmd(&make, MCMD(STRV("lcov -q -c -o $(PROJDIR)bin/lcov.info -d $(INTDIR)")), &act);
+	make_rule(&make, MRULE(MSTR(STRV("cov"))), 1, &cov);
+
+	make_cmd(&make, MCMD(STRV("@if [ -n \"$(GCDA)\" ]; then \\")), &act);
 	make_rule_add_act(&make, cov, act);
+	make_cmd(&make, MCMD(STRV("\tmkdir -pv $(COVDIR); \\")), &act);
+	make_rule_add_act(&make, cov, act);
+	make_cmd(&make, MCMD(STRV("\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\")), &act);
+	make_rule_add_act(&make, cov, act);
+	make_cmd(&make, MCMD(STRV("\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\")), &act);
+	make_rule_add_act(&make, cov, act);
+	make_cmd(&make, MCMD(STRV("\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\")), &act);
+	make_rule_add_act(&make, cov, act);
+	make_cmd(&make, MCMD(STRV("fi")), &act);
+	make_rule_add_act(&make, cov, act);
+
 	make_add_act(&make, root, cov);
 
 	if (proj->pkgs.cnt > 0) {
@@ -824,8 +902,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		{
 			const pkg_t *pkg = proj_get_pkg(proj, *id);
 
-			strv_t name = proj_get_str(proj, pkg->strs + PKG_NAME);
-
 			buf.len = 0;
 			str_cat(&buf, STRV("$(BUILDDIR)"));
 			strv_t pkg_path = proj_get_str(proj, pkg->strs + PKG_PATH);
@@ -840,8 +916,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			make_add_act(&make, root, inc);
 
 			gen_pkg(proj, &make, drv->fs, *id, inc, protos_defs, exts_defs, defines, &deps, &buf2, build_dir);
-
-			make_rule_add_depend(&make, test, MRULEACT(MSTR(name), STRV("/test")));
 		}
 
 		arr_free(&deps);
