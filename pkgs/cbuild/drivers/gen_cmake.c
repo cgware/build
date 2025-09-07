@@ -21,7 +21,7 @@ static void resolve_dir(const proj_t *proj, strv_t *values, target_type_t type, 
 
 	buf->len = 0;
 	if (pathv_is_rel(STRVS(tmp))) {
-		str_cat(buf, STRV("${CMAKE_SOURCE_DIR}/${PROJDIR}"));
+		str_cat(buf, STRV("${PROJDIR}"));
 	}
 	str_cat(buf, STRVS(tmp));
 
@@ -192,8 +192,8 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs, f, uri);
 				fs_write(fs, f, STRV(")\n"));
 
-				fs_write(fs, f, STRV("set(ZIP_FILE ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/dl/main.zip)\n"));
-				fs_write(fs, f, STRV("set(EXT_DIR ${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/ext/)\n"));
+				fs_write(fs, f, STRV("set(ZIP_FILE ${PROJDIR}tmp/dl/main.zip)\n"));
+				fs_write(fs, f, STRV("set(EXT_DIR ${PROJDIR}tmp/ext/)\n"));
 
 				strv_t uri_dir = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
 				if (uri_dir.len > 0) {
@@ -241,10 +241,9 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs,
 					 f,
 					 STRV("add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory "
-					      "${CMAKE_SOURCE_DIR}/${PROJDIR}bin/${ARCH}-${CONFIG}/ext/${PN}\n"
+					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${PROJDIR}bin/${ARCH}-${CONFIG}/ext/${PN}\n"
 					      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}${URI_ROOT}${OUT} "
-					      "${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/${ARCH}-${CONFIG}/ext/${PN}/\n"
+					      "${PROJDIR}/bin/${ARCH}-${CONFIG}/ext/${PN}/\n"
 					      ")\n"));
 				break;
 			}
@@ -279,7 +278,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 					 f,
 					 STRV("add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config "
 					      "${CONFIG} --target ${PN}_${TN})\n"
-					      "add_test(${PN} ${CMAKE_SOURCE_DIR}/${PROJDIR}/bin/${ARCH}-${CONFIG}/test/${PN})\n"
+					      "add_test(${PN} ${PROJDIR}/bin/${ARCH}-${CONFIG}/test/${PN})\n"
 					      "set_tests_properties(${PN} PROPERTIES\n"
 					      "\tDEPENDS ${PN}_${TN}_build\n"
 					      "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
@@ -383,9 +382,9 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("enable_testing()\n\n"));
 
-	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n"));
+	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
-	fs_write(drv->fs, f, STRV("set(PROJDIR \""));
+	fs_write(drv->fs, f, STRV("set(PROJDIR \"${CMAKE_SOURCE_DIR}/"));
 
 	path_t rel = {0};
 	path_calc_rel_s(build_dir, proj_dir, '/', &rel);
@@ -420,7 +419,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("set(INTDIR \"${CMAKE_BINARY_DIR}\")\n\n"));
 
-	fs_write(drv->fs, f, STRV("set(REPDIR \"${CMAKE_SOURCE_DIR}/${PROJDIR}tmp/report/\")\n"));
+	fs_write(drv->fs, f, STRV("set(REPDIR \"${PROJDIR}tmp/report/\")\n"));
 	fs_write(drv->fs, f, STRV("set(COVDIR \"${REPDIR}cov/\")\n\n"));
 
 	fs_write(drv->fs,

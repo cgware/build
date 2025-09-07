@@ -11,8 +11,107 @@ typedef struct defines_s {
 	make_act_t def;
 } defines_t;
 
+typedef struct proj_var_s {
+	strv_t name;
+	strv_t val;
+	int ref;
+} proj_var_t;
+
+typedef enum proj_vars_e {
+	// PROJ
+	DIR_PROJ,
+	DIR_BUILD,
+	// PKG
+	PKG_DIR,
+	PKG_DLFILE,
+	PKG_DLROOT,
+	// TGT
+	TGT_CMD,
+	TGT_OUT,
+	// DIR_TMP
+	DIR_TMP,
+	DIR_TMP_EXT,
+	DIR_TMP_EXT_PKG,
+	DIR_TMP_EXT_PKG_ROOT,
+	DIR_TMP_EXT_PKG_ROOT_OUT,
+	DIR_TMP_REP,
+	DIR_TMP_COV,
+	DIR_TMP_DL,
+	DIR_TMP_DL_PKG,
+	// DIR_PKG
+	DIR_PKG,
+	DIR_PKG_SRC,
+	DIR_PKG_INC,
+	DIR_PKG_DRV,
+	DIR_PKG_TST,
+	// DIR_OUT
+	DIR_OUT,
+	DIR_OUT_INT,
+	DIR_OUT_INT_SRC,
+	DIR_OUT_INT_DRV,
+	DIR_OUT_INT_TST,
+	DIR_OUT_LIB,
+	DIR_OUT_LIB_FILE,
+	DIR_OUT_BIN,
+	DIR_OUT_BIN_FILE,
+	DIR_OUT_EXT,
+	DIR_OUT_EXT_PKG,
+	DIR_OUT_EXT_FILE,
+	DIR_OUT_TST,
+	DIR_OUT_TST_FILE,
+	__PROJ_VARS_CNT,
+} proj_vars_t;
+
+#define PVAR(_name, _val, _ref) [_name] = {STRVT(#_name), STRVT(_val), _ref}
+
+static proj_var_t s_proj_vars[__PROJ_VARS_CNT] = {
+	// PROJ
+	PVAR(DIR_PROJ, "", 0),
+	PVAR(DIR_BUILD, "", 0),
+	// PKG
+	PVAR(PKG_DIR, "$($(PN)_DIR)", 1),
+	PVAR(PKG_DLFILE, "$($(PN)_DLFILE)", 1),
+	PVAR(PKG_DLROOT, "$($(PN)_DLROOT)", 1),
+	// TGT
+	PVAR(TGT_CMD, "$($(PN)_$(TN)_CMD)", 1),
+	PVAR(TGT_OUT, "$($(PN)_$(TN)_OUT)", 1),
+	// DIR_TMP
+	PVAR(DIR_TMP, "$(DIR_PROJ)tmp/", 0),
+	PVAR(DIR_TMP_EXT, "$(DIR_TMP)ext/", 0),
+	PVAR(DIR_TMP_EXT_PKG, "$(DIR_TMP_EXT)$(PKG_DIR)", 1),
+	PVAR(DIR_TMP_EXT_PKG_ROOT, "$(DIR_TMP_EXT_PKG)$(PKG_DLROOT)", 1),
+	PVAR(DIR_TMP_EXT_PKG_ROOT_OUT, "$(DIR_TMP_EXT_PKG_ROOT)$(TGT_OUT)", 1),
+	PVAR(DIR_TMP_REP, "$(DIR_TMP)report/", 0),
+	PVAR(DIR_TMP_COV, "$(DIR_TMP_REP)cov/", 0),
+	PVAR(DIR_TMP_DL, "$(DIR_TMP)dl/", 0),
+	PVAR(DIR_TMP_DL_PKG, "$(DIR_TMP_DL)$(PKG_DIR)", 1),
+	// DIR_PKG
+	PVAR(DIR_PKG, "$(DIR_PROJ)$(PKG_DIR)", 1),
+	PVAR(DIR_PKG_SRC, "$(DIR_PKG)src/", 1),
+	PVAR(DIR_PKG_INC, "$(DIR_PKG)include/", 1),
+	PVAR(DIR_PKG_DRV, "$(DIR_PKG)drivers/", 1),
+	PVAR(DIR_PKG_TST, "$(DIR_PKG)test/", 1),
+	// DIR_OUT
+	PVAR(DIR_OUT, "(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/", 0),
+	PVAR(DIR_OUT_INT, "$(DIR_OUT)int/", 0),
+	PVAR(DIR_OUT_INT_SRC, "$(DIR_OUT_INT)$(PN)/src/", 1),
+	PVAR(DIR_OUT_INT_DRV, "$(DIR_OUT_INT)$(PN)/drivers/", 1),
+	PVAR(DIR_OUT_INT_TST, "$(DIR_OUT_INT)$(PN)/test/", 1),
+	PVAR(DIR_OUT_LIB, "$(DIR_OUT)lib/", 0),
+	PVAR(DIR_OUT_LIB_FILE, "$(DIR_OUT_LIB)$(PN).a", 1),
+	PVAR(DIR_OUT_BIN, "$(DIR_OUT)bin/", 0),
+	PVAR(DIR_OUT_BIN_FILE, "$(DIR_OUT_BIN)$(PN)", 1),
+	PVAR(DIR_OUT_EXT, "$(DIR_OUT)ext/", 0),
+	PVAR(DIR_OUT_EXT_PKG, "$(DIR_OUT_EXT)$(PN)/", 1),
+	PVAR(DIR_OUT_EXT_FILE, "$(DIR_OUT_EXT_PKG)$(TN)", 1),
+	PVAR(DIR_OUT_TST, "$(DIR_OUT)test/", 0),
+	PVAR(DIR_OUT_TST_FILE, "$(DIR_OUT_TST)$(PN)", 1),
+};
+
 static void resolve_var(strv_t var, const strv_t *values, str_t *buf)
 {
+	(void)s_proj_vars;
+
 	buf->len = 0;
 	str_cat(buf, var);
 	var_replace(buf, values);
@@ -40,7 +139,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 	make_var_add_val(make, act, MSTR(proj_get_str(proj, pkg->strs + PKG_NAME)));
 	make_inc_add_act(make, inc, act);
 
-	make_var(make, STRV("$(PN).DIR"), MAKE_VAR_INST, &act);
+	make_var(make, STRV("$(PN)_DIR"), MAKE_VAR_INST, &act);
 	strv_t dir = proj_get_str(proj, pkg->strs + PKG_PATH);
 	if (dir.len > 0) {
 		path_t tmp = {0};
@@ -52,7 +151,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 
 	strv_t uri = proj_get_str(proj, pkg->strs + PKG_URI_STR);
 	if (uri.len > 0) {
-		make_var(make, STRV("$(PN).URI"), MAKE_VAR_INST, &act);
+		make_var(make, STRV("$(PN)_URI"), MAKE_VAR_INST, &act);
 		make_var_add_val(make, act, MSTR(uri));
 		make_inc_add_act(make, inc, act);
 
@@ -62,13 +161,13 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 		if (pkg->uri.ext == PKG_URI_EXT_ZIP) {
 			str_cat(buf, STRV(".zip"));
 		}
-		make_var(make, STRV("$(PN).DLFILE"), MAKE_VAR_INST, &act);
+		make_var(make, STRV("$(PN)_DLFILE"), MAKE_VAR_INST, &act);
 		make_var_add_val(make, act, MSTR(uri_file));
 		make_inc_add_act(make, inc, act);
 
 		strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
 		if (uri_root.len > 0) {
-			make_var(make, STRV("$(PN).DLROOT"), MAKE_VAR_INST, &act);
+			make_var(make, STRV("$(PN)_DLROOT"), MAKE_VAR_INST, &act);
 			make_var_add_val(make, act, MSTR(uri_root));
 			make_inc_add_act(make, inc, act);
 		}
@@ -95,16 +194,16 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 
 		if (target->type != TARGET_TYPE_EXT) {
 
-			make_var(make, STRV("$(PN).$(TN).HEADERS"), MAKE_VAR_INST, &act);
+			make_var(make, STRV("$(PN)_$(TN)_HEADERS"), MAKE_VAR_INST, &act);
 			strv_t include = proj_get_str(proj, pkg->strs + PKG_INC);
 			if (include.len > 0) {
 				make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
 			}
 			make_inc_add_act(make, inc, act);
-			make_var(make, STRV("$(PN).$(TN).INCLUDES"), MAKE_VAR_INST, &act);
+			make_var(make, STRV("$(PN)_$(TN)_INCLUDES"), MAKE_VAR_INST, &act);
 			if (include.len > 0) {
 				buf->len = 0;
-				str_cat(buf, STRV("$(PKGDIR)"));
+				str_cat(buf, STRV("$(DIR_PKG)"));
 				str_cat(buf, include);
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
 			}
@@ -115,7 +214,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 		case TARGET_TYPE_EXE:
 		case TARGET_TYPE_TST: {
 			make_act_t libs;
-			make_var(make, STRV("$(PN).$(TN).LIBS"), MAKE_VAR_INST, &libs);
+			make_var(make, STRV("$(PN)_$(TN)_LIBS"), MAKE_VAR_INST, &libs);
 			make_inc_add_act(make, inc, libs);
 
 			deps->cnt = 0;
@@ -133,7 +232,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 					const target_t *dtarget = proj_get_target(proj, *dep);
 					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 					str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_NAME));
-					str_cat(buf, STRV("."));
+					str_cat(buf, STRV("_"));
 					str_cat(buf, proj_get_str(proj, dtarget->strs + PKG_NAME));
 					str_cat(buf, STRV(")"));
 					make_var_add_val(make, libs, MSTR(STRVS(*buf)));
@@ -141,12 +240,12 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 				}
 			}
 
-			make_var(make, STRV("$(PN).$(TN).DRIVERS"), MAKE_VAR_INST, &act);
+			make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
 			make_inc_add_act(make, inc, act);
 			break;
 		}
 		case TARGET_TYPE_EXT: {
-			make_var(make, STRV("$(PN).$(TN).CMD"), MAKE_VAR_INST, &act);
+			make_var(make, STRV("$(PN)_$(TN)_CMD"), MAKE_VAR_INST, &act);
 			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
 			resolve_var(cmd, svalues, buf);
 			if (buf->len > 0) {
@@ -154,7 +253,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 			}
 			make_inc_add_act(make, inc, act);
 
-			make_var(make, STRV("$(PN).$(TN).OUT"), MAKE_VAR_INST, &act);
+			make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_INST, &act);
 			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
 			resolve_var(out, svalues, buf);
 			if (buf->len > 0) {
@@ -196,12 +295,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		[VAR_CONFIG] = STRVT("$(CONFIG)"),
 	};
 
-	strv_t poutdir = proj_get_str(proj, proj->outdir);
-	str_t outdir   = strn(poutdir.data, poutdir.len, 256);
-	if (var_replace(&outdir, values)) {
-		// return 1;
-	}
-
 	make_t make = {0};
 	make_init(&make, 32, 32, 2, 32, ALLOC_STD);
 
@@ -216,29 +309,67 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_var_ext(&make, STRV("OPEN"), &mopen);
 	make_add_act(&make, root, mopen);
 
-	make_var(&make, STRV("PROJDIR"), MAKE_VAR_INST, &act);
-
-	path_t rel = {0};
-	path_calc_rel(build_dir, proj_dir, &rel);
-	if (rel.len > 0) {
-		make_var_add_val(&make, act, MSTR(STRVS(rel)));
-	}
+	make_var_var(&make, march, MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("x64")));
 	make_add_act(&make, root, act);
-	make_var(&make, STRV("BUILDDIR"), MAKE_VAR_INST, &act);
+
+	make_var_var(&make, mconfig, MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("Debug")));
+	make_add_act(&make, root, act);
+
+	make_var_var(&make, mopen, MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("1")));
 	make_add_act(&make, root, act);
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
-	make_var(&make, STRV("TCC"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("$(CC)")));
-	make_add_act(&make, root, act);
+	path_t tmp = {0};
+	str_t buf  = strz(16);
+
+	make_act_t vars[__PROJ_VARS_CNT] = {0};
+
+	for (int i = 0; i < __PROJ_VARS_CNT; i++) {
+		strv_t val = s_proj_vars[i].val;
+		switch (i) {
+		case DIR_PROJ: {
+			path_calc_rel(build_dir, proj_dir, &tmp);
+			val = STRVS(tmp);
+			break;
+		}
+		case DIR_OUT: {
+			strv_t poutdir = proj_get_str(proj, proj->outdir);
+			if (poutdir.len == 0) {
+				break;
+			}
+
+			str_t outdir = strn(poutdir.data, poutdir.len, 256);
+			if (var_replace(&outdir, values)) {
+				// return 1;
+			}
+
+			buf.len = 0;
+			if (pathv_is_rel(STRVS(outdir))) {
+				str_cat(&buf, STRV("$(DIR_PROJ)"));
+			}
+			str_cat(&buf, STRVN(outdir.data, outdir.len));
+			str_free(&outdir);
+			val = STRVS(buf);
+		}
+		default:
+			break;
+		}
+
+		make_var(&make, s_proj_vars[i].name, s_proj_vars[i].ref ? MAKE_VAR_REF : MAKE_VAR_INST, &vars[i]);
+		if (val.len > 0) {
+			make_var_add_val(&make, vars[i], MSTR(val));
+		}
+		make_add_act(&make, root, vars[i]);
+	}
+
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
 	make_act_t mbits, if_x64, if_x86;
-	make_var_var(&make, march, MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("x64")));
-	make_add_act(&make, root, act);
 	make_ifeq(&make, MVAR(march), MSTR(STRV("x64")), &if_x64);
 	make_add_act(&make, root, if_x64);
 	make_var(&make, STRV("BITS"), MAKE_VAR_INST, &mbits);
@@ -250,10 +381,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_var_add_val(&make, act, MSTR(STRV("32")));
 	make_if_add_true_act(&make, if_x86, act);
 	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	make_var_var(&make, mconfig, MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("Debug")));
 	make_add_act(&make, root, act);
 
 	make_act_t mcflags, mldflags, if_debug, if_release;
@@ -275,111 +402,9 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
-	make_var_var(&make, mopen, MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("1")));
+	make_var(&make, STRV("TCC"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("$(CC)")));
 	make_add_act(&make, root, act);
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	str_t buf = strz(16);
-	if (pathv_is_rel(STRVS(outdir))) {
-		str_cat(&buf, STRV("$(PROJDIR)"));
-	}
-	str_cat(&buf, STRVN(outdir.data, outdir.len));
-
-	make_var(&make, STRV("DLDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)tmp/dl/")));
-	make_add_act(&make, root, act);
-
-	make_var(&make, STRV("EXTDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)tmp/ext/")));
-	make_add_act(&make, root, act);
-
-	make_var(&make, STRV("REPDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)tmp/report/")));
-	make_add_act(&make, root, act);
-
-	make_var(&make, STRV("COVDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("$(REPDIR)cov/")));
-	make_add_act(&make, root, act);
-
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	make_act_t pkgdldir;
-	make_var(&make, STRV("PKGDLDIR"), MAKE_VAR_REF, &pkgdldir);
-	make_var_add_val(&make, pkgdldir, MSTR(STRV("$(DLDIR)$($(PN).DIR)")));
-	make_add_act(&make, root, pkgdldir);
-
-	make_act_t pkgextdir;
-	make_var(&make, STRV("PKGEXTDIR"), MAKE_VAR_REF, &pkgextdir);
-	make_var_add_val(&make, pkgextdir, MSTR(STRV("$(EXTDIR)$($(PN).DIR)")));
-	make_add_act(&make, root, pkgextdir);
-
-	make_act_t pkgdlfile;
-	make_var(&make, STRV("PKGDLFILE"), MAKE_VAR_REF, &pkgdlfile);
-	make_var_add_val(&make, pkgdlfile, MSTR(STRV("$($(PN).DLFILE)")));
-	make_add_act(&make, root, pkgdlfile);
-
-	make_act_t pkgdlroot;
-	make_var(&make, STRV("PKGDLROOT"), MAKE_VAR_REF, &pkgdlroot);
-	make_var_add_val(&make, pkgdlroot, MSTR(STRV("$($(PN).DLROOT)")));
-	make_add_act(&make, root, pkgdlroot);
-
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	make_var(&make, STRV("OUTDIR"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRVS(buf)));
-	make_add_act(&make, root, act);
-
-	static const struct {
-		strv_t name;
-		strv_t val;
-	} outdirs[] = {
-		{STRVT("INTDIR"), STRVT("$(OUTDIR)int/")},
-		{STRVT("LIBDIR"), STRVT("$(OUTDIR)lib/")},
-		{STRVT("BINDIR"), STRVT("$(OUTDIR)bin/")},
-		{STRVT("EXTOUTDIR"), STRVT("$(OUTDIR)ext/")},
-		{STRVT("TSTDIR"), STRVT("$(OUTDIR)test/")},
-	};
-
-	for (size_t i = 0; i < sizeof(outdirs) / sizeof(outdirs[0]); i++) {
-		make_var(&make, outdirs[i].name, MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MSTR(outdirs[i].val));
-		make_add_act(&make, root, act);
-	}
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	make_var(&make, STRV("PKGDIR"), MAKE_VAR_REF, &act);
-	make_var_add_val(&make, act, MSTR(STRV("$(PROJDIR)$($(PN).DIR)")));
-	make_add_act(&make, root, act);
-
-	enum {
-		PKGDIR_SRC,
-		PKGDIR_INC,
-		PKGDIR_DRV,
-		PKGDIR_TST,
-	};
-
-	struct {
-		strv_t name;
-		strv_t val;
-		make_act_t var;
-	} pkgdirs[] = {
-		[PKGDIR_SRC] = {STRVT("PKGDIR_SRC"), STRVT("$(PKGDIR)src/")},
-		[PKGDIR_INC] = {STRVT("PKGDIR_INC"), STRVT("$(PKGDIR)include/")},
-		[PKGDIR_DRV] = {STRVT("PKGDIR_DRV"), STRVT("$(PKGDIR)drivers/")},
-		[PKGDIR_TST] = {STRVT("PKGDIR_TST"), STRVT("$(PKGDIR)test/")},
-	};
-
-	for (size_t i = 0; i < sizeof(pkgdirs) / sizeof(pkgdirs[0]); i++) {
-		make_var(&make, pkgdirs[i].name, MAKE_VAR_REF, &act);
-		make_var_add_val(&make, act, MSTR(pkgdirs[i].val));
-		make_add_act(&make, root, act);
-		pkgdirs[i].var = act;
-	}
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
@@ -397,12 +422,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		strv_t val;
 		make_act_t var;
 	} pkgfiles[] = {
-		[PKGSRC_C] = {STRVT("PKGSRC_C"), STRVT("$(shell find $(PKGDIR_SRC) -type f -name '*.c')")},
-		[PKGSRC_H] = {STRVT("PKGSRC_H"), STRVT("$(shell find $(PKGDIR_SRC) -type f -name '*.h')")},
-		[PKGDRV_C] = {STRVT("PKGDRV_C"), STRVT("$(shell find $(PKGDIR_DRV) -type f -name '*.c')")},
-		[PKGTST_C] = {STRVT("PKGTST_C"), STRVT("$(shell find $(PKGDIR_TST) -type f -name '*.c')")},
-		[PKGTST_H] = {STRVT("PKGTST_H"), STRVT("$(shell find $(PKGDIR_TST) -type f -name '*.h')")},
-		[PKGINC_H] = {STRVT("PKGINC_H"), STRVT("$(shell find $(PKGDIR_INC) -type f -name '*.h')")},
+		[PKGSRC_C] = {STRVT("PKGSRC_C"), STRVT("$(shell find $(DIR_PKG_SRC) -type f -name '*.c')")},
+		[PKGSRC_H] = {STRVT("PKGSRC_H"), STRVT("$(shell find $(DIR_PKG_SRC) -type f -name '*.h')")},
+		[PKGDRV_C] = {STRVT("PKGDRV_C"), STRVT("$(shell find $(DIR_PKG_DRV) -type f -name '*.c')")},
+		[PKGTST_C] = {STRVT("PKGTST_C"), STRVT("$(shell find $(DIR_PKG_TST) -type f -name '*.c')")},
+		[PKGTST_H] = {STRVT("PKGTST_H"), STRVT("$(shell find $(DIR_PKG_TST) -type f -name '*.h')")},
+		[PKGINC_H] = {STRVT("PKGINC_H"), STRVT("$(shell find $(DIR_PKG_INC) -type f -name '*.h')")},
 	};
 
 	for (size_t i = 0; i < sizeof(pkgfiles) / sizeof(pkgfiles[0]); i++) {
@@ -410,31 +435,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_var_add_val(&make, act, MSTR(pkgfiles[i].val));
 		make_add_act(&make, root, act);
 		pkgfiles[i].var = act;
-	}
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	enum {
-		INTDIR_SRC,
-		INTDIR_DRV,
-		INTDIR_TST,
-	};
-
-	struct {
-		strv_t name;
-		strv_t val;
-		make_act_t var;
-	} intdirs[] = {
-		[INTDIR_SRC] = {STRVT("INTDIR_SRC"), STRVT("$(INTDIR)/$(PN)/src/")},
-		[INTDIR_DRV] = {STRVT("INTDIR_DRV"), STRVT("$(INTDIR)/$(PN)/drivers/")},
-		[INTDIR_TST] = {STRVT("INTDIR_TST"), STRVT("$(INTDIR)/$(PN)/test/")},
-	};
-
-	for (size_t i = 0; i < sizeof(intdirs) / sizeof(intdirs[0]); i++) {
-		make_var(&make, intdirs[i].name, MAKE_VAR_REF, &act);
-		make_var_add_val(&make, act, MSTR(intdirs[i].val));
-		make_add_act(&make, root, act);
-		intdirs[i].var = act;
 	}
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
@@ -453,11 +453,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		strv_t val;
 		make_act_t var;
 	} objs[] = {
-		[PKGSRC_OBJ]  = {STRVT("PKGSRC_OBJ"), STRVT("$(patsubst $(PKGDIR_SRC)%.c,$(INTDIR_SRC)%.o,$(PKGSRC_C))")},
+		[PKGSRC_OBJ]  = {STRVT("PKGSRC_OBJ"), STRVT("$(patsubst $(DIR_PKG_SRC)%.c,$(DIR_OUT_INT_SRC)%.o,$(PKGSRC_C))")},
 		[PKGSRC_GCDA] = {STRVT("PKGSRC_GCDA"), STRVT("$(patsubst %.o,%.gcda,$(PKGSRC_OBJ))")},
-		[PKGDRV_OBJ]  = {STRVT("PKGDRV_OBJ"), STRVT("$(patsubst $(PKGDIR_DRV)%.c,$(INTDIR_DRV)%.o,$(PKGDRV_C))")},
+		[PKGDRV_OBJ]  = {STRVT("PKGDRV_OBJ"), STRVT("$(patsubst $(DIR_PKG_DRV)%.c,$(DIR_OUT_INT_DRV)%.o,$(PKGDRV_C))")},
 		[PKGDRV_GCDA] = {STRVT("PKGDRV_GCDA"), STRVT("$(patsubst %.o,%.gcda,$(PKGDRV_OBJ))")},
-		[PKGTST_OBJ]  = {STRVT("PKGTST_OBJ"), STRVT("$(patsubst $(PKGDIR_TST)%.c,$(INTDIR_TST)%.o,$(PKGTST_C))")},
+		[PKGTST_OBJ]  = {STRVT("PKGTST_OBJ"), STRVT("$(patsubst $(DIR_PKG_TST)%.c,$(DIR_OUT_INT_TST)%.o,$(PKGTST_C))")},
 		[PKGTST_GCDA] = {STRVT("PKGTST_GCDA"), STRVT("$(patsubst %.o,%.gcda,$(PKGTST_OBJ))")},
 	};
 
@@ -466,33 +466,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_var_add_val(&make, act, MSTR(objs[i].val));
 		make_add_act(&make, root, act);
 		objs[i].var = act;
-	}
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	enum {
-		PKGEXE,
-		PKGLIB,
-		PKGEXT,
-		PKGTST,
-	};
-
-	struct {
-		strv_t name;
-		strv_t val;
-		make_act_t var;
-	} targets[] = {
-		[PKGEXE] = {STRVT("PKGEXE"), STRVT("$(BINDIR)$(PN)")},
-		[PKGLIB] = {STRVT("PKGLIB"), STRVT("$(LIBDIR)$(PN).a")},
-		[PKGEXT] = {STRVT("PKGEXT"), STRVT("$(EXTOUTDIR)$(PN)/$(TN)")},
-		[PKGTST] = {STRVT("PKGTST"), STRVT("$(TSTDIR)$(PN)")},
-	};
-
-	for (size_t i = 0; i < sizeof(targets) / sizeof(targets[0]); i++) {
-		make_var(&make, targets[i].name, MAKE_VAR_REF, &act);
-		make_var_add_val(&make, act, MSTR(targets[i].val));
-		make_add_act(&make, root, act);
-		targets[i].var = act;
 	}
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
@@ -560,12 +533,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		protos_defs[PKG_URI_PROTO_HTTPS].def = def;
 
 		make_act_t dl;
-		make_rule(&make, MRULE(MSTR(STRV("$(PKGDLDIR)$(PKGDLFILE)"))), 1, &dl);
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_TMP_DL_PKG)$(PKG_DLFILE)"))), 1, &dl);
 		make_def_add_act(&make, def, dl);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, dl, act);
-		make_cmd(&make, MCMD(STRV("wget $($(PN).URI) -O $$@")), &act);
+		make_cmd(&make, MCMD(STRV("wget $($(PN)_URI) -O $$@")), &act);
 		make_rule_add_act(&make, dl, act);
 
 		make_empty(&make, &act);
@@ -579,8 +552,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		exts_defs[PKG_URI_EXT_ZIP].def = def;
 
 		make_act_t ext;
-		make_rule(&make, MRULE(MSTR(STRV("$(PKGEXTDIR)"))), 1, &ext);
-		make_rule_add_depend(&make, ext, MRULE(MSTR(STRV("$(PKGDLDIR)$(PKGDLFILE)"))));
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_TMP_EXT_PKG)"))), 1, &ext);
+		make_rule_add_depend(&make, ext, MRULE(MSTR(STRV("$(DIR_TMP_DL_PKG)$(PKG_DLFILE)"))));
 		make_def_add_act(&make, def, ext);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
@@ -608,8 +581,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, def);
 		defines[TARGET_TYPE_EXE].def = def;
 
-		make_var(&make, STRV("$(PN).$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(targets[PKGEXE].var));
+		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
+		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_BIN_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -622,42 +595,42 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t def_all;
 		make_rule(&make, MRULE(MSTR(STRV("all"))), 1, &def_all);
-		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_def_add_act(&make, def, def_all);
 
 		make_act_t def_phony;
 		make_phony(&make, &def_phony);
 		make_def_add_act(&make, def, def_phony);
 
-		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
-		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(targets[PKGEXE].var)));
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_BIN_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(targets[PKGEXE].var)), 1, &def_rule_target);
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN).$(TN).DRIVERS)"))));
+		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_BIN_FILE])), 1, &def_rule_target);
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN).$(TN).LIBS)"))));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS)"))));
 		make_def_add_act(&make, def, def_rule_target);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 		make_cmd(&make,
-			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PN).$(TN).DRIVERS) $($(PN).$(TN).LIBS)")),
+			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGSRC_OBJ) $($(PN)_$(TN)_DRIVERS) $($(PN)_$(TN)_LIBS)")),
 			 &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
 		make_act_t def_rule_obj;
-		make_rule(&make, MRULE(MSTR(STRV("$(INTDIR_SRC)%.o"))), 1, &def_rule_obj);
-		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(PKGDIR_SRC)%.c"))));
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_OUT_INT_SRC)%.o"))), 1, &def_rule_obj);
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(DIR_PKG_SRC)%.c"))));
 		make_rule_add_depend(&make, def_rule_obj, MRULE(MVAR(pkgfiles[PKGSRC_H].var)));
-		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN).$(TN).HEADERS)"))));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN)_$(TN)_HEADERS)"))));
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
-			 MCMD(STRV("$(TCC) -m$(BITS) -c $(PKGDIR_SRC:%=-I%) $($(PN).$(TN).INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")),
+			 MCMD(STRV("$(TCC) -m$(BITS) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_def_add_act(&make, def, def_rule_obj);
@@ -671,8 +644,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_def(&make, defines[TARGET_TYPE_LIB].name, &def);
 		make_add_act(&make, root, def);
 		defines[TARGET_TYPE_LIB].def = def;
-		make_var(&make, STRV("$(PN).$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(targets[PKGLIB].var));
+		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
+		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_LIB_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -685,21 +658,21 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t def_all;
 		make_rule(&make, MRULE(MSTR(STRV("all"))), 1, &def_all);
-		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_def_add_act(&make, def, def_all);
 
 		make_act_t def_phony;
 		make_phony(&make, &def_phony);
 		make_def_add_act(&make, def, def_phony);
 
-		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
-		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(targets[PKGLIB].var)));
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_LIB_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(targets[PKGLIB].var)), 1, &def_rule_target);
+		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_LIB_FILE])), 1, &def_rule_target);
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
@@ -708,14 +681,14 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_def_add_act(&make, def, def_rule_target);
 
 		make_act_t def_rule_obj;
-		make_rule(&make, MRULE(MSTR(STRV("$(INTDIR_SRC)%.o"))), 1, &def_rule_obj);
-		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(PKGDIR_SRC)%.c"))));
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_OUT_INT_SRC)%.o"))), 1, &def_rule_obj);
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(DIR_PKG_SRC)%.c"))));
 		make_rule_add_depend(&make, def_rule_obj, MRULE(MVAR(pkgfiles[PKGSRC_H].var)));
-		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN).$(TN).HEADERS)"))));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN)_$(TN)_HEADERS)"))));
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
-			 MCMD(STRV("$(TCC) -m$(BITS) -c $(PKGDIR_SRC:%=-I%) $($(PN).$(TN).INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")),
+			 MCMD(STRV("$(TCC) -m$(BITS) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_def_add_act(&make, def, def_rule_obj);
@@ -729,39 +702,39 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_def(&make, defines[TARGET_TYPE_EXT].name, &def);
 		make_add_act(&make, root, def);
 		defines[TARGET_TYPE_EXT].def = def;
-		make_var(&make, STRV("$(PN).$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(targets[PKGEXT].var));
+		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
+		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_EXT_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
 
 		make_act_t def_all;
 		make_rule(&make, MRULE(MSTR(STRV("all"))), 1, &def_all);
-		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_def_add_act(&make, def, def_all);
 
 		make_act_t def_phony;
 		make_phony(&make, &def_phony);
 		make_def_add_act(&make, def, def_phony);
 
-		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
-		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(targets[PKGEXT].var)));
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_EXT_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(targets[PKGEXT].var)), 1, &def_rule_target);
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$(PKGEXTDIR)"))));
+		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_EXT_FILE])), 1, &def_rule_target);
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$(DIR_TMP_EXT_PKG)"))));
 		make_def_add_act(&make, def, def_rule_target);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
-		make_cmd(&make, MCMD(STRV("cd $(PKGEXTDIR)$(PKGDLROOT) && $($(PN).$(TN).CMD)")), &act);
+		make_cmd(&make, MCMD(STRV("cd $(DIR_TMP_EXT_PKG_ROOT) && $(TGT_CMD)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
-		make_cmd(&make, MCMD(STRV("cp $(PKGEXTDIR)$(PKGDLROOT)$($(PN).$(TN).OUT) $(EXTOUTDIR)$(PN)")), &act);
+		make_cmd(&make, MCMD(STRV("cp $(DIR_TMP_EXT_PKG_ROOT_OUT) $(DIR_OUT_EXT_PKG)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
 		make_cmd(&make, MCMD(STRV("touch $$@")), &act);
@@ -777,8 +750,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, def);
 		defines[TARGET_TYPE_TST].def = def;
 
-		make_var(&make, STRV("$(PN).$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(targets[PKGTST].var));
+		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
+		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_TST_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -791,69 +764,69 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t def_all;
 		make_rule(&make, MRULE(MSTR(STRV("all"))), 1, &def_all);
-		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_all, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_def_add_act(&make, def, def_all);
 
 		make_act_t def_test;
 		make_rule(&make, MRULE(MSTR(STRV("test"))), 1, &def_test);
-		make_rule_add_depend(&make, def_test, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/test")));
+		make_rule_add_depend(&make, def_test, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/test")));
 		make_def_add_act(&make, def, def_test);
 
 		make_act_t def_cov;
 		make_rule(&make, MRULE(MSTR(STRV("cov"))), 1, &def_cov);
-		make_rule_add_depend(&make, def_cov, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/cov")));
+		make_rule_add_depend(&make, def_cov, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/cov")));
 		make_def_add_act(&make, def, def_cov);
 
 		make_act_t def_phony;
 		make_phony(&make, &def_phony);
 		make_def_add_act(&make, def, def_phony);
 
-		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")));
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
-		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(targets[PKGTST].var)));
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_TST_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
-		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/test")));
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/test")));
 		make_act_t def_run_test;
-		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/test")), 1, &def_run_test);
-		make_rule_add_depend(&make, def_run_test, MRULE(MVAR(targets[PKGTST].var)));
-		make_cmd(&make, MCMD(STRV("$(PKGTST)")), &act);
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/test")), 1, &def_run_test);
+		make_rule_add_depend(&make, def_run_test, MRULE(MVAR(vars[DIR_OUT_TST_FILE])));
+		make_cmd(&make, MCMD(STRV("$(DIR_OUT_TST_FILE)")), &act);
 		make_rule_add_act(&make, def_run_test, act);
 		make_def_add_act(&make, def, def_run_test);
 
-		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/cov")));
+		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/cov")));
 		make_act_t def_run_cov;
-		make_rule(&make, MRULEACT(MSTR(STRV("$(PN).$(TN)")), STRV("/cov")), 1, &def_run_cov);
+		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/cov")), 1, &def_run_cov);
 		make_rule_add_depend(&make, def_run_cov, MRULE(MSTR(STRV("precov"))));
-		make_rule_add_depend(&make, def_run_cov, MRULE(MVAR(targets[PKGTST].var)));
-		make_cmd(&make, MCMD(STRV("$(PKGTST)")), &act);
+		make_rule_add_depend(&make, def_run_cov, MRULE(MVAR(vars[DIR_OUT_TST_FILE])));
+		make_cmd(&make, MCMD(STRV("$(DIR_OUT_TST_FILE)")), &act);
 		make_rule_add_act(&make, def_run_cov, act);
 		make_def_add_act(&make, def, def_run_cov);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(targets[PKGTST].var)), 1, &def_rule_target);
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN).$(TN).DRIVERS)"))));
+		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_TST_FILE])), 1, &def_rule_target);
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGTST_OBJ].var)));
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN).$(TN).LIBS)"))));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS)"))));
 		make_def_add_act(&make, def, def_rule_target);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 		make_cmd(&make,
-			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGTST_OBJ) $($(PN).$(TN).DRIVERS) $($(PN).$(TN).LIBS)")),
+			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) -o $$@ $(PKGTST_OBJ) $($(PN)_$(TN)_DRIVERS) $($(PN)_$(TN)_LIBS)")),
 			 &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
 		make_act_t def_rule_obj;
-		make_rule(&make, MRULE(MSTR(STRV("$(INTDIR_TST)%.o"))), 1, &def_rule_obj);
-		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(PKGDIR_TST)%.c"))));
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_OUT_INT_TST)%.o"))), 1, &def_rule_obj);
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(DIR_PKG_TST)%.c"))));
 		make_rule_add_depend(&make, def_rule_obj, MRULE(MVAR(pkgfiles[PKGSRC_H].var)));
-		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN).$(TN).HEADERS)"))));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN)_$(TN)_HEADERS)"))));
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
-			 MCMD(STRV("$(TCC) -m$(BITS) -c $(PKGDIR_TST:%=-I%) $($(PN).$(TN).INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")),
+			 MCMD(STRV("$(TCC) -m$(BITS) -c $(DIR_PKG_TST:%=-I%) $($(PN)_$(TN)_INCLUDES:%=-I%) $(CFLAGS) -o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_def_add_act(&make, def, def_rule_obj);
@@ -873,13 +846,13 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	make_cmd(&make, MCMD(STRV("@if [ -n \"$(GCDA)\" ]; then \\")), &act);
 	make_rule_add_act(&make, cov, act);
-	make_cmd(&make, MCMD(STRV("\tmkdir -pv $(COVDIR); \\")), &act);
+	make_cmd(&make, MCMD(STRV("\tmkdir -pv $(DIR_TMP_COV); \\")), &act);
 	make_rule_add_act(&make, cov, act);
-	make_cmd(&make, MCMD(STRV("\tlcov -q -c -o $(COVDIR)lcov.info -d $(INTDIR); \\")), &act);
+	make_cmd(&make, MCMD(STRV("\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT_INT); \\")), &act);
 	make_rule_add_act(&make, cov, act);
-	make_cmd(&make, MCMD(STRV("\tgenhtml -q -o $(COVDIR) $(COVDIR)lcov.info; \\")), &act);
+	make_cmd(&make, MCMD(STRV("\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\")), &act);
 	make_rule_add_act(&make, cov, act);
-	make_cmd(&make, MCMD(STRV("\t[ \"$(OPEN)\" = \"1\" ] && open $(COVDIR)index.html || true; \\")), &act);
+	make_cmd(&make, MCMD(STRV("\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\")), &act);
 	make_rule_add_act(&make, cov, act);
 	make_cmd(&make, MCMD(STRV("fi")), &act);
 	make_rule_add_act(&make, cov, act);
@@ -902,14 +875,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		{
 			const pkg_t *pkg = proj_get_pkg(proj, *id);
 
+			path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_PATH), '/');
+			path_push_s(&tmp, STRV("pkg.mk"), '/');
+
 			buf.len = 0;
-			str_cat(&buf, STRV("$(BUILDDIR)"));
-			strv_t pkg_path = proj_get_str(proj, pkg->strs + PKG_PATH);
-			if (pkg_path.len > 0) {
-				str_cat(&buf, pkg_path);
-				str_cat(&buf, STRV("/"));
-			}
-			str_cat(&buf, STRV("pkg.mk"));
+			str_cat(&buf, STRV("$(DIR_BUILD)"));
+			str_cat(&buf, STRVS(tmp));
 
 			make_act_t inc;
 			make_inc(&make, STRVS(buf), &inc);
@@ -933,7 +904,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	make_free(&make);
 
-	str_free(&outdir);
 	str_free(&buf);
 
 	return 0;

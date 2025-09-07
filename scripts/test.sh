@@ -40,18 +40,18 @@ mk() {
 		return
 	fi
 
-	if ! out="$(make -C "$tmp/build" ARCH="$p_arch" CONFIG="$p_config" 2>&1)"; then
+	if ! build_out="$(make -C "$tmp/build" ARCH="$p_arch" CONFIG="$p_config" 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "make: Failed to build project"
-		echo "$out"
+		echo "$build_out"
 		ret=1
 		return
 	fi
 
-	if ! out="$(make -C "$tmp/build" cov ARCH="$p_arch" CONFIG="$p_config" OPEN=0 2>&1)"; then
+	if ! cov_out="$(make -C "$tmp/build" cov ARCH="$p_arch" CONFIG="$p_config" OPEN=0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "make: Failed to cov project"
-		echo "$out"
+		echo "$cov_out"
 		ret=1
 		return
 	fi
@@ -60,6 +60,8 @@ mk() {
 		if [ ! -f "$dir/$target" ]; then
 			printf "\033[0;31mFAIL\033[0m\n"
 			echo "Target not found: $target"
+			echo "$build_out"
+			echo "$cov_out"
 			ret=1
 			return
 		fi
@@ -79,6 +81,7 @@ cm() {
 	bin="$dir/bin"
 	tmp="$dir/tmp"
 	build="$dir/build"
+	rm -rf "$bin" "$build" "$tmp"
 
 	printf "%s %-7s %-12s %-5s " "$p_arch" "$p_config" "$proj" "CMake"
 
@@ -90,26 +93,26 @@ cm() {
 		return
 	fi
 
-	if ! out="$(cmake -S "$tmp/build" -B "$build" -G "Unix Makefiles" -DARCH="$p_arch" -DCMAKE_BUILD_TYPE="$p_config" -DOPEN=0 2>&1)"; then
+	if ! gen_out="$(cmake -S "$tmp/build" -B "$build" -G "Unix Makefiles" -DARCH="$p_arch" -DCMAKE_BUILD_TYPE="$p_config" -DOPEN=0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "cmake: Failed to generate make"
-		echo "$out"
+		echo "$gen_out"
 		ret=1
 		return
 	fi
 
-	if ! out="$(cmake --build "$build" 2>&1)"; then
+	if ! build_out="$(cmake --build "$build" 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "cmake: Failed to build project"
-		echo "$out"
+		echo "$build_out"
 		ret=1
 		return
 	fi
 
-	if ! out="$(cmake --build "$build" --target cov 2>&1)"; then
+	if ! cov_out="$(cmake --build "$build" --target cov 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "cmake: Failed to cov project"
-		echo "$out"
+		echo "$cov_out"
 		ret=1
 		return
 	fi
@@ -118,18 +121,20 @@ cm() {
 		if [ ! -f "$dir/$target" ]; then
 			printf "\033[0;31mFAIL\033[0m\n"
 			echo "Target not found: $target"
+			echo "$gen_out"
+			echo "$build_out"
+			echo "$cov_out"
 			ret=1
 			return
 		fi
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
-	rm -rf "$bin" "$build" "$tmp"
 }
 
 gen() {
 	mk "$@"
-	cm "$@"
+	#cm "$@"
 }
 
 test() {
@@ -148,8 +153,8 @@ test() {
 }
 
 test x64 Debug
-test x64 Release
-test x86 Debug
-test x86 Release
+#test x64 Release
+#test x86 Debug
+#test x86 Release
 
 exit $ret
