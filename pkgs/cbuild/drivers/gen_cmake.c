@@ -21,7 +21,7 @@ static void resolve_dir(const proj_t *proj, strv_t *values, target_type_t type, 
 
 	buf->len = 0;
 	if (pathv_is_rel(STRVS(tmp))) {
-		str_cat(buf, STRV("${PROJDIR}"));
+		str_cat(buf, STRV("${DIR_PROJ}"));
 	}
 	str_cat(buf, STRVS(tmp));
 
@@ -70,7 +70,8 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		fs_write(fs, f, name);
 	}
 	fs_write(fs, f, STRV("\")\n"));
-	fs_write(fs, f, STRV("set(PKGDIR \""));
+
+	fs_write(fs, f, STRV("set(${PN}_DIR \""));
 	strv_t dir = proj_get_str(proj, pkg->strs + PKG_PATH);
 	if (dir.len > 0) {
 		fs_write(fs, f, dir);
@@ -78,9 +79,59 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 	}
 	fs_write(fs, f, STRV("\")\n"));
 
-	strv_t svalues[__VAR_CNT] = {
-		[VAR_ARCH]   = STRVT("${ARCH}"),
-		[VAR_CONFIG] = STRVT("${CONFIG}"),
+	strv_t uri = proj_get_str(proj, pkg->strs + PKG_URI_STR);
+	if (uri.len > 0) {
+		fs_write(fs, f, STRV("set(${PN}_URI "));
+		fs_write(fs, f, uri);
+		fs_write(fs, f, STRV(")\n"));
+
+		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_NAME);
+		fs_write(fs, f, STRV("set(${PN}_DLFILE "));
+		fs_write(fs, f, uri_file);
+		fs_write(fs, f, STRV(")\n"));
+
+		strv_t uri_dir = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
+		if (uri_dir.len > 0) {
+			fs_write(fs, f, STRV("set(${PN}_DLROOT "));
+			fs_write(fs, f, uri_dir);
+			fs_write(fs, f, STRV(")\n"));
+		}
+	}
+
+	for (int i = 0; i < __VARS_CNT; i++) {
+		if (!g_vars[i].pkg || g_vars[i].tgt) {
+			continue;
+		}
+
+		strv_t val = g_vars[i].val;
+		switch (i) {
+		default:
+			break;
+		}
+
+		if (val.data == NULL) {
+			continue;
+		}
+
+		buf.len = 0;
+		str_cat(&buf, val);
+
+		var_convert(&buf, '{', '}', '{', '}');
+
+		fs_write(fs, f, STRV("set("));
+		fs_write(fs, f, g_vars[i].name);
+		fs_write(fs, f, STRV(" \""));
+		if (buf.len > 0) {
+			fs_write(fs, f, STRVS(buf));
+		}
+		fs_write(fs, f, STRV("\")\n"));
+	}
+
+	fs_write(fs, f, STRV("\n"));
+
+	strv_t svalues[__VARS_CNT] = {
+		[ARCH]	 = STRVT("${ARCH}"),
+		[CONFIG] = STRVT("${CONFIG}"),
 	};
 
 	if (pkg->has_targets) {
@@ -95,8 +146,60 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			}
 			fs_write(fs, f, STRV("\")\n"));
 
+			switch (target->type) {
+			case TARGET_TYPE_EXT: {
+				strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
+				resolve_var(cmd, svalues, &buf);
+				fs_write(fs, f, STRV("set(${PN}_${TN}_CMD "));
+				fs_write(fs, f, STRVS(buf));
+				fs_write(fs, f, STRV(")\n"));
+
+				strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+				resolve_var(out, svalues, &buf);
+				if (out.len > 0) {
+					fs_write(fs, f, STRV("set(${PN}_${TN}_OUT "));
+					fs_write(fs, f, STRVS(buf));
+					fs_write(fs, f, STRV(")\n"));
+				}
+
+				break;
+			}
+			default:
+				break;
+			}
+
+			for (int i = 0; i < __VARS_CNT; i++) {
+				if (!g_vars[i].tgt) {
+					continue;
+				}
+
+				strv_t val = g_vars[i].val;
+				switch (i) {
+				default:
+					break;
+				}
+
+				if (val.data == NULL) {
+					continue;
+				}
+
+				buf.len = 0;
+				str_cat(&buf, val);
+
+				var_convert(&buf, '{', '}', '{', '}');
+
+				fs_write(fs, f, STRV("set("));
+				fs_write(fs, f, g_vars[i].name);
+				fs_write(fs, f, STRV(" \""));
+				if (buf.len > 0) {
+					fs_write(fs, f, STRVS(buf));
+				}
+				fs_write(fs, f, STRV("\")\n"));
+			}
+			fs_write(fs, f, STRV("\n"));
+
 			if (target->type != TARGET_TYPE_EXT) {
-				fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${PROJDIR}${PKGDIR}"));
+				fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 				path_t tmp = {0};
 
@@ -113,7 +216,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				path_push_s(&tmp, STRV("*.h"), '/');
 				fs_write(fs, f, STRVS(tmp));
 
-				fs_write(fs, f, STRV(" ${PROJDIR}${PKGDIR}"));
+				fs_write(fs, f, STRV(" ${DIR_PKG}"));
 				tmp.len = src_len;
 				path_push_s(&tmp, STRV("*.c"), '/');
 				fs_write(fs, f, STRVS(tmp));
@@ -154,7 +257,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 				strv_t inc = proj_get_str(proj, pkg->strs + PKG_INC);
 				if (inc.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC ${PROJDIR}${PKGDIR}"));
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}"));
 					fs_write(fs, f, inc);
 					fs_write(fs, f, STRV(")\n"));
 				}
@@ -186,64 +289,35 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				break;
 			}
 			case TARGET_TYPE_EXT: {
-				strv_t uri = proj_get_str(proj, pkg->strs + PKG_URI_STR);
-
-				fs_write(fs, f, STRV("set(URL "));
-				fs_write(fs, f, uri);
-				fs_write(fs, f, STRV(")\n"));
-
-				fs_write(fs, f, STRV("set(ZIP_FILE ${PROJDIR}tmp/dl/main.zip)\n"));
-				fs_write(fs, f, STRV("set(EXT_DIR ${PROJDIR}tmp/ext/)\n"));
-
-				strv_t uri_dir = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
-				if (uri_dir.len > 0) {
-					fs_write(fs, f, STRV("set(URI_ROOT "));
-					fs_write(fs, f, uri_dir);
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-				resolve_var(out, svalues, &buf);
-				if (out.len > 0) {
-					fs_write(fs, f, STRV("set(OUT "));
-					fs_write(fs, f, STRVS(buf));
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
-				resolve_var(cmd, svalues, &buf);
-				fs_write(fs, f, STRV("set(CMD "));
-				fs_write(fs, f, STRVS(buf));
-				fs_write(fs, f, STRV(")\n"));
+				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"));
 
 				fs_write(fs,
 					 f,
-					 STRV("add_custom_target(${PN}_${TN} ALL\n"
-					      "\tCOMMAND ${CMD}\n"
-					      "\tWORKING_DIRECTORY ${EXT_DIR}${URI_ROOT}\n"
-					      ")\n"));
-
-				fs_write(fs,
-					 f,
-					 STRV("file(DOWNLOAD ${URL} ${ZIP_FILE}\n"
+					 STRV("file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 					      "\tSHOW_PROGRESS\n"
 					      ")\n"));
 
-				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${EXT_DIR}\")\n"));
+				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"));
 
 				fs_write(fs,
 					 f,
 					 STRV("execute_process(\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${ZIP_FILE}\n"
-					      "\tWORKING_DIRECTORY ${EXT_DIR}\n"
+					      "\tCOMMAND unzip ${DIR_TMP_DL_PKG}${PKG_DLFILE} -d ${DIR_TMP_EXT_PKG}\n"
+					      "\tWORKING_DIRECTORY ${DIR_TMP_DL_PKG}\n"
+					      ")\n"));
+
+				fs_write(fs,
+					 f,
+					 STRV("add_custom_target(${PN}_${TN} ALL\n"
+					      "\tCOMMAND ${TGT_CMD}\n"
+					      "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
 					      ")\n"));
 
 				fs_write(fs,
 					 f,
 					 STRV("add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${PROJDIR}bin/${ARCH}-${CONFIG}/ext/${PN}\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${EXT_DIR}${URI_ROOT}${OUT} "
-					      "${PROJDIR}/bin/${ARCH}-${CONFIG}/ext/${PN}/\n"
+					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+					      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_PKG}\n"
 					      ")\n"));
 				break;
 			}
@@ -278,7 +352,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 					 f,
 					 STRV("add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config "
 					      "${CONFIG} --target ${PN}_${TN})\n"
-					      "add_test(${PN} ${PROJDIR}/bin/${ARCH}-${CONFIG}/test/${PN})\n"
+					      "add_test(${PN} ${DIR_OUT_TST_FILE})\n"
 					      "set_tests_properties(${PN} PROPERTIES\n"
 					      "\tDEPENDS ${PN}_${TN}_build\n"
 					      "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
@@ -289,7 +363,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				break;
 			}
 
-			strv_t values[__VAR_CNT] = {0};
+			strv_t values[__VARS_CNT] = {0};
 
 			fs_write(fs,
 				 f,
@@ -332,7 +406,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs, f, STRV("\t"));
 				fs_write(fs, f, props[target->type][i].name);
 				fs_write(fs, f, STRV(" "));
-				values[VAR_CONFIG] = props[target->type][i].config;
+				values[CONFIG] = props[target->type][i].config;
 				resolve_dir(proj, values, target->type, &buf, &outdir);
 				fs_write(fs, f, STRVS(outdir));
 				fs_write(fs, f, STRV("\n"));
@@ -384,53 +458,79 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
-	fs_write(drv->fs, f, STRV("set(PROJDIR \"${CMAKE_SOURCE_DIR}/"));
+	path_t tmp = {0};
+	str_t buf  = strz(16);
 
-	path_t rel = {0};
-	path_calc_rel_s(build_dir, proj_dir, '/', &rel);
-	if (rel.len > 0) {
-		fs_write(drv->fs, f, STRVS(rel));
+	for (int i = 0; i < __VARS_CNT; i++) {
+		if (g_vars[i].pkg || g_vars[i].tgt) {
+			continue;
+		}
+
+		strv_t val = g_vars[i].val;
+		switch (i) {
+		case CONFIG: {
+			val = STRV("${CMAKE_BUILD_TYPE}");
+			break;
+		}
+		case DIR_PROJ: {
+			path_calc_rel_s(build_dir, proj_dir, '/', &tmp);
+			buf.len = 0;
+			str_cat(&buf, STRV("${CMAKE_SOURCE_DIR}/"));
+			str_cat(&buf, STRVS(tmp));
+			val = STRVS(buf);
+			break;
+		}
+		case DIR_OUT: {
+			strv_t poutdir = proj_get_str(proj, proj->outdir);
+			if (poutdir.len == 0) {
+				break;
+			}
+
+			buf.len = 0;
+			if (pathv_is_rel(STRVS(poutdir))) {
+				str_cat(&buf, STRV("${DIR_PROJ}"));
+			}
+			str_cat(&buf, STRVS(poutdir));
+			val = STRVS(buf);
+			break;
+		}
+		case DIR_OUT_INT: {
+			val = STRV("${CMAKE_BINARY_DIR}");
+			break;
+		}
+		default:
+			break;
+		}
+
+		if (val.data == NULL) {
+			continue;
+		}
+
+		buf.len = 0;
+		str_cat(&buf, val);
+
+		var_convert(&buf, '{', '}', '{', '}');
+
+		fs_write(drv->fs, f, STRV("set("));
+		fs_write(drv->fs, f, g_vars[i].name);
+		fs_write(drv->fs, f, STRV(" \""));
+		if (buf.len > 0) {
+			fs_write(drv->fs, f, STRVS(buf));
+		}
+		fs_write(drv->fs, f, STRV("\")\n"));
 	}
 
-	fs_write(drv->fs, f, STRV("\")\n"));
-
-	fs_write(drv->fs, f, STRV("set(CONFIG \"${CMAKE_BUILD_TYPE}\")\n\n"));
-
-	strv_t values[__VAR_CNT] = {
-		[VAR_ARCH]   = STRVT("${ARCH}"),
-		[VAR_CONFIG] = STRVT("${CONFIG}"),
-	};
-
-	strv_t poutdir = proj_get_str(proj, proj->outdir);
-	str_t outdir   = strn(poutdir.data, poutdir.len, 256);
-	if (var_replace(&outdir, values)) {
-		// return 1;
-	}
-
-	str_t buf = strz(16);
-	if (pathv_is_rel(STRVS(outdir))) {
-		str_cat(&buf, STRV("${PROJDIR}"));
-	}
-	str_cat(&buf, STRVN(outdir.data, outdir.len));
-
-	fs_write(drv->fs, f, STRV("set(OUTDIR \""));
-	fs_write(drv->fs, f, STRVS(buf));
-	fs_write(drv->fs, f, STRV("\")\n\n"));
-
-	fs_write(drv->fs, f, STRV("set(INTDIR \"${CMAKE_BINARY_DIR}\")\n\n"));
-
-	fs_write(drv->fs, f, STRV("set(REPDIR \"${PROJDIR}tmp/report/\")\n"));
-	fs_write(drv->fs, f, STRV("set(COVDIR \"${REPDIR}cov/\")\n\n"));
+	fs_write(drv->fs, f, STRV("\n"));
 
 	fs_write(drv->fs,
 		 f,
 		 STRV("add_custom_target(cov\n"
-		      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${COVDIR}\n"
+		      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
 		      "\tCOMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target test\n"
 		      "\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		      "\t\tlcov -q -c -o ${COVDIR}lcov.info -d ${INTDIR}\\;\n"
-		      "\t\tgenhtml -q -o ${COVDIR} ${COVDIR}lcov.info\\;\n"
-		      "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${COVDIR}index.html || true\\;\n"
+		      "\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${DIR_OUT_INT}\\;\n"
+		      "\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		      "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
 		      "\tfi\n"
 		      "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
 		      ")\n\n"));
@@ -462,7 +562,6 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_close(drv->fs, f);
 
-	str_free(&outdir);
 	str_free(&buf);
 
 	return 0;

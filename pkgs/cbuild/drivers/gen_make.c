@@ -11,107 +11,8 @@ typedef struct defines_s {
 	make_act_t def;
 } defines_t;
 
-typedef struct proj_var_s {
-	strv_t name;
-	strv_t val;
-	int ref;
-} proj_var_t;
-
-typedef enum proj_vars_e {
-	// PROJ
-	DIR_PROJ,
-	DIR_BUILD,
-	// PKG
-	PKG_DIR,
-	PKG_DLFILE,
-	PKG_DLROOT,
-	// TGT
-	TGT_CMD,
-	TGT_OUT,
-	// DIR_TMP
-	DIR_TMP,
-	DIR_TMP_EXT,
-	DIR_TMP_EXT_PKG,
-	DIR_TMP_EXT_PKG_ROOT,
-	DIR_TMP_EXT_PKG_ROOT_OUT,
-	DIR_TMP_REP,
-	DIR_TMP_COV,
-	DIR_TMP_DL,
-	DIR_TMP_DL_PKG,
-	// DIR_PKG
-	DIR_PKG,
-	DIR_PKG_SRC,
-	DIR_PKG_INC,
-	DIR_PKG_DRV,
-	DIR_PKG_TST,
-	// DIR_OUT
-	DIR_OUT,
-	DIR_OUT_INT,
-	DIR_OUT_INT_SRC,
-	DIR_OUT_INT_DRV,
-	DIR_OUT_INT_TST,
-	DIR_OUT_LIB,
-	DIR_OUT_LIB_FILE,
-	DIR_OUT_BIN,
-	DIR_OUT_BIN_FILE,
-	DIR_OUT_EXT,
-	DIR_OUT_EXT_PKG,
-	DIR_OUT_EXT_FILE,
-	DIR_OUT_TST,
-	DIR_OUT_TST_FILE,
-	__PROJ_VARS_CNT,
-} proj_vars_t;
-
-#define PVAR(_name, _val, _ref) [_name] = {STRVT(#_name), STRVT(_val), _ref}
-
-static proj_var_t s_proj_vars[__PROJ_VARS_CNT] = {
-	// PROJ
-	PVAR(DIR_PROJ, "", 0),
-	PVAR(DIR_BUILD, "", 0),
-	// PKG
-	PVAR(PKG_DIR, "$($(PN)_DIR)", 1),
-	PVAR(PKG_DLFILE, "$($(PN)_DLFILE)", 1),
-	PVAR(PKG_DLROOT, "$($(PN)_DLROOT)", 1),
-	// TGT
-	PVAR(TGT_CMD, "$($(PN)_$(TN)_CMD)", 1),
-	PVAR(TGT_OUT, "$($(PN)_$(TN)_OUT)", 1),
-	// DIR_TMP
-	PVAR(DIR_TMP, "$(DIR_PROJ)tmp/", 0),
-	PVAR(DIR_TMP_EXT, "$(DIR_TMP)ext/", 0),
-	PVAR(DIR_TMP_EXT_PKG, "$(DIR_TMP_EXT)$(PKG_DIR)", 1),
-	PVAR(DIR_TMP_EXT_PKG_ROOT, "$(DIR_TMP_EXT_PKG)$(PKG_DLROOT)", 1),
-	PVAR(DIR_TMP_EXT_PKG_ROOT_OUT, "$(DIR_TMP_EXT_PKG_ROOT)$(TGT_OUT)", 1),
-	PVAR(DIR_TMP_REP, "$(DIR_TMP)report/", 0),
-	PVAR(DIR_TMP_COV, "$(DIR_TMP_REP)cov/", 0),
-	PVAR(DIR_TMP_DL, "$(DIR_TMP)dl/", 0),
-	PVAR(DIR_TMP_DL_PKG, "$(DIR_TMP_DL)$(PKG_DIR)", 1),
-	// DIR_PKG
-	PVAR(DIR_PKG, "$(DIR_PROJ)$(PKG_DIR)", 1),
-	PVAR(DIR_PKG_SRC, "$(DIR_PKG)src/", 1),
-	PVAR(DIR_PKG_INC, "$(DIR_PKG)include/", 1),
-	PVAR(DIR_PKG_DRV, "$(DIR_PKG)drivers/", 1),
-	PVAR(DIR_PKG_TST, "$(DIR_PKG)test/", 1),
-	// DIR_OUT
-	PVAR(DIR_OUT, "(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/", 0),
-	PVAR(DIR_OUT_INT, "$(DIR_OUT)int/", 0),
-	PVAR(DIR_OUT_INT_SRC, "$(DIR_OUT_INT)$(PN)/src/", 1),
-	PVAR(DIR_OUT_INT_DRV, "$(DIR_OUT_INT)$(PN)/drivers/", 1),
-	PVAR(DIR_OUT_INT_TST, "$(DIR_OUT_INT)$(PN)/test/", 1),
-	PVAR(DIR_OUT_LIB, "$(DIR_OUT)lib/", 0),
-	PVAR(DIR_OUT_LIB_FILE, "$(DIR_OUT_LIB)$(PN).a", 1),
-	PVAR(DIR_OUT_BIN, "$(DIR_OUT)bin/", 0),
-	PVAR(DIR_OUT_BIN_FILE, "$(DIR_OUT_BIN)$(PN)", 1),
-	PVAR(DIR_OUT_EXT, "$(DIR_OUT)ext/", 0),
-	PVAR(DIR_OUT_EXT_PKG, "$(DIR_OUT_EXT)$(PN)/", 1),
-	PVAR(DIR_OUT_EXT_FILE, "$(DIR_OUT_EXT_PKG)$(TN)", 1),
-	PVAR(DIR_OUT_TST, "$(DIR_OUT)test/", 0),
-	PVAR(DIR_OUT_TST_FILE, "$(DIR_OUT_TST)$(PN)", 1),
-};
-
 static void resolve_var(strv_t var, const strv_t *values, str_t *buf)
 {
-	(void)s_proj_vars;
-
 	buf->len = 0;
 	str_cat(buf, var);
 	var_replace(buf, values);
@@ -179,9 +80,9 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 		make_inc_add_act(make, inc, act);
 	}
 
-	strv_t svalues[__VAR_CNT] = {
-		[VAR_ARCH]   = STRVT("$(ARCH)"),
-		[VAR_CONFIG] = STRVT("$(CONFIG)"),
+	strv_t svalues[__VARS_CNT] = {
+		[ARCH]	 = STRVT("$(ARCH)"),
+		[CONFIG] = STRVT("$(CONFIG)"),
 	};
 
 	uint i = pkg->targets;
@@ -290,11 +191,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	log_info("cbuild", "gen_make", NULL, "generating project: '%.*s'", path.len, path.data);
 
-	strv_t values[__VAR_CNT] = {
-		[VAR_ARCH]   = STRVT("$(ARCH)"),
-		[VAR_CONFIG] = STRVT("$(CONFIG)"),
-	};
-
 	make_t make = {0};
 	make_init(&make, 32, 32, 2, 32, ALLOC_STD);
 
@@ -326,10 +222,10 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	path_t tmp = {0};
 	str_t buf  = strz(16);
 
-	make_act_t vars[__PROJ_VARS_CNT] = {0};
+	make_act_t vars[__VARS_CNT] = {0};
 
-	for (int i = 0; i < __PROJ_VARS_CNT; i++) {
-		strv_t val = s_proj_vars[i].val;
+	for (int i = 0; i < __VARS_CNT; i++) {
+		strv_t val = g_vars[i].val;
 		switch (i) {
 		case DIR_PROJ: {
 			path_calc_rel(build_dir, proj_dir, &tmp);
@@ -342,32 +238,33 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 				break;
 			}
 
-			str_t outdir = strn(poutdir.data, poutdir.len, 256);
-			if (var_replace(&outdir, values)) {
-				// return 1;
-			}
-
 			buf.len = 0;
-			if (pathv_is_rel(STRVS(outdir))) {
+			if (pathv_is_rel(poutdir)) {
 				str_cat(&buf, STRV("$(DIR_PROJ)"));
 			}
-			str_cat(&buf, STRVN(outdir.data, outdir.len));
-			str_free(&outdir);
+			str_cat(&buf, STRVS(poutdir));
 			val = STRVS(buf);
+			break;
 		}
 		default:
 			break;
 		}
 
-		make_var(&make, s_proj_vars[i].name, s_proj_vars[i].ref ? MAKE_VAR_REF : MAKE_VAR_INST, &vars[i]);
-		if (val.len > 0) {
-			make_var_add_val(&make, vars[i], MSTR(val));
+		if (val.data == NULL) {
+			continue;
+		}
+
+		buf.len = 0;
+		str_cat(&buf, val);
+
+		var_convert(&buf, '{', '}', '(', ')');
+
+		make_var(&make, g_vars[i].name, (g_vars[i].pkg || g_vars[i].tgt) ? MAKE_VAR_REF : MAKE_VAR_INST, &vars[i]);
+		if (buf.len > 0) {
+			make_var_add_val(&make, vars[i], MSTR(STRVS(buf)));
 		}
 		make_add_act(&make, root, vars[i]);
 	}
-
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
 
 	make_act_t mbits, if_x64, if_x86;
 	make_ifeq(&make, MVAR(march), MSTR(STRV("x64")), &if_x64);
@@ -538,7 +435,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, dl, act);
-		make_cmd(&make, MCMD(STRV("wget $($(PN)_URI) -O $$@")), &act);
+		make_cmd(&make, MCMD(STRV("wget $(PKG_URI) -O $$@")), &act);
 		make_rule_add_act(&make, dl, act);
 
 		make_empty(&make, &act);
