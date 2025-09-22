@@ -59,11 +59,18 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_NAME);
 		buf->len	= 0;
 		str_cat(buf, uri_file);
-		if (pkg->uri.ext == PKG_URI_EXT_ZIP) {
-			str_cat(buf, STRV(".zip"));
+		if (uri_file.len > 0) {
+			switch (pkg->uri.ext) {
+			case PKG_URI_EXT_ZIP:
+				str_cat(buf, STRV(".zip"));
+				break;
+			default:
+				break;
+			}
 		}
 		make_var(make, STRV("$(PN)_DLFILE"), MAKE_VAR_INST, &act);
-		make_var_add_val(make, act, MSTR(uri_file));
+		make_var_add_val(make, act, MSTR(STRVS(*buf)));
+
 		make_inc_add_act(make, inc, act);
 
 		strv_t uri_root = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
@@ -157,6 +164,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 			make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_INST, &act);
 			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
 			resolve_var(out, svalues, buf);
+			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
 			}
@@ -265,6 +273,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		}
 		make_add_act(&make, root, vars[i]);
 	}
+
+	make_var(&make, STRV("EXT_LIB"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV(".a")));
+	make_add_act(&make, root, act);
+	make_var(&make, STRV("EXT_EXE"), MAKE_VAR_INST, &act);
+	make_add_act(&make, root, act);
 
 	make_act_t mbits, if_x64, if_x86;
 	make_ifeq(&make, MVAR(march), MSTR(STRV("x64")), &if_x64);
@@ -391,7 +405,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	};
 
 	defines_t exts_defs[] = {
-		[PKG_URI_EXT_ZIP] = {STRVT("ext_zip")},
+		[PKG_URI_EXT_UNKNOWN] = {STRVT("ext_unknown")},
+		[PKG_URI_EXT_ZIP]     = {STRVT("ext_zip")},
 	};
 
 	defines_t defines[] = {
@@ -437,6 +452,16 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, dl, act);
 		make_cmd(&make, MCMD(STRV("wget $(PKG_URI) -O $$@")), &act);
 		make_rule_add_act(&make, dl, act);
+
+		make_empty(&make, &act);
+		make_add_act(&make, root, act);
+	}
+
+	if (exts[PKG_URI_EXT_UNKNOWN]) {
+		make_act_t def;
+		make_def(&make, exts_defs[PKG_URI_EXT_UNKNOWN].name, &def);
+		make_add_act(&make, root, def);
+		exts_defs[PKG_URI_EXT_UNKNOWN].def = def;
 
 		make_empty(&make, &act);
 		make_add_act(&make, root, act);

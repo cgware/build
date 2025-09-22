@@ -103,6 +103,7 @@ cm() {
 	if ! build_out="$(cmake --build "$build" 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "cmake: Failed to build project"
+		echo "$gen_out"
 		echo "$build_out"
 		ret=1
 		return
@@ -120,6 +121,7 @@ cm() {
 		if [ ! -f "$dir/$target" ]; then
 			printf "\033[0;31mFAIL\033[0m\n"
 			echo "Target not found: $target"
+			echo "$out"
 			echo "$gen_out"
 			echo "$build_out"
 			echo "$cov_out"
@@ -133,28 +135,28 @@ cm() {
 }
 
 gen() {
-	#mk "$@"
+	mk "$@"
 	cm "$@"
 }
 
 test() {
-	#gen "$@" 00_exe "bin/$1-$2/bin/00_exe"
-	#gen "$@" 01_lib "bin/$1-$2/lib/01_lib.a"
-	#gen "$@" 02_multi "bin/$1-$2/bin/a bin/$1-$2/bin/b"
-	#gen "$@" 03_depends "bin/$1-$2/bin/exe bin/$1-$2/lib/lib.a"
-	#gen "$@" 04_rdepends "bin/$1-$2/lib/base.a bin/$1-$2/lib/lib1.a bin/$1-$2/lib/lib2.a bin/$1-$2/bin/exe"
-	#if [ "$2" = "Debug" ]; then
-	#	gen "$@" 05_extern "bin/$1-$2/lib/cbase.a tmp/report/cov/index.html"
-	#else
-	#	gen "$@" 05_extern "bin/$1-$2/lib/cbase.a"
-	#fi
-	#gen "$@" 06_lib_test "bin/$1-$2/lib/06_lib_test.a bin/$1-$2/test/06_lib_test"
-	gen "$@" 07_zip "bin/$1-$2/ext/cbase/cbase.a"
+	gen "$@" 00_exe "bin/$1-$2/bin/00_exe"
+	gen "$@" 01_lib "bin/$1-$2/lib/01_lib.a"
+	gen "$@" 02_multi "bin/$1-$2/bin/a bin/$1-$2/bin/b"
+	gen "$@" 03_depends "bin/$1-$2/bin/exe bin/$1-$2/lib/lib.a"
+	gen "$@" 04_rdepends "bin/$1-$2/lib/base.a bin/$1-$2/lib/lib1.a bin/$1-$2/lib/lib2.a bin/$1-$2/bin/exe"
+	if [ "$2" = "Debug" ]; then
+		gen "$@" 05_extern "bin/$1-$2/lib/cbase.a tmp/report/cov/index.html"
+	else
+		gen "$@" 05_extern "bin/$1-$2/lib/cbase.a"
+	fi
+	gen "$@" 06_lib_test "bin/$1-$2/lib/06_lib_test.a bin/$1-$2/test/06_lib_test"
+	gen "$@" 07_zip "tmp/dl/cbase-main.zip bin/$1-$2/ext/cbase/cbase.a"
 }
 
 test x64 Debug
-#test x64 Release
-#test x86 Debug
-#test x86 Release
+test x64 Release
+test x86 Debug
+test x86 Release
 
 exit $ret

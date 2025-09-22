@@ -32,9 +32,10 @@ TEST(gen_make_proj_build_dir)
 		    "CONFIG := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
-		    "DIR_PROJ := ../../\n"
+		    "DIR_PROJ := .." SEP ".." SEP "\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -66,8 +67,9 @@ TEST(gen_make_proj_build_dir)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -143,6 +145,7 @@ TEST(gen_make_proj_empty)
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -174,8 +177,9 @@ TEST(gen_make_proj_empty)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -251,6 +255,7 @@ TEST(gen_make_proj_name)
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -282,8 +287,9 @@ TEST(gen_make_proj_name)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -359,6 +365,7 @@ TEST(gen_make_proj_unknown)
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -390,8 +397,9 @@ TEST(gen_make_proj_unknown)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -482,6 +490,7 @@ TEST(gen_make_proj_exe)
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -513,8 +522,9 @@ TEST(gen_make_proj_exe)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -625,6 +635,7 @@ TEST(gen_make_proj_lib)
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -656,8 +667,9 @@ TEST(gen_make_proj_lib)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -766,6 +778,7 @@ TEST(gen_make_proj_ext)
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -797,8 +810,9 @@ TEST(gen_make_proj_ext)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -840,7 +854,7 @@ TEST(gen_make_proj_ext)
 		    "define fetch_wget\n"
 		    "$(DIR_TMP_DL_PKG)$(PKG_DLFILE):\n"
 		    "\t@mkdir -pv $$(@D)\n"
-		    "\twget $($(PN)_URI) -O $$@\n"
+		    "\twget $(PKG_URI) -O $$@\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
@@ -921,6 +935,7 @@ TEST(gen_make_proj_test)
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_DLFILE = $($(PN)_DLFILE)\n"
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
@@ -952,8 +967,9 @@ TEST(gen_make_proj_test)
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
 		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
 		    "DIR_OUT_TST := $(DIR_OUT)test/\n"
-		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)"
-		    "\n"
+		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
 		    "ifeq ($(ARCH),x64)\n"
 		    "BITS := 64\n"
 		    "endif\n"
@@ -1271,12 +1287,12 @@ TEST(gen_make_pkg_rdepends)
 	END;
 }
 
-TEST(gen_make_pkg_zip)
+TEST(gen_make_pkg_ext_unknown)
 {
 	START;
 
 	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_zip(&com, STRV("M")), 0);
+	EXPECT_EQ(t_gen_pkg_ext_unknown(&com, STRV("M")), 0);
 
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
@@ -1286,7 +1302,37 @@ TEST(gen_make_pkg_zip)
 		    "PN := pkg\n"
 		    "$(PN)_DIR :=\n"
 		    "$(PN)_URI := url\n"
-		    "$(PN)_DLFILE := \n"
+		    "$(PN)_DLFILE := archive\n"
+		    "$(PN)_DLROOT := main\n"
+		    "$(eval $(call fetch_wget))\n"
+		    "$(eval $(call ext_unknown))\n"
+		    "TN := pkg\n"
+		    "$(PN)_$(TN)_CMD := cmd\n"
+		    "$(PN)_$(TN)_OUT := out\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_ext_zip)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_zip(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := pkg\n"
+		    "$(PN)_DIR :=\n"
+		    "$(PN)_URI := url\n"
+		    "$(PN)_DLFILE := archive.zip\n"
 		    "$(PN)_DLROOT := main\n"
 		    "$(eval $(call fetch_wget))\n"
 		    "$(eval $(call ext_zip))\n"
@@ -1320,7 +1366,8 @@ STEST(gen_make)
 	RUN(gen_make_pkg_multi);
 	RUN(gen_make_pkg_depends);
 	RUN(gen_make_pkg_rdepends);
-	RUN(gen_make_pkg_zip);
+	RUN(gen_make_pkg_ext_unknown);
+	RUN(gen_make_pkg_ext_zip);
 
 	SEND;
 }

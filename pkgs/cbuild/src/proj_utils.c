@@ -43,11 +43,11 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 
 	if (strv_eq(ext, STRV("git"))) {
 		pkg->uri.proto = PKG_URI_PROTO_GIT;
-		pkg->uri.ext   = PKG_URI_EXT_NONE;
+		pkg->uri.ext   = PKG_URI_EXT_UNKNOWN;
 	} else if (strv_eq(ext, STRV("zip"))) {
 		pkg->uri.ext = PKG_URI_EXT_ZIP;
 	} else {
-		pkg->uri.ext = PKG_URI_EXT_NONE;
+		pkg->uri.ext = PKG_URI_EXT_UNKNOWN;
 	}
 
 	if (strv_cmpn(host, STRV("github.com"), 10) == 0) {
@@ -88,6 +88,7 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 			str_cat(&buf, repo);
 			str_cat(&buf, STRV("-"));
 			str_cat(&buf, name);
+			proj_set_str(proj, pkg->strs + PKG_URI_NAME, STRVS(buf));
 			str_cat(&buf, STRV(SEP));
 			proj_set_str(proj, pkg->strs + PKG_URI_DIR, STRVS(buf));
 			str_free(&buf);
@@ -101,6 +102,7 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 				str_cat(&buf, name);
 			}
 
+			proj_set_str(proj, pkg->strs + PKG_URI_NAME, STRVS(buf));
 			str_cat(&buf, STRV(SEP));
 			proj_set_str(proj, pkg->strs + PKG_URI_DIR, STRVS(buf));
 			str_free(&buf);
@@ -108,7 +110,9 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 			log_error("cbuild", "proj", NULL, "invalid uri (cat): '%.*s': '%.*s'", uri.len, uri.data, cat.len, cat.data);
 			return 1;
 		}
+	} else {
+		proj_set_str(proj, pkg->strs + PKG_URI_NAME, name);
 	}
 
-	return proj_set_str(proj, pkg->strs + PKG_URI_STR, uri) || proj_set_str(proj, pkg->strs + PKG_URI_NAME, name);
+	return proj_set_str(proj, pkg->strs + PKG_URI_STR, uri);
 }

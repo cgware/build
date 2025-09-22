@@ -36,7 +36,7 @@ typedef enum pkg_uri_proto_e {
 } pkg_uri_proto_t;
 
 typedef enum pkg_uri_ext_e {
-	PKG_URI_EXT_NONE,
+	PKG_URI_EXT_UNKNOWN,
 	PKG_URI_EXT_ZIP,
 	__PKG_URI_EXT_MAX,
 } pkg_uri_ext_t;

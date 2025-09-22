@@ -364,7 +364,7 @@ int t_gen_pkg_rdepends(t_gen_common_t *com, strv_t p)
 	return drv.gen(&drv, &com->proj, STRV("."), STRV("."));
 }
 
-int t_gen_pkg_zip(t_gen_common_t *com, strv_t p)
+int t_gen_pkg_ext_unknown(t_gen_common_t *com, strv_t p)
 {
 	fs_init(&com->fs, 2, 1, ALLOC_STD);
 
@@ -378,6 +378,38 @@ int t_gen_pkg_zip(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
 	proj_set_str(&com->proj, pkg->strs + PKG_URI_STR, STRV("url"));
 	proj_set_str(&com->proj, pkg->strs + PKG_URI_DIR, STRV("main"));
+	proj_set_str(&com->proj, pkg->strs + PKG_URI_NAME, STRV("archive"));
+	pkg->uri.proto = PKG_URI_PROTO_HTTPS;
+	pkg->uri.ext   = PKG_URI_EXT_UNKNOWN;
+
+	target = proj_add_target(&com->proj, ext, NULL);
+	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, target->strs + TARGET_CMD, STRV("cmd"));
+	proj_set_str(&com->proj, target->strs + TARGET_OUT, STRV("out"));
+	target->type = TARGET_TYPE_EXT;
+
+	gen_driver_t drv = *gen_find_param(p);
+
+	drv.fs = &com->fs;
+
+	return drv.gen(&drv, &com->proj, STRV_NULL, STRV_NULL);
+}
+
+int t_gen_pkg_ext_zip(t_gen_common_t *com, strv_t p)
+{
+	fs_init(&com->fs, 2, 1, ALLOC_STD);
+
+	proj_init(&com->proj, 1, 1, ALLOC_STD);
+
+	uint ext;
+	pkg_t *pkg;
+	target_t *target;
+
+	pkg = proj_add_pkg(&com->proj, &ext);
+	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_URI_STR, STRV("url"));
+	proj_set_str(&com->proj, pkg->strs + PKG_URI_DIR, STRV("main"));
+	proj_set_str(&com->proj, pkg->strs + PKG_URI_NAME, STRV("archive"));
 	pkg->uri.proto = PKG_URI_PROTO_HTTPS;
 	pkg->uri.ext   = PKG_URI_EXT_ZIP;
 

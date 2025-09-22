@@ -16,9 +16,9 @@ if exist build (
 cmake -S . -B build -G "Visual Studio 17 2022" -DARCH=%arch% -DCMAKE_BUILD_TYPE=%config%
 cmake --build build --config %config%
 
-rem call :test x64 Debug
-rem call :test x64 Release
-rem call :test x86 Debug
+call :test x64 Debug
+call :test x64 Release
+call :test x86 Debug
 call :test x86 Release
 exit /b %ret%
 
@@ -112,6 +112,6 @@ exit /b %ret%
 	call :gen %* 04_rdepends "bin/%a%-%c%/lib/base.lib bin/%a%-%c%/lib/lib1.lib bin/%a%-%c%/lib/lib2.lib bin/%a%-%c%/bin/exe.exe"
 	call :gen %* 05_extern "bin/%a%-%c%/lib/cbase.lib"
 	call :gen %* 06_lib_test "bin/%a%-%c%/lib/06_lib_test.lib bin/%a%-%c%/test/06_lib_test.exe"
-	call :gen %* 07_zip "bin/%a%-%c%/ext/cbase/cbase.lib"
+	call :gen %* 07_zip "tmp/dl/cbase-main.zip bin/%a%-%c%/ext/cbase/cbase.lib"
 
 	exit /b 0

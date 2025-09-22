@@ -33,10 +33,10 @@ TEST(proj_set_uri)
 
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://host.com/file")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
-	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_NONE);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_UNKNOWN);
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://host.com/repo.git")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_GIT);
-	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_NONE);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_UNKNOWN);
 
 	proj_free(&proj);
 
