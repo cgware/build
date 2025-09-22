@@ -20,8 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        conf: [Debug, Release]
         arch: [x64, x86]
+        conf: [Debug, Release]
 
     steps:
       - uses: actions/checkout@v4
@@ -33,3 +33,16 @@ jobs:
 
       - name: Test
         run: ./scripts/test.sh ${{ matrix.arch }} ${{ matrix.conf }}
+
+  Windows-CMake:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+        conf: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        run: ./scripts/test.bat ${{ matrix.arch }} ${{ matrix.conf }}
