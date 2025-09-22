@@ -112,6 +112,8 @@ int main(int argc, const char **argv)
 	config_free(&config);
 	str_free(&buf);
 
+	proj_print(&proj, DST_STD());
+
 	gen_driver_t gen_driver = *(gen_driver_t *)gens[gen].priv;
 
 	gen_driver.fs = &fs;

@@ -44,17 +44,26 @@ static void resolve_dir(const proj_t *proj, strv_t *values, target_type_t type, 
 	path_push_s(resolved, STRV(""), '/');
 }
 
+static void get_path(const proj_t *proj, uint id, path_t *path) {
+	path_init_s(path, proj_get_str(proj, id), '/');
+	if(path->len > 0) {
+		path_push_s(path, STRV(""), '/');
+	}
+}
+
 static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 {
 	const pkg_t *pkg = proj_get_pkg(proj, id);
 
 	path_t path = {0};
-	path_init(&path, build_dir);
-	strv_t pkg_dir = proj_get_str(proj, pkg->strs + PKG_PATH);
-	if (pkg_dir.len > 0) {
-		fs_mkpath(fs, STRVS(path), pkg_dir);
+	path_t tmp = {0};
+
+	path_init_s(&path, build_dir, '/');
+	get_path(proj, pkg->strs + PKG_PATH, &tmp);
+	if (tmp.len > 0) {
+		fs_mkpath(fs, STRVS(path), STRVS(tmp));
 	}
-	path_push(&path, proj_get_str(proj, pkg->strs + PKG_PATH));
+	path_push(&path, STRVS(tmp));
 	path_push(&path, STRV("pkg.cmake"));
 
 	log_info("cbuild", "gen_make", NULL, "generating package: '%.*s'", path.len, path.data);
@@ -72,10 +81,8 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 	fs_write(fs, f, STRV("\")\n"));
 
 	fs_write(fs, f, STRV("set(${PN}_DIR \""));
-	strv_t dir = proj_get_str(proj, pkg->strs + PKG_PATH);
-	if (dir.len > 0) {
-		fs_write(fs, f, dir);
-		fs_write(fs, f, STRV(SEP));
+	if (tmp.len > 0) {
+		fs_write(fs, f, STRVS(tmp));
 	}
 	fs_write(fs, f, STRV("\")\n"));
 
@@ -88,12 +95,19 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_NAME);
 		fs_write(fs, f, STRV("set(${PN}_DLFILE "));
 		fs_write(fs, f, uri_file);
+		switch (pkg->uri.ext) {
+			case PKG_URI_EXT_ZIP:
+			fs_write(fs, f, STRV(".zip"));
+			break;
+		default:
+			break;
+		}
 		fs_write(fs, f, STRV(")\n"));
 
-		strv_t uri_dir = proj_get_str(proj, pkg->strs + PKG_URI_DIR);
-		if (uri_dir.len > 0) {
+		get_path(proj, pkg->strs + PKG_URI_DIR, &tmp);
+		if (tmp.len > 0) {
 			fs_write(fs, f, STRV("set(${PN}_DLROOT "));
-			fs_write(fs, f, uri_dir);
+			fs_write(fs, f, STRVS(tmp));
 			fs_write(fs, f, STRV(")\n"));
 		}
 	}
@@ -290,21 +304,11 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			}
 			case TARGET_TYPE_EXT: {
 				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"));
-
 				fs_write(fs,
 					 f,
 					 STRV("file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
-					      "\tSHOW_PROGRESS\n"
-					      ")\n"));
-
-				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"));
-
-				fs_write(fs,
-					 f,
-					 STRV("execute_process(\n"
-					      "\tCOMMAND unzip ${DIR_TMP_DL_PKG}${PKG_DLFILE} -d ${DIR_TMP_EXT_PKG}\n"
-					      "\tWORKING_DIRECTORY ${DIR_TMP_DL_PKG}\n"
-					      ")\n"));
+						  "\tSHOW_PROGRESS\n"
+						  ")\n"));
 
 				fs_write(fs,
 					 f,
@@ -312,6 +316,17 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 					      "\tCOMMAND ${TGT_CMD}\n"
 					      "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
 					      ")\n"));
+
+
+				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"));
+
+				fs_write(fs,
+					 f,
+					 STRV("add_custom_command(TARGET ${PN}_${TN} PRE_BUILD\n"
+						  "	COMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
+						  "	WORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
+						  "	DEPENDS ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
+						  ")\n"));
 
 				fs_write(fs,
 					 f,
@@ -520,20 +535,31 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		fs_write(drv->fs, f, STRV("\")\n"));
 	}
 
-	fs_write(drv->fs, f, STRV("\n"));
-
 	fs_write(drv->fs,
 		 f,
-		 STRV("add_custom_target(cov\n"
-		      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		      "\tCOMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config ${CONFIG} --target test\n"
-		      "\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		      "\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${DIR_OUT_INT}\\;\n"
-		      "\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		      "\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		      "\tfi\n"
-		      "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		      ")\n\n"));
+		 STRV("if(WIN32)\n"
+		      "\tadd_custom_target(cov\n"
+		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} -C ${CONFIG}\n"
+		      "\t\tCOMMAND if exist \"${CMAKE_BINARY_DIR}\\\\*.gcda\" (\n"
+		      "\t\t\tlcov -q -c -o \"${DIR_TMP_COV}\\\\lcov.info\" -d \"${DIR_OUT_INT}\"\n"
+		      "\t\t\tgenhtml -q -o \"${DIR_TMP_COV}\" \"${DIR_TMP_COV}\\\\lcov.info\"\n"
+		      "\t\t\t\"if \\\"${OPEN}\\\"==\\\"1\\\" start \\\"\\\" \\\"${DIR_TMP_COV}\\\\index.html\\\"\"\n"
+		      "\t\t)\n"
+		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		      "\t)\n"
+		      "else()\n"
+		      "\tadd_custom_target(cov\n"
+		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} -C ${CONFIG}\n"
+		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${DIR_OUT_INT}\\;\n"
+		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		      "\t\tfi\n"
+		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		      "\t)\n"
+		      "endif()\n\n"));
 
 	int types[__TARGET_TYPE_MAX] = {0};
 
@@ -551,7 +577,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	arr_foreach(&proj->pkgs, i, pkg)
 	{
 		path_t dir = {0};
-		path_init_s(&dir, proj_get_str(proj, pkg->strs + PKG_PATH), '/');
+		get_path(proj, pkg->strs + PKG_PATH, &dir);
 		path_push_s(&dir, STRV("pkg.cmake"), '/');
 		fs_write(drv->fs, f, STRV("include("));
 		fs_write(drv->fs, f, STRVS(dir));
