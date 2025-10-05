@@ -12,6 +12,8 @@ fi
 arch="$1"
 config="$2"
 
+configs="Debug Release"
+
 ret=0
 
 if ! res="$(make build ARCH="$arch" CONFIG="$config" 2>&1)"; then
@@ -40,7 +42,7 @@ mk() {
 		return
 	fi
 
-	if ! build_out="$(make -C "$tmp/build" ARCH="$p_arch" CONFIG="$p_config" 2>&1)"; then
+	if ! build_out="$(make -C "$tmp/build" ARCH="$p_arch" 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "make: Failed to build project"
 		echo "$build_out"
@@ -48,7 +50,7 @@ mk() {
 		return
 	fi
 
-	if ! cov_out="$(make -C "$tmp/build" cov ARCH="$p_arch" CONFIG="$p_config" OPEN=0 2>&1)"; then
+	if ! cov_out="$(make -C "$tmp/build" cov ARCH="$p_arch" OPEN=0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "make: Failed to cov project"
 		echo "$cov_out"
@@ -56,15 +58,17 @@ mk() {
 		return
 	fi
 
-	for target in $targets; do
-		if [ ! -f "$dir/$target" ]; then
-			printf "\033[0;31mFAIL\033[0m\n"
-			echo "Target not found: $target"
-			echo "$build_out"
-			echo "$cov_out"
-			ret=1
-			return
-		fi
+	for c in $configs; do
+		for target in $targets; do
+			if [ ! -f "$dir/bin/$p_arch-$c/$target" ]; then
+				printf "\033[0;31mFAIL\033[0m\n"
+				echo "Target not found: $target"
+				echo "$build_out"
+				echo "$cov_out"
+				ret=1
+				return
+			fi
+		done
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
@@ -118,7 +122,7 @@ cm() {
 	fi
 
 	for target in $targets; do
-		if [ ! -f "$dir/$target" ]; then
+		if [ ! -f "$dir/bin/$p_arch-$p_config/$target" ]; then
 			printf "\033[0;31mFAIL\033[0m\n"
 			echo "Target not found: $target"
 			echo "$out"
@@ -140,18 +144,18 @@ gen() {
 }
 
 test() {
-	gen "$@" 00_exe "bin/$1-$2/bin/00_exe"
-	gen "$@" 01_lib "bin/$1-$2/lib/01_lib.a"
-	gen "$@" 02_multi "bin/$1-$2/bin/a bin/$1-$2/bin/b"
-	gen "$@" 03_depends "bin/$1-$2/bin/exe bin/$1-$2/lib/lib.a"
-	gen "$@" 04_rdepends "bin/$1-$2/lib/base.a bin/$1-$2/lib/lib1.a bin/$1-$2/lib/lib2.a bin/$1-$2/bin/exe"
+	gen "$@" 00_exe "bin/00_exe"
+	gen "$@" 01_lib "lib/01_lib.a"
+	gen "$@" 02_multi "bin/a bin/b"
+	gen "$@" 03_depends "bin/exe lib/lib.a"
+	gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
 	if [ "$2" = "Debug" ]; then
-		gen "$@" 05_extern "bin/$1-$2/lib/cbase.a tmp/report/cov/index.html"
+		gen "$@" 05_extern "lib/cbase.a ../../tmp/report/cov/index.html"
 	else
-		gen "$@" 05_extern "bin/$1-$2/lib/cbase.a"
+		gen "$@" 05_extern "lib/cbase.a"
 	fi
-	gen "$@" 06_lib_test "bin/$1-$2/lib/06_lib_test.a bin/$1-$2/test/06_lib_test"
-	gen "$@" 07_zip "tmp/dl/cbase-main.zip bin/$1-$2/ext/cbase/cbase.a"
+	gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
+	gen "$@" 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.a"
 }
 
 test x64 Debug
