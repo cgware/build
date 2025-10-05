@@ -4,21 +4,21 @@
 #include "log.h"
 #include "mem.h"
 #include "path.h"
-#include "var.h"
+#include "vars.h"
 
 typedef struct defines_s {
 	strv_t name;
 	make_act_t def;
 } defines_t;
 
-static void resolve_var(strv_t var, const strv_t *values, str_t *buf)
+static void resolve_var(const vars_t *vars, strv_t var, const strv_t *values, str_t *buf)
 {
 	buf->len = 0;
 	str_cat(buf, var);
-	var_replace(buf, values);
+	vars_replace(vars, buf, values);
 }
 
-static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act_t inc, const defines_t *protos_defs,
+static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *fs, uint id, make_act_t inc, const defines_t *protos_defs,
 		   const defines_t *exts_defs, const defines_t *defines, arr_t *deps, str_t *buf, strv_t build_dir)
 
 {
@@ -155,7 +155,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 		case TARGET_TYPE_EXT: {
 			make_var(make, STRV("$(PN)_$(TN)_CMD"), MAKE_VAR_INST, &act);
 			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
-			resolve_var(cmd, svalues, buf);
+			resolve_var(vars, cmd, svalues, buf);
 			if (buf->len > 0) {
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
 			}
@@ -163,7 +163,7 @@ static int gen_pkg(const proj_t *proj, make_t *make, fs_t *fs, uint id, make_act
 
 			make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_INST, &act);
 			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-			resolve_var(out, svalues, buf);
+			resolve_var(vars, out, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
@@ -199,6 +199,9 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	log_info("cbuild", "gen_make", NULL, "generating project: '%.*s'", path.len, path.data);
 
+	vars_t vars = {0};
+	vars_init(&vars);
+
 	make_t make = {0};
 	make_init(&make, 32, 32, 2, 32, ALLOC_STD);
 
@@ -230,10 +233,10 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	path_t tmp = {0};
 	str_t buf  = strz(16);
 
-	make_act_t vars[__VARS_CNT] = {0};
+	make_act_t mvars[__VARS_CNT] = {0};
 
 	for (int i = 0; i < __VARS_CNT; i++) {
-		strv_t val = g_vars[i].val;
+		strv_t val = vars.vars[i].val;
 		switch (i) {
 		case DIR_PROJ: {
 			path_calc_rel(build_dir, proj_dir, &tmp);
@@ -267,11 +270,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		var_convert(&buf, '{', '}', '(', ')');
 
-		make_var(&make, g_vars[i].name, (g_vars[i].pkg || g_vars[i].tgt) ? MAKE_VAR_REF : MAKE_VAR_INST, &vars[i]);
+		make_var_type_t type = (vars.vars[i].deps & ((1 << PN) | (1 << TN))) ? MAKE_VAR_REF : MAKE_VAR_INST;
+		make_var(&make, vars.vars[i].name, type, &mvars[i]);
 		if (buf.len > 0) {
-			make_var_add_val(&make, vars[i], MSTR(STRVS(buf)));
+			make_var_add_val(&make, mvars[i], MSTR(STRVS(buf)));
 		}
-		make_add_act(&make, root, vars[i]);
+		make_add_act(&make, root, mvars[i]);
 	}
 
 	make_var(&make, STRV("EXT_LIB"), MAKE_VAR_INST, &act);
@@ -504,7 +508,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		defines[TARGET_TYPE_EXE].def = def;
 
 		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_BIN_FILE]));
+		make_var_add_val(&make, act, MVAR(mvars[DIR_OUT_BIN_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -527,11 +531,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_BIN_FILE])));
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(mvars[DIR_OUT_BIN_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_BIN_FILE])), 1, &def_rule_target);
+		make_rule(&make, MRULE(MVAR(mvars[DIR_OUT_BIN_FILE])), 1, &def_rule_target);
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS)"))));
@@ -567,7 +571,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, def);
 		defines[TARGET_TYPE_LIB].def = def;
 		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_LIB_FILE]));
+		make_var_add_val(&make, act, MVAR(mvars[DIR_OUT_LIB_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -590,11 +594,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_LIB_FILE])));
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(mvars[DIR_OUT_LIB_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_LIB_FILE])), 1, &def_rule_target);
+		make_rule(&make, MRULE(MVAR(mvars[DIR_OUT_LIB_FILE])), 1, &def_rule_target);
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
@@ -625,7 +629,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, def);
 		defines[TARGET_TYPE_EXT].def = def;
 		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_EXT_FILE]));
+		make_var_add_val(&make, act, MVAR(mvars[DIR_OUT_EXT_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -642,11 +646,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_EXT_FILE])));
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(mvars[DIR_OUT_EXT_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_EXT_FILE])), 1, &def_rule_target);
+		make_rule(&make, MRULE(MVAR(mvars[DIR_OUT_EXT_FILE])), 1, &def_rule_target);
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$(DIR_TMP_EXT_PKG)"))));
 		make_def_add_act(&make, def, def_rule_target);
 
@@ -673,7 +677,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		defines[TARGET_TYPE_TST].def = def;
 
 		make_var(&make, STRV("$(PN)_$(TN)"), MAKE_VAR_INST, &act);
-		make_var_add_val(&make, act, MVAR(vars[DIR_OUT_TST_FILE]));
+		make_var_add_val(&make, act, MVAR(mvars[DIR_OUT_TST_FILE]));
 		make_def_add_act(&make, def, act);
 		make_empty(&make, &act);
 		make_def_add_act(&make, def, act);
@@ -706,13 +710,13 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")));
 		make_act_t def_compile;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/compile")), 1, &def_compile);
-		make_rule_add_depend(&make, def_compile, MRULE(MVAR(vars[DIR_OUT_TST_FILE])));
+		make_rule_add_depend(&make, def_compile, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])));
 		make_def_add_act(&make, def, def_compile);
 
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/test")));
 		make_act_t def_run_test;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/test")), 1, &def_run_test);
-		make_rule_add_depend(&make, def_run_test, MRULE(MVAR(vars[DIR_OUT_TST_FILE])));
+		make_rule_add_depend(&make, def_run_test, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])));
 		make_cmd(&make, MCMD(STRV("$(DIR_OUT_TST_FILE)")), &act);
 		make_rule_add_act(&make, def_run_test, act);
 		make_def_add_act(&make, def, def_run_test);
@@ -721,13 +725,13 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_act_t def_run_cov;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)")), STRV("/cov")), 1, &def_run_cov);
 		make_rule_add_depend(&make, def_run_cov, MRULE(MSTR(STRV("precov"))));
-		make_rule_add_depend(&make, def_run_cov, MRULE(MVAR(vars[DIR_OUT_TST_FILE])));
+		make_rule_add_depend(&make, def_run_cov, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])));
 		make_cmd(&make, MCMD(STRV("$(DIR_OUT_TST_FILE)")), &act);
 		make_rule_add_act(&make, def_run_cov, act);
 		make_def_add_act(&make, def, def_run_cov);
 
 		make_act_t def_rule_target;
-		make_rule(&make, MRULE(MVAR(vars[DIR_OUT_TST_FILE])), 1, &def_rule_target);
+		make_rule(&make, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])), 1, &def_rule_target);
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGTST_OBJ].var)));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS)"))));
@@ -808,7 +812,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			make_inc(&make, STRVS(buf), &inc);
 			make_add_act(&make, root, inc);
 
-			gen_pkg(proj, &make, drv->fs, *id, inc, protos_defs, exts_defs, defines, &deps, &buf2, build_dir);
+			gen_pkg(proj, &vars, &make, drv->fs, *id, inc, protos_defs, exts_defs, defines, &deps, &buf2, build_dir);
 		}
 
 		arr_free(&deps);

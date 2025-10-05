@@ -2,10 +2,13 @@
 #define VAR_H
 
 #include "str.h"
+#include "type.h"
 
-typedef enum vars_e {
+typedef enum var_name_e {
 	ARCH,
 	CONFIG,
+	PN,
+	TN,
 	// PROJ
 	DIR_PROJ,
 	DIR_BUILD,
@@ -49,18 +52,21 @@ typedef enum vars_e {
 	DIR_OUT_TST,
 	DIR_OUT_TST_FILE,
 	__VARS_CNT,
-} vars_t;
+} var_name_t;
 
 typedef struct var_s {
 	strv_t name;
 	strv_t val;
-	int pkg;
-	int tgt;
+	u64 deps;
 } var_t;
 
-extern const var_t g_vars[__VARS_CNT];
+typedef struct vars_s {
+	var_t vars[__VARS_CNT];
+} vars_t;
 
-int var_replace(str_t *str, const strv_t *values);
+vars_t *vars_init(vars_t *vars);
+
+int vars_replace(const vars_t *vars, str_t *str, const strv_t *values);
 int var_convert(str_t *str, char froms, char frome, char tos, char toe);
 
 #endif

@@ -2,20 +2,20 @@
 
 #include "log.h"
 #include "path.h"
-#include "var.h"
+#include "vars.h"
 
-static void resolve_var(strv_t var, const strv_t *values, str_t *buf)
+static void resolve_var(const vars_t *vars, strv_t var, const strv_t *values, str_t *buf)
 {
 	buf->len = 0;
 	str_cat(buf, var);
-	var_replace(buf, values);
+	vars_replace(vars, buf, values);
 }
 
-static void resolve_dir(const proj_t *proj, strv_t *values, target_type_t type, str_t *buf, path_t *resolved)
+static void resolve_dir(const proj_t *proj, const vars_t *vars, strv_t *values, target_type_t type, str_t *buf, path_t *resolved)
 {
 	buf->len = 0;
 	str_cat(buf, proj_get_str(proj, proj->outdir));
-	var_replace(buf, values);
+	vars_replace(vars, buf, values);
 	path_t tmp = {0};
 	path_init(&tmp, STRVS(*buf));
 
@@ -52,7 +52,7 @@ static void get_path(const proj_t *proj, uint id, path_t *path)
 	}
 }
 
-static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
+static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, strv_t build_dir)
 {
 	const pkg_t *pkg = proj_get_pkg(proj, id);
 
@@ -116,11 +116,11 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 	}
 
 	for (int i = 0; i < __VARS_CNT; i++) {
-		if (!g_vars[i].pkg || g_vars[i].tgt) {
+		if ((vars->vars[i].deps & ((1 << PN) | (1 << TN))) != (1 << PN)) {
 			continue;
 		}
 
-		strv_t val = g_vars[i].val;
+		strv_t val = vars->vars[i].val;
 		switch (i) {
 		default:
 			break;
@@ -136,7 +136,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 		var_convert(&buf, '{', '}', '{', '}');
 
 		fs_write(fs, f, STRV("set("));
-		fs_write(fs, f, g_vars[i].name);
+		fs_write(fs, f, vars->vars[i].name);
 		fs_write(fs, f, STRV(" \""));
 		if (buf.len > 0) {
 			fs_write(fs, f, STRVS(buf));
@@ -166,13 +166,13 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			switch (target->type) {
 			case TARGET_TYPE_EXT: {
 				strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
-				resolve_var(cmd, svalues, &buf);
+				resolve_var(vars, cmd, svalues, &buf);
 				fs_write(fs, f, STRV("set(${PN}_${TN}_CMD "));
 				fs_write(fs, f, STRVS(buf));
 				fs_write(fs, f, STRV(")\n"));
 
 				strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-				resolve_var(out, svalues, &buf);
+				resolve_var(vars, out, svalues, &buf);
 				if (out.len > 0) {
 					fs_write(fs, f, STRV("set(${PN}_${TN}_OUT "));
 					fs_write(fs, f, STRVS(buf));
@@ -186,11 +186,11 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 			}
 
 			for (int i = 0; i < __VARS_CNT; i++) {
-				if (!g_vars[i].tgt) {
+				if (!(vars->vars[i].deps & (1 << TN))) {
 					continue;
 				}
 
-				strv_t val = g_vars[i].val;
+				strv_t val = vars->vars[i].val;
 				switch (i) {
 				default:
 					break;
@@ -206,7 +206,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				var_convert(&buf, '{', '}', '{', '}');
 
 				fs_write(fs, f, STRV("set("));
-				fs_write(fs, f, g_vars[i].name);
+				fs_write(fs, f, vars->vars[i].name);
 				fs_write(fs, f, STRV(" \""));
 				if (buf.len > 0) {
 					fs_write(fs, f, STRVS(buf));
@@ -431,7 +431,7 @@ static int gen_pkg(const proj_t *proj, fs_t *fs, uint id, strv_t build_dir)
 				fs_write(fs, f, props[target->type][i].name);
 				fs_write(fs, f, STRV(" "));
 				values[CONFIG] = props[target->type][i].config;
-				resolve_dir(proj, values, target->type, &buf, &outdir);
+				resolve_dir(proj, vars, values, target->type, &buf, &outdir);
 				fs_write(fs, f, STRVS(outdir));
 				fs_write(fs, f, STRV("\n"));
 			}
@@ -466,6 +466,9 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	log_info("cbuild", "gen_make", NULL, "generating project: '%.*s'", path.len, path.data);
 
+	vars_t vars = {0};
+	vars_init(&vars);
+
 	void *f;
 	fs_open(drv->fs, STRVS(path), "w", &f);
 
@@ -486,11 +489,11 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	str_t buf  = strz(16);
 
 	for (int i = 0; i < __VARS_CNT; i++) {
-		if (g_vars[i].pkg || g_vars[i].tgt) {
+		if (vars.vars[i].deps & ((1 << PN) | (1 << TN))) {
 			continue;
 		}
 
-		strv_t val = g_vars[i].val;
+		strv_t val = vars.vars[i].val;
 		switch (i) {
 		case CONFIG: {
 			val = STRV("${CMAKE_BUILD_TYPE}");
@@ -536,7 +539,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		var_convert(&buf, '{', '}', '{', '}');
 
 		fs_write(drv->fs, f, STRV("set("));
-		fs_write(drv->fs, f, g_vars[i].name);
+		fs_write(drv->fs, f, vars.vars[i].name);
 		fs_write(drv->fs, f, STRV(" \""));
 		if (buf.len > 0) {
 			fs_write(drv->fs, f, STRVS(buf));
@@ -602,7 +605,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		fs_write(drv->fs, f, STRVS(dir));
 		fs_write(drv->fs, f, STRV(")\n"));
 
-		gen_pkg(proj, drv->fs, i, build_dir);
+		gen_pkg(proj, &vars, drv->fs, i, build_dir);
 	}
 
 	fs_close(drv->fs, f);

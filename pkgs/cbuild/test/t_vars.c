@@ -1,22 +1,40 @@
-#include "var.h"
+#include "vars.h"
 
 #include "log.h"
 #include "mem.h"
 #include "str.h"
 #include "test.h"
 
-TEST(var_replace_null)
+TEST(vars_init)
 {
 	START;
 
-	EXPECT_EQ(var_replace(NULL, NULL), 1);
+	vars_t vars = {0};
+
+	EXPECT_EQ(vars_init(NULL), NULL);
+	EXPECT_EQ(vars_init(&vars), &vars);
+
+	EXPECT_EQ(vars.vars[PKG_DIR].deps, (1ULL << PN));
+	EXPECT_EQ(vars.vars[TGT_CMD].deps, (1 << PN) | (1 << TN));
 
 	END;
 }
 
-TEST(var_replace_none)
+TEST(vars_replace_null)
 {
 	START;
+
+	EXPECT_EQ(vars_replace(NULL, NULL, NULL), 1);
+
+	END;
+}
+
+TEST(vars_replace_none)
+{
+	START;
+
+	vars_t vars = {0};
+	vars_init(&vars);
 
 	strv_t values[__VARS_CNT] = {0};
 
@@ -24,15 +42,18 @@ TEST(var_replace_none)
 	str_t str    = STRB(buf, 0);
 	str_cat(&str, STRV("bin"));
 
-	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_EQ(vars_replace(&vars, &str, values), 0);
 	EXPECT_STRN(str.data, "bin", str.len);
 
 	END;
 }
 
-TEST(var_replace_no_end)
+TEST(vars_replace_no_end)
 {
 	START;
+
+	vars_t vars = {0};
+	vars_init(&vars);
 
 	strv_t values[__VARS_CNT] = {0};
 
@@ -40,15 +61,18 @@ TEST(var_replace_no_end)
 	str_t str    = STRB(buf, 0);
 	str_cat(&str, STRV("${aaaaa"));
 
-	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_EQ(vars_replace(&vars, &str, values), 0);
 	EXPECT_STRN(str.data, "${aaaaa", str.len);
 
 	END;
 }
 
-TEST(var_replace_not_set)
+TEST(vars_replace_not_set)
 {
 	START;
+
+	vars_t vars = {0};
+	vars_init(&vars);
 
 	strv_t values[__VARS_CNT] = {0};
 
@@ -56,15 +80,18 @@ TEST(var_replace_not_set)
 	str_t str    = STRB(buf, 0);
 	str_cat(&str, STRV("${ARCH}"));
 
-	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_EQ(vars_replace(&vars, &str, values), 0);
 	EXPECT_STRN(str.data, "${ARCH}", str.len);
 
 	END;
 }
 
-TEST(var_replace_not_exists)
+TEST(vars_replace_not_exists)
 {
 	START;
+
+	vars_t vars = {0};
+	vars_init(&vars);
 
 	strv_t values[__VARS_CNT] = {0};
 
@@ -72,15 +99,18 @@ TEST(var_replace_not_exists)
 	str_t str    = STRB(buf, 0);
 	str_cat(&str, STRV("${NOT_EXISTS}"));
 
-	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_EQ(vars_replace(&vars, &str, values), 0);
 	EXPECT_STRN(str.data, "${NOT_EXISTS}", str.len);
 
 	END;
 }
 
-TEST(var_replace_oom)
+TEST(vars_replace_oom)
 {
 	START;
+
+	vars_t vars = {0};
+	vars_init(&vars);
 
 	strv_t values[__VARS_CNT] = {
 		[ARCH] = STRVT("123456789"),
@@ -91,16 +121,19 @@ TEST(var_replace_oom)
 	str_cat(&str, STRV("${ARCH}"));
 
 	mem_oom(1);
-	EXPECT_EQ(var_replace(&str, values), 1);
+	EXPECT_EQ(vars_replace(&vars, &str, values), 1);
 	mem_oom(0);
 	EXPECT_STRN(str.data, "${ARCH}", str.len);
 
 	END;
 }
 
-TEST(var_replace_empty)
+TEST(vars_replace_empty)
 {
 	START;
+
+	vars_t vars = {0};
+	vars_init(&vars);
 
 	strv_t values[__VARS_CNT] = {
 		[ARCH] = STRVT(""),
@@ -109,15 +142,18 @@ TEST(var_replace_empty)
 	char buf[16] = {0};
 	str_t str    = STRB(buf, 0);
 	str_cat(&str, STRV("${ARCH}"));
-	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_EQ(vars_replace(&vars, &str, values), 0);
 	EXPECT_STRN(str.data, "", str.len);
 
 	END;
 }
 
-TEST(var_replace_same)
+TEST(vars_replace_same)
 {
 	START;
+
+	vars_t vars = {0};
+	vars_init(&vars);
 
 	strv_t values[__VARS_CNT] = {
 		[ARCH] = STRVT("${ARCH}"),
@@ -126,7 +162,7 @@ TEST(var_replace_same)
 	char buf[16] = {0};
 	str_t str    = STRB(buf, 0);
 	str_cat(&str, STRV("${ARCH}"));
-	EXPECT_EQ(var_replace(&str, values), 0);
+	EXPECT_EQ(vars_replace(&vars, &str, values), 0);
 	EXPECT_STRN(str.data, "${ARCH}", str.len);
 
 	END;
@@ -216,18 +252,19 @@ TEST(var_convert_recursive)
 	END;
 }
 
-STEST(var)
+STEST(vars)
 {
 	SSTART;
 
-	RUN(var_replace_null);
-	RUN(var_replace_none);
-	RUN(var_replace_no_end);
-	RUN(var_replace_not_set);
-	RUN(var_replace_not_exists);
-	RUN(var_replace_oom);
-	RUN(var_replace_empty);
-	RUN(var_replace_same);
+	RUN(vars_init);
+	RUN(vars_replace_null);
+	RUN(vars_replace_none);
+	RUN(vars_replace_no_end);
+	RUN(vars_replace_not_set);
+	RUN(vars_replace_not_exists);
+	RUN(vars_replace_oom);
+	RUN(vars_replace_empty);
+	RUN(vars_replace_same);
 	RUN(var_convert_null);
 	RUN(var_convert_short);
 	RUN(var_convert_short_no_end);

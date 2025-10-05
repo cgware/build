@@ -13,7 +13,7 @@ STEST(proj);
 STEST(proj_cfg);
 STEST(proj_gen);
 STEST(proj_utils);
-STEST(var);
+STEST(vars);
 
 TEST(cbuild)
 {
@@ -29,7 +29,7 @@ TEST(cbuild)
 	RUN(proj_cfg);
 	RUN(proj_gen);
 	RUN(proj_utils);
-	RUN(var);
+	RUN(vars);
 	SEND;
 }
 
