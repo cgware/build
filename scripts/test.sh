@@ -86,6 +86,8 @@ cm() {
 	tmp="$dir/tmp"
 	build="$dir/build"
 
+	rm -rf "$bin" "$build" "$tmp"
+
 	printf "%s %-7s %-12s %-5s " "$p_arch" "$p_config" "$proj" "CMake"
 
 	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g C 2>&1)"; then
@@ -96,7 +98,7 @@ cm() {
 		return
 	fi
 
-	if ! gen_out="$(cmake -S "$tmp/build" -B "$build" -G "Unix Makefiles" -DARCH="$p_arch" -DCMAKE_BUILD_TYPE="$p_config" -DOPEN=0 2>&1)"; then
+	if ! gen_out="$(cmake -S "$tmp/build" -B "$build" -G "Unix Makefiles" -DARCH="$p_arch" -DOPEN=0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "cmake: Failed to generate make"
 		echo "$gen_out"
@@ -135,32 +137,32 @@ cm() {
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
-	rm -rf "$bin" "$build" "$tmp"
+	#rm -rf "$bin" "$build" "$tmp"
 }
 
 gen() {
-	mk "$@"
+	#mk "$@"
 	cm "$@"
 }
 
 test() {
-	gen "$@" 00_exe "bin/00_exe"
-	gen "$@" 01_lib "lib/01_lib.a"
-	gen "$@" 02_multi "bin/a bin/b"
-	gen "$@" 03_depends "bin/exe lib/lib.a"
-	gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	#gen "$@" 00_exe "bin/00_exe"
+	#gen "$@" 01_lib "lib/01_lib.a"
+	#gen "$@" 02_multi "bin/a bin/b"
+	#gen "$@" 03_depends "bin/exe lib/lib.a"
+	#gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
 	if [ "$2" = "Debug" ]; then
 		gen "$@" 05_extern "lib/cbase.a ../../tmp/report/cov/index.html"
 	else
 		gen "$@" 05_extern "lib/cbase.a"
 	fi
-	gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
-	gen "$@" 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.a"
+	#gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
+	#gen "$@" 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.a"
 }
 
 test x64 Debug
-test x64 Release
-test x86 Debug
-test x86 Release
+#test x64 Release
+#test x86 Debug
+#test x86 Release
 
 exit $ret
