@@ -324,7 +324,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 
 				fs_write(fs,
 					 f,
-					 STRV("if (CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
+					 STRV("if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
 					      "\tadd_custom_command(TARGET ${PN}_${TN} PRE_BUILD\n"
 					      "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 					      "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
@@ -375,8 +375,9 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 				fs_write(fs,
 					 f,
 					 STRV("add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config "
-					      "${CONFIG} --target ${PN}_${TN})\n"
-					      "add_test(${PN} ${DIR_OUT_TST_FILE})\n"
+					      "${CMAKE_BUILD_TYPE} --target ${PN}_${TN})\n"
+					      "string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_TST_FILE_DEBUG \"${DIR_OUT_TST_FILE}\")\n"
+					      "add_test(${PN} ${DIR_OUT_TST_FILE_DEBUG})\n"
 					      "set_tests_properties(${PN} PROPERTIES\n"
 					      "\tDEPENDS ${PN}_${TN}_build\n"
 					      "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
@@ -486,7 +487,8 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
 	fs_write(drv->fs, f, STRV("set(CONFIGS \"Debug;Release\" CACHE STRING \"List of build configurations\")\n"));
-	fs_write(drv->fs, f, STRV("list(LENGTH CONFIGS _config_count)\n\n"));
+	fs_write(drv->fs, f, STRV("list(LENGTH CONFIGS _config_count)\n"));
+	fs_write(drv->fs, f, STRV("get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n\n"));
 
 	path_t tmp = {0};
 	str_t buf  = strz(16);
@@ -499,8 +501,16 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		strv_t val = vars.vars[i].val;
 		switch (i) {
 		case CONFIG: {
-			val = STRV("${CMAKE_BUILD_TYPE}");
-			break;
+			fs_write(drv->fs, f, STRV("if(is_multi_config)\n"));
+			fs_write(drv->fs, f, STRV("\tset("));
+			fs_write(drv->fs, f, vars.vars[i].name);
+			fs_write(drv->fs, f, STRV(" \"$<CONFIG>\")\n"));
+			fs_write(drv->fs, f, STRV("else()\n"));
+			fs_write(drv->fs, f, STRV("\tset("));
+			fs_write(drv->fs, f, vars.vars[i].name);
+			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
+			fs_write(drv->fs, f, STRV("endif()\n"));
+			continue;
 		}
 		case DIR_PROJ: {
 			path_calc_rel_s(build_dir, proj_dir, '/', &tmp);
@@ -562,7 +572,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(_config_count GREATER 0)\n"
+		 STRV("if(_config_count GREATER 0 AND NOT is_multi_config)\n"
 		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}/Debug\")\n"
 		      "set(TEST_DEPENDS \"Debug\")\n"
 		      "include(ExternalProject)\n"
