@@ -324,7 +324,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 
 				fs_write(fs,
 					 f,
-					 STRV("if (CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
+					 STRV("if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
 					      "\tadd_custom_command(TARGET ${PN}_${TN} PRE_BUILD\n"
 					      "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 					      "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
@@ -375,8 +375,9 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 				fs_write(fs,
 					 f,
 					 STRV("add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config "
-					      "${CONFIG} --target ${PN}_${TN})\n"
-					      "add_test(${PN} ${DIR_OUT_TST_FILE})\n"
+					      "${CMAKE_BUILD_TYPE} --target ${PN}_${TN})\n"
+					      "string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_TST_FILE_DEBUG \"${DIR_OUT_TST_FILE}\")\n"
+					      "add_test(${PN} ${DIR_OUT_TST_FILE_DEBUG})\n"
 					      "set_tests_properties(${PN} PROPERTIES\n"
 					      "\tDEPENDS ${PN}_${TN}_build\n"
 					      "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
@@ -485,6 +486,10 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
+	fs_write(drv->fs, f, STRV("set(CONFIGS \"Debug;Release\" CACHE STRING \"List of build configurations\")\n"));
+	fs_write(drv->fs, f, STRV("list(LENGTH CONFIGS _config_count)\n"));
+	fs_write(drv->fs, f, STRV("get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n\n"));
+
 	path_t tmp = {0};
 	str_t buf  = strz(16);
 
@@ -496,8 +501,16 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		strv_t val = vars.vars[i].val;
 		switch (i) {
 		case CONFIG: {
-			val = STRV("${CMAKE_BUILD_TYPE}");
-			break;
+			fs_write(drv->fs, f, STRV("if(is_multi_config)\n"));
+			fs_write(drv->fs, f, STRV("\tset("));
+			fs_write(drv->fs, f, vars.vars[i].name);
+			fs_write(drv->fs, f, STRV(" \"$<CONFIG>\")\n"));
+			fs_write(drv->fs, f, STRV("else()\n"));
+			fs_write(drv->fs, f, STRV("\tset("));
+			fs_write(drv->fs, f, vars.vars[i].name);
+			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
+			fs_write(drv->fs, f, STRV("endif()\n"));
+			continue;
 		}
 		case DIR_PROJ: {
 			path_calc_rel_s(build_dir, proj_dir, '/', &tmp);
@@ -559,29 +572,24 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(WIN32)\n"
-		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} -C ${CONFIG}\n"
-		      "\t\tCOMMAND if exist \"${CMAKE_BINARY_DIR}\\\\*.gcda\" (\n"
-		      "\t\t\tlcov -q -c -o \"${DIR_TMP_COV}lcov.info\" -d \"${DIR_OUT_INT}\"\n"
-		      "\t\t\tgenhtml -q -o \"${DIR_TMP_COV}\" \"${DIR_TMP_COV}lcov.info\"\n"
-		      "\t\t\t\"if \\\"${OPEN}\\\"==\\\"1\\\" start \\\"\\\" \\\"${DIR_TMP_COV}index.html\\\"\"\n"
-		      "\t\t)\n"
-		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		 STRV("if(_config_count GREATER 0 AND NOT is_multi_config)\n"
+		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}/Debug\")\n"
+		      "set(TEST_DEPENDS \"Debug\")\n"
+		      "include(ExternalProject)\n"
+		      "foreach(cfg IN LISTS CONFIGS)\n"
+		      "\tExternalProject_Add(${cfg}\n"
+		      "\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		      "\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${cfg}\n"
+		      "\t\tINSTALL_COMMAND \"\"\n"
+		      "\t\tCMAKE_ARGS\n"
+		      "\t\t\t-DARCH=${ARCH}\n"
+		      "\t\t\t-DCMAKE_BUILD_TYPE=${cfg}\n"
+		      "\t\t\t-DCONFIGS=\n"
 		      "\t)\n"
+		      "endforeach()\n"
 		      "else()\n"
-		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} -C ${CONFIG}\n"
-		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${DIR_OUT_INT}\\;\n"
-		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		      "\t\tfi\n"
-		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		      "\t)\n"
-		      "endif()\n\n"));
+		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}\")\n"
+		      "set(TEST_DEPENDS \"\")\n"));
 
 	int types[__TARGET_TYPE_MAX] = {0};
 
@@ -607,6 +615,36 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 		gen_pkg(proj, &vars, drv->fs, i, build_dir);
 	}
+
+	fs_write(drv->fs, f, STRV("endif()\n\n"));
+
+	fs_write(drv->fs,
+		 f,
+		 STRV("if(WIN32)\n"
+		      "\tadd_custom_target(cov\n"
+		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${TEST_DIR}\n"
+		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		      "\t\tCOMMAND if exist \"${CMAKE_BINARY_DIR}\\\\*.gcda\" (\n"
+		      "\t\t\tlcov -q -c -o \"${DIR_TMP_COV}lcov.info\" -d \"${DIR_OUT_INT}\"\n"
+		      "\t\t\tgenhtml -q -o \"${DIR_TMP_COV}\" \"${DIR_TMP_COV}lcov.info\"\n"
+		      "\t\t\t\"if \\\"${OPEN}\\\"==\\\"1\\\" start \\\"\\\" \\\"${DIR_TMP_COV}index.html\\\"\"\n"
+		      "\t\t)\n"
+		      "\t\tDEPENDS ${TEST_DEPENDS}\n"
+		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		      "\t)\n"
+		      "else()\n"
+		      "\tadd_custom_target(cov\n"
+		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${TEST_DIR}\n"
+		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${DIR_OUT_INT}\\;\n"
+		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		      "\t\tfi\n"
+		      "\t\tDEPENDS ${TEST_DEPENDS}\n"
+		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		      "\t)\n"
+		      "endif()\n\n"));
 
 	fs_close(drv->fs, f);
 
