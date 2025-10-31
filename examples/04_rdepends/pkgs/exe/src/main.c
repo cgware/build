@@ -1,5 +1,5 @@
-int lib1();
-int lib2();
+#include "lib1.h"
+#include "lib2.h"
 
 int main()
 {

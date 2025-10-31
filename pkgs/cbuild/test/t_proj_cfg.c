@@ -86,7 +86,6 @@ TEST(proj_cfg_include)
 	uint dir;
 	config_dir_t *d = config_add_dir(&config, &dir);
 
-	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
 	config_set_str(&config, d->strs + CONFIG_DIR_INC, STRV("include"));
 
 	EXPECT_EQ(proj_cfg(&proj, &config), 0);
@@ -94,12 +93,66 @@ TEST(proj_cfg_include)
 	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
 	const target_t *target = proj_get_target(&proj, 0);
 
-	strv_t val;
-	val = proj_get_str(&proj, pkg->strs + PKG_SRC);
-	EXPECT_STRN(val.data, "src", val.len);
-	val = proj_get_str(&proj, pkg->strs + PKG_INC);
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_INC);
 	EXPECT_STRN(val.data, "include", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_src_include)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+	config_set_str(&config, d->strs + CONFIG_DIR_INC, STRV("include"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const target_t *target = proj_get_target(&proj, 0);
+
+	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_src_include_main)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+	config_set_str(&config, d->strs + CONFIG_DIR_INC, STRV("include"));
+	d->has_main = 1;
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const target_t *target = proj_get_target(&proj, 0);
+
+	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
 
 	config_free(&config);
 	proj_free(&proj);
@@ -120,7 +173,7 @@ TEST(proj_cfg_test)
 	uint dir;
 	config_dir_t *d = config_add_dir(&config, &dir);
 
-	config_set_str(&config, d->strs + CONFIG_DIR_TEST, STRV("test"));
+	config_set_str(&config, d->strs + CONFIG_DIR_TST, STRV("test"));
 
 	EXPECT_EQ(proj_cfg(&proj, &config), 0);
 
@@ -373,7 +426,7 @@ TEST(proj_cfg_pkg_dep_test)
 	config_dir_t *d = config_add_dir(&config, &dir);
 	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
 	config_set_str(&config, d->strs + CONFIG_DIR_INC, STRV("include"));
-	config_set_str(&config, d->strs + CONFIG_DIR_TEST, STRV("test"));
+	config_set_str(&config, d->strs + CONFIG_DIR_TST, STRV("test"));
 
 	EXPECT_EQ(proj_cfg(&proj, &config), 0);
 
@@ -398,6 +451,8 @@ STEST(proj_cfg)
 	RUN(proj_cfg_dir_empty);
 	RUN(proj_cfg_src);
 	RUN(proj_cfg_include);
+	RUN(proj_cfg_src_include);
+	RUN(proj_cfg_src_include_main);
 	RUN(proj_cfg_test);
 	RUN(proj_cfg_pkg);
 	RUN(proj_cfg_uri);

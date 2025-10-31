@@ -51,6 +51,7 @@ typedef enum pkg_str_e {
 	PKG_PATH,
 	PKG_SRC,
 	PKG_INC,
+	PKG_DRV,
 	PKG_TST,
 	PKG_URI_STR,
 	PKG_URI_NAME,

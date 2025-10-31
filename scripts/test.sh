@@ -31,7 +31,7 @@ mk() {
 	bin="$dir/bin"
 	tmp="$dir/tmp"
 
-	printf "%s %-12s %-5s " "$p_arch" "$proj" "Make"
+	printf "%s %-13s %-5s " "$p_arch" "$proj" "Make"
 
 	rm -rf "$bin" "$tmp"
 
@@ -46,6 +46,7 @@ mk() {
 	if ! build_out="$(make -C "$tmp/build" ARCH="$p_arch" 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "make: Failed to build project"
+		echo "$out"
 		echo "$build_out"
 		ret=1
 		return
@@ -86,7 +87,7 @@ cm() {
 	tmp="$dir/tmp"
 	build="$dir/build"
 
-	printf "%s %-12s %-5s " "$p_arch" "$proj" "CMake"
+	printf "%s %-13s %-5s " "$p_arch" "$proj" "CMake"
 
 	rm -rf "$bin" "$build" "$tmp"
 
@@ -160,6 +161,8 @@ test() {
 	fi
 	gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
 	gen "$@" 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.a"
+	gen "$@" 08_exe_driver "bin/08_exe_driver"
+	gen "$@" 09_lib_driver "bin/exe test/lib"
 }
 
 test x64

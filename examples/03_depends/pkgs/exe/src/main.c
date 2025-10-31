@@ -1,4 +1,4 @@
-int lib();
+#include "lib.h"
 
 int main()
 {

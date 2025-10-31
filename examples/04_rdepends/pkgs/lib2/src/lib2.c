@@ -1,6 +1,6 @@
-#include <stdio.h>
+#include "base.h"
 
-int base(const char *str);
+#include <stdio.h>
 
 int lib2()
 {

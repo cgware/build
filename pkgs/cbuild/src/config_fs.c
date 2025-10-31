@@ -27,14 +27,24 @@ config_dir_t *config_fs(config_t *config, fs_t *fs, proc_t *proc, strv_t base_pa
 
 	path_push(&full_path, STRV("src"));
 	config_set_str(config, dir->strs + CONFIG_DIR_SRC, fs_isdir(fs, STRVS(full_path)) ? STRV("src") : STRV_NULL);
+	if(fs_isdir(fs, STRVS(full_path))) {
+		path_push(&full_path, STRV("main.c"));
+		if(fs_isfile(fs, STRVS(full_path))) {
+			dir->has_main = 1;
+		}
+	}
 	full_path.len = dir_path_len;
 
 	path_push(&full_path, STRV("include"));
 	config_set_str(config, dir->strs + CONFIG_DIR_INC, fs_isdir(fs, STRVS(full_path)) ? STRV("include") : STRV_NULL);
 	full_path.len = dir_path_len;
 
+	path_push(&full_path, STRV("drivers"));
+	config_set_str(config, dir->strs + CONFIG_DIR_DRV, fs_isdir(fs, STRVS(full_path)) ? STRV("drivers") : STRV_NULL);
+	full_path.len = dir_path_len;
+
 	path_push(&full_path, STRV("test"));
-	config_set_str(config, dir->strs + CONFIG_DIR_TEST, fs_isdir(fs, STRVS(full_path)) ? STRV("test") : STRV_NULL);
+	config_set_str(config, dir->strs + CONFIG_DIR_TST, fs_isdir(fs, STRVS(full_path)) ? STRV("test") : STRV_NULL);
 	full_path.len = dir_path_len;
 
 	path_push(&full_path, STRV("pkgs"));

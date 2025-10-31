@@ -96,7 +96,7 @@ TEST(config_fs_test)
 	str_t buf     = STRB(tmp, 0);
 	EXPECT_NE(dir = config_fs(&config, &fs, NULL, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()), NULL);
 
-	strv_t val = config_get_str(&config, dir->strs + CONFIG_DIR_TEST);
+	strv_t val = config_get_str(&config, dir->strs + CONFIG_DIR_TST);
 	EXPECT_STRN(val.data, "test", val.len);
 
 	config_free(&config);
@@ -165,6 +165,32 @@ TEST(config_fs_build_cfg)
 	END;
 }
 
+TEST(config_fs_main)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("src"));
+	fs_mkfile(&fs, STRV("src/main.c"));
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+	config_dir_t *dir;
+
+	char tmp[128] = {0};
+	str_t buf     = STRB(tmp, 0);
+	EXPECT_NE(dir = config_fs(&config, &fs, NULL, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()), NULL);
+
+	EXPECT_EQB(dir->has_main, 1);
+
+	config_free(&config);
+	fs_free(&fs);
+
+	END;
+}
+
 STEST(config_fs)
 {
 	SSTART;
@@ -175,6 +201,7 @@ STEST(config_fs)
 	RUN(config_fs_test);
 	RUN(config_fs_pkgs);
 	RUN(config_fs_build_cfg);
+	RUN(config_fs_main);
 
 	SEND;
 }

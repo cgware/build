@@ -22,7 +22,8 @@ int proj_cfg(proj_t *proj, const config_t *config)
 		strv_t path = config_get_str(config, dir->strs + CONFIG_DIR_PATH);
 		strv_t src  = config_get_str(config, dir->strs + CONFIG_DIR_SRC);
 		strv_t inc  = config_get_str(config, dir->strs + CONFIG_DIR_INC);
-		strv_t test = config_get_str(config, dir->strs + CONFIG_DIR_TEST);
+		strv_t drv  = config_get_str(config, dir->strs + CONFIG_DIR_DRV);
+		strv_t test = config_get_str(config, dir->strs + CONFIG_DIR_TST);
 
 		uint pkg_id;
 		pkg_t *pkg	 = NULL;
@@ -35,6 +36,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 			proj_set_str(proj, pkg->strs + PKG_PATH, path);
 			proj_set_str(proj, pkg->strs + PKG_SRC, src);
 			proj_set_str(proj, pkg->strs + PKG_INC, inc);
+			proj_set_str(proj, pkg->strs + PKG_DRV, drv);
 			proj_set_str(proj, pkg->strs + PKG_TST, test);
 
 			if (src.len > 0 || inc.len > 0) {
@@ -42,11 +44,11 @@ int proj_cfg(proj_t *proj, const config_t *config)
 				target = proj_add_target(proj, pkg_id, &target_id);
 				proj_set_str(proj, target->strs + TARGET_NAME, name);
 
-				if (src.len > 0) {
+				if (src.len > 0 && inc.len > 0) {
+					target->type = dir->has_main ? TARGET_TYPE_EXE : TARGET_TYPE_LIB;
+				} else if (src.len > 0) {
 					target->type = TARGET_TYPE_EXE;
-				}
-
-				if (inc.len > 0) {
+				} else if (inc.len > 0) {
 					target->type = TARGET_TYPE_LIB;
 				}
 			}
@@ -73,6 +75,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 					proj_set_str(proj, pkg->strs + PKG_PATH, path);
 					proj_set_str(proj, pkg->strs + PKG_SRC, src);
 					proj_set_str(proj, pkg->strs + PKG_INC, inc);
+					proj_set_str(proj, pkg->strs + PKG_DRV, drv);
 					proj_set_str(proj, pkg->strs + PKG_TST, test);
 
 					if (uri.len > 0) {

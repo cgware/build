@@ -270,13 +270,15 @@ TEST(config_print)
 	EXPECT_EQ(config_print(NULL, DST_NONE()), 0);
 
 	char buf[256] = {0};
-	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 99);
+	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 113);
 	EXPECT_STR(buf,
 		   "[dir]\n"
 		   "NAME: \n"
 		   "PATH: \n"
 		   "SRC: \n"
+		   "MAIN: 0\n"
 		   "INC: \n"
+		   "DRV: \n"
 		   "TEST: \n"
 		   "\n"
 		   "[pkg]\n"

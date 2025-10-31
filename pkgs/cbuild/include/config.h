@@ -35,14 +35,16 @@ typedef enum config_dit_str_e {
 	CONFIG_DIR_PATH,
 	CONFIG_DIR_SRC,
 	CONFIG_DIR_INC,
-	CONFIG_DIR_TEST,
+	CONFIG_DIR_DRV,
+	CONFIG_DIR_TST,
 	__CONFIG_DIR_STR_CNT,
 } config_dir_str_t;
 
 typedef struct config_dir_s {
 	uint strs;
 	list_node_t pkgs;
-	uint has_pkgs;
+	uint has_pkgs : 1;
+	uint has_main : 1;
 } config_dir_t;
 
 typedef struct config_s {

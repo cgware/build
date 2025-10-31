@@ -52,7 +52,7 @@ static void get_path(const proj_t *proj, uint id, path_t *path)
 	}
 }
 
-static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, strv_t build_dir)
+static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, arr_t *deps, strv_t build_dir)
 {
 	const pkg_t *pkg = proj_get_pkg(proj, id);
 
@@ -115,14 +115,53 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 		}
 	}
 
-	for (int i = 0; i < __VARS_CNT; i++) {
-		if ((vars->vars[i].deps & ((1 << PN) | (1 << TN))) != (1 << PN)) {
-			continue;
-		}
+	strv_t inc = proj_get_str(proj, pkg->strs + PKG_INC);
+	strv_t drv = proj_get_str(proj, pkg->strs + PKG_DRV);
+	strv_t tst = proj_get_str(proj, pkg->strs + PKG_TST);
 
+	for (int i = 0; i < __VARS_CNT; i++) {
 		strv_t val = vars->vars[i].val;
 		switch (i) {
+		case PKG_URI:
+		case PKG_DLFILE:
+		case PKG_DLROOT:
+		case DIR_TMP_EXT_PKG:
+		case DIR_TMP_EXT_PKG_ROOT:
+		case DIR_TMP_DL_PKG:
+		case DIR_OUT_EXT_PKG:
+			if (uri.len == 0) {
+				continue;
+			}
+			break;
+		case DIR_PKG_INC:
+			if (inc.len == 0) {
+				continue;
+			}
+			break;
+		case DIR_PKG_DRV:
+		case DIR_PKG_DRV_C:
+		case DIR_OUT_DRV_PKG:
+			if (drv.len == 0) {
+				continue;
+			}
+			break;
+		case DIR_PKG_TST:
+		case DIR_OUT_INT_TST:
+		case DIR_OUT_TST_FILE:
+			if (tst.len == 0) {
+				continue;
+			}
+			break;
+		case PN_DRIVERS:
+			if (drv.len == 0) {
+				continue;
+			}
+			fs_write(fs, f, STRV("set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"));
+			continue;
 		default:
+			if ((vars->vars[i].deps & ((1 << PN) | (1 << TN))) != (1 << PN)) {
+				continue;
+			}
 			break;
 		}
 
@@ -192,8 +231,16 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 
 				strv_t val = vars->vars[i].val;
 				switch (i) {
-				default:
+				case TGT_CMD:
+				case TGT_OUT:
+				case DIR_TMP_EXT_PKG_ROOT_OUT:
+				case DIR_OUT_EXT_FILE:
+					if (uri.len == 0) {
+						continue;
+					}
 					break;
+				default:       // LCOV_EXCL_LINE
+					break; // LCOV_EXCL_LINE
 				}
 
 				if (val.data == NULL) {
@@ -222,7 +269,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 
 				switch (target->type) {
 				case TARGET_TYPE_TST:
-					path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_TST), '/');
+					path_init_s(&tmp, tst, '/');
 					break;
 				default:
 					path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_SRC), '/');
@@ -237,12 +284,46 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 				tmp.len = src_len;
 				path_push_s(&tmp, STRV("*.c"), '/');
 				fs_write(fs, f, STRVS(tmp));
+
+				if (target->type != TARGET_TYPE_LIB) {
+					if (drv.len > 0) {
+						tmp.len = 0;
+						path_init_s(&tmp, drv, '/');
+						path_push_s(&tmp, STRV("*.c"), '/');
+						fs_write(fs, f, STRV(" ${DIR_PKG}"));
+						fs_write(fs, f, STRVS(tmp));
+					}
+
+					deps->cnt = 0;
+					proj_get_deps(proj, target_id, deps);
+					if (deps->cnt > 0) {
+						uint i = 0;
+						const uint *dep;
+						arr_foreach(deps, i, dep)
+						{
+							const target_t *dtarget = list_get(&proj->targets, *dep);
+							const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+							strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_DRV);
+							if (ddriver.len > 0) {
+								fs_write(fs, f, STRV(" ${"));
+								fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+								fs_write(fs, f, STRV("_DRIVERS}"));
+							}
+						}
+					}
+				}
+
 				fs_write(fs, f, STRV(")\n"));
 			}
 
 			switch (target->type) {
 			case TARGET_TYPE_EXE: {
 				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+				if (inc.len > 0) {
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}"));
+					fs_write(fs, f, inc);
+					fs_write(fs, f, STRV(")\n"));
+				}
 				fs_write(fs,
 					 f,
 					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -272,7 +353,6 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 			}
 			case TARGET_TYPE_LIB: {
 				fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-				strv_t inc = proj_get_str(proj, pkg->strs + PKG_INC);
 				if (inc.len > 0) {
 					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}"));
 					fs_write(fs, f, inc);
@@ -347,6 +427,11 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 			}
 			case TARGET_TYPE_TST: {
 				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+				if (inc.len > 0) {
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}"));
+					fs_write(fs, f, inc);
+					fs_write(fs, f, STRV(")\n"));
+				}
 				fs_write(fs,
 					 f,
 					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -602,18 +687,32 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	(void)types;
 
-	i = 0;
-	const pkg_t *pkg;
-	arr_foreach(&proj->pkgs, i, pkg)
-	{
-		path_t dir = {0};
-		get_path(proj, pkg->strs + PKG_PATH, &dir);
-		path_push_s(&dir, STRV("pkg.cmake"), '/');
-		fs_write(drv->fs, f, STRV("include("));
-		fs_write(drv->fs, f, STRVS(dir));
-		fs_write(drv->fs, f, STRV(")\n"));
+	if (proj->pkgs.cnt > 0) {
+		arr_t order = {0};
+		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
+		proj_get_pkg_build_order(proj, &order, ALLOC_STD);
 
-		gen_pkg(proj, &vars, drv->fs, i, build_dir);
+		arr_t deps = {0};
+		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
+
+		i = 0;
+		const uint *id;
+		arr_foreach(&order, i, id)
+		{
+			const pkg_t *pkg = proj_get_pkg(proj, *id);
+
+			path_t dir = {0};
+			get_path(proj, pkg->strs + PKG_PATH, &dir);
+			path_push_s(&dir, STRV("pkg.cmake"), '/');
+			fs_write(drv->fs, f, STRV("include("));
+			fs_write(drv->fs, f, STRVS(dir));
+			fs_write(drv->fs, f, STRV(")\n"));
+
+			gen_pkg(proj, &vars, drv->fs, i, &deps, build_dir);
+		}
+
+		arr_free(&deps);
+		arr_free(&order);
 	}
 
 	fs_write(drv->fs, f, STRV("endif()\n\n"));

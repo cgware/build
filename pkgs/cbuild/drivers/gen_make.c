@@ -101,32 +101,97 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 		make_inc_add_act(make, inc, act);
 
 		if (target->type != TARGET_TYPE_EXT) {
-
-			make_var(make, STRV("$(PN)_$(TN)_HEADERS"), MAKE_VAR_INST, &act);
 			strv_t include = proj_get_str(proj, pkg->strs + PKG_INC);
 			if (include.len > 0) {
-				make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
+				make_var(make, STRV("$(PN)_$(TN)_HEADERS"), MAKE_VAR_INST, &act);
+				strv_t include = proj_get_str(proj, pkg->strs + PKG_INC);
+				if (include.len > 0) {
+					make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
+				}
+				make_inc_add_act(make, inc, act);
+
+				make_var(make, STRV("$(PN)_$(TN)_INCLUDE"), MAKE_VAR_INST, &act);
+				if (include.len > 0) {
+					buf->len = 0;
+					str_cat(buf, STRV("$(DIR_PKG)"));
+					str_cat(buf, include);
+					make_var_add_val(make, act, MSTR(STRVS(*buf)));
+				}
+				make_inc_add_act(make, inc, act);
 			}
-			make_inc_add_act(make, inc, act);
-			make_var(make, STRV("$(PN)_$(TN)_INCLUDES"), MAKE_VAR_INST, &act);
-			if (include.len > 0) {
+
+			deps->cnt = 0;
+			proj_get_deps(proj, i, deps);
+
+			int includes = 0;
+			if (deps->cnt > 0) {
 				buf->len = 0;
-				str_cat(buf, STRV("$(DIR_PKG)"));
-				str_cat(buf, include);
-				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+
+				uint i = 0;
+				const uint *dep;
+				arr_foreach(deps, i, dep)
+				{
+					const target_t *dtarget = proj_get_target(proj, *dep);
+					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+					strv_t dinclude		= proj_get_str(proj, dpkg->strs + PKG_INC);
+					if (dinclude.len > 0) {
+						includes++;
+					}
+				}
 			}
-			make_inc_add_act(make, inc, act);
+
+			if (include.len > 0 || includes > 0) {
+				make_var(make, STRV("$(PN)_$(TN)_INCLUDES"), MAKE_VAR_INST, &act);
+				if (include.len > 0) {
+					buf->len = 0;
+					str_cat(buf, STRV("$(DIR_PKG)"));
+					str_cat(buf, include);
+					make_var_add_val(make, act, MSTR(STRVS(*buf)));
+				}
+
+				if (deps->cnt > 0) {
+					buf->len = 0;
+
+					size_t buf_len = buf->len;
+
+					uint i = 0;
+					const uint *dep;
+					arr_foreach(deps, i, dep)
+					{
+						const target_t *dtarget = proj_get_target(proj, *dep);
+						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+						strv_t dinclude		= proj_get_str(proj, dpkg->strs + PKG_INC);
+						if (dinclude.len > 0) {
+							str_cat(buf, STRV("$("));
+							str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_NAME));
+							str_cat(buf, STRV("_"));
+							str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+							str_cat(buf, STRV("_INCLUDE)"));
+							make_var_add_val(make, act, MSTR(STRVS(*buf)));
+							buf->len = buf_len;
+						}
+					}
+				}
+				make_inc_add_act(make, inc, act);
+			}
 		}
 
 		switch (target->type) {
+		case TARGET_TYPE_LIB: {
+			strv_t drv = proj_get_str(proj, pkg->strs + PKG_DRV);
+			if (drv.len > 0) {
+				make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
+				make_var_add_val(make, act, MSTR(STRV("$(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)")));
+				make_inc_add_act(make, inc, act);
+			}
+			break;
+		}
 		case TARGET_TYPE_EXE:
 		case TARGET_TYPE_TST: {
 			make_act_t libs;
 			make_var(make, STRV("$(PN)_$(TN)_LIBS"), MAKE_VAR_INST, &libs);
 			make_inc_add_act(make, inc, libs);
 
-			deps->cnt = 0;
-			proj_get_deps(proj, i, deps);
 			if (deps->cnt > 0) {
 				buf->len = 0;
 
@@ -140,14 +205,60 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 					str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_NAME));
 					str_cat(buf, STRV("_"));
-					str_cat(buf, proj_get_str(proj, dtarget->strs + PKG_NAME));
+					str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 					make_var_add_val(make, libs, MSTR(STRVS(*buf)));
 					buf->len = buf_len;
 				}
 			}
 
-			make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
-			make_inc_add_act(make, inc, act);
+			int drivers = 0;
+			if (deps->cnt > 0) {
+				buf->len = 0;
+
+				uint i = 0;
+				const uint *dep;
+				arr_foreach(deps, i, dep)
+				{
+					const target_t *dtarget = proj_get_target(proj, *dep);
+					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+					strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_DRV);
+					if (ddriver.len > 0) {
+						drivers++;
+					}
+				}
+			}
+
+			strv_t drv = proj_get_str(proj, pkg->strs + PKG_DRV);
+			if (drivers > 0 || (target->type == TARGET_TYPE_EXE && drv.len > 0)) {
+				make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
+				if (target->type == TARGET_TYPE_EXE && drv.len > 0) {
+					make_var_add_val(make, act, MSTR(STRV("$(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)")));
+				}
+				if (deps->cnt > 0) {
+					buf->len = 0;
+
+					size_t buf_len = buf->len;
+
+					uint i = 0;
+					const uint *dep;
+					arr_foreach(deps, i, dep)
+					{
+						const target_t *dtarget = proj_get_target(proj, *dep);
+						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+						strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_DRV);
+						if (ddriver.len > 0) {
+							str_cat(buf, STRV("$("));
+							str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_NAME));
+							str_cat(buf, STRV("_"));
+							str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+							str_cat(buf, STRV("_DRIVERS)"));
+							make_var_add_val(make, act, MSTR(STRVS(*buf)));
+							buf->len = buf_len;
+						}
+					}
+				}
+				make_inc_add_act(make, inc, act);
+			}
 			break;
 		}
 		case TARGET_TYPE_EXT: {
@@ -255,6 +366,9 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			str_cat(&buf, STRVS(poutdir));
 			val = STRVS(buf);
 			break;
+		}
+		case DIR_PKG_DRV_C: {
+			continue;
 		}
 		default:
 			break;
@@ -368,7 +482,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	} objs[] = {
 		[PKGSRC_OBJ]  = {STRVT("PKGSRC_OBJ"), STRVT("$(patsubst $(DIR_PKG_SRC)%.c,$(DIR_OUT_INT_SRC)%.o,$(PKGSRC_C))")},
 		[PKGSRC_GCDA] = {STRVT("PKGSRC_GCDA"), STRVT("$(patsubst %.o,%.gcda,$(PKGSRC_OBJ))")},
-		[PKGDRV_OBJ]  = {STRVT("PKGDRV_OBJ"), STRVT("$(patsubst $(DIR_PKG_DRV)%.c,$(DIR_OUT_INT_DRV)%.o,$(PKGDRV_C))")},
+		[PKGDRV_OBJ]  = {STRVT("PKGDRV_OBJ"), STRVT("$(patsubst $(DIR_PKG_DRV)%.c,$(DIR_OUT_DRV_PKG)%.o,$(PKGDRV_C))")},
 		[PKGDRV_GCDA] = {STRVT("PKGDRV_GCDA"), STRVT("$(patsubst %.o,%.gcda,$(PKGDRV_OBJ))")},
 		[PKGTST_OBJ]  = {STRVT("PKGTST_OBJ"), STRVT("$(patsubst $(DIR_PKG_TST)%.c,$(DIR_OUT_INT_TST)%.o,$(PKGTST_C))")},
 		[PKGTST_GCDA] = {STRVT("PKGTST_GCDA"), STRVT("$(patsubst %.o,%.gcda,$(PKGTST_OBJ))")},
@@ -537,7 +651,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t def_rule_target;
 		make_rule(&make, MRULE(MVAR(mvars[DIR_OUT_BIN_FILE])), 1, &def_rule_target);
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS)"))));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGSRC_OBJ].var)));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS:%=$$(%_$(CONFIG)))"))));
 		make_def_add_act(&make, def, def_rule_target);
@@ -545,7 +659,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 		make_cmd(&make,
-			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGSRC_OBJ) $($(PN)_$(TN)_DRIVERS) "
+			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGSRC_OBJ) "
+				   "$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
 				   "$($(PN)_$(TN)_LIBS:%=$$(%_$(CONFIG)))")),
 			 &act);
 		make_rule_add_act(&make, def_rule_target, act);
@@ -559,6 +674,18 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
 			 MCMD(STRV("$(TCC) -m$(BITS) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDES:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) "
+				   "-o $$@ $$<")),
+			 &act);
+		make_rule_add_act(&make, def_rule_obj, act);
+		make_def_add_act(&make, def, def_rule_obj);
+
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_OUT_DRV_PKG)%.o"))), 1, &def_rule_obj);
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(DIR_PKG_DRV)%.c"))));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN)_$(TN)_HEADERS)"))));
+		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
+		make_rule_add_act(&make, def_rule_obj, act);
+		make_cmd(&make,
+			 MCMD(STRV("$(TCC) -m$(BITS) -c $(DIR_PKG_DRV:%=-I%) $($(PN)_$(TN)_INCLUDES:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) "
 				   "-o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
@@ -637,6 +764,18 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
 			 MCMD(STRV("$(TCC) -m$(BITS) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDES:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) "
+				   "-o $$@ $$<")),
+			 &act);
+		make_rule_add_act(&make, def_rule_obj, act);
+		make_def_add_act(&make, def, def_rule_obj);
+
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_OUT_DRV_PKG)%.o"))), 1, &def_rule_obj);
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$(DIR_PKG_DRV)%.c"))));
+		make_rule_add_depend(&make, def_rule_obj, MRULE(MSTR(STRV("$($(PN)_$(TN)_HEADERS)"))));
+		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
+		make_rule_add_act(&make, def_rule_obj, act);
+		make_cmd(&make,
+			 MCMD(STRV("$(TCC) -m$(BITS) -c $(DIR_PKG_DRV:%=-I%) $($(PN)_$(TN)_INCLUDES:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) "
 				   "-o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
@@ -792,7 +931,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t def_rule_target;
 		make_rule(&make, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])), 1, &def_rule_target);
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS)"))));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGTST_OBJ].var)));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS:%=$$(%_$(CONFIG)))"))));
 		make_def_add_act(&make, def, def_rule_target);
@@ -800,7 +939,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 		make_cmd(&make,
-			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGTST_OBJ) $($(PN)_$(TN)_DRIVERS) "
+			 MCMD(STRV("$(TCC) -m$(BITS) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGTST_OBJ) "
+				   "$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
 				   "$($(PN)_$(TN)_LIBS:%=$$(%_$(CONFIG)))")),
 			 &act);
 		make_rule_add_act(&make, def_rule_target, act);

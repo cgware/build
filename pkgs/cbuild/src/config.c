@@ -259,7 +259,8 @@ size_t config_print(const config_t *config, dst_t dst)
 		strv_t dir_path = config_get_str(config, dir->strs + CONFIG_DIR_PATH);
 		strv_t dir_src	= config_get_str(config, dir->strs + CONFIG_DIR_SRC);
 		strv_t dir_inc	= config_get_str(config, dir->strs + CONFIG_DIR_INC);
-		strv_t dir_test = config_get_str(config, dir->strs + CONFIG_DIR_TEST);
+		strv_t dir_drv	= config_get_str(config, dir->strs + CONFIG_DIR_DRV);
+		strv_t dir_tst	= config_get_str(config, dir->strs + CONFIG_DIR_TST);
 
 		dst.off += dputf(dst, "[dir]\n");
 
@@ -267,7 +268,9 @@ size_t config_print(const config_t *config, dst_t dst)
 				 "NAME: %.*s\n"
 				 "PATH: %.*s\n"
 				 "SRC: %.*s\n"
+				 "MAIN: %d\n"
 				 "INC: %.*s\n"
+				 "DRV: %.*s\n"
 				 "TEST: %.*s\n",
 				 dir_name.len,
 				 dir_name.data,
@@ -275,10 +278,13 @@ size_t config_print(const config_t *config, dst_t dst)
 				 dir_path.data,
 				 dir_src.len,
 				 dir_src.data,
+				 dir->has_main,
 				 dir_inc.len,
 				 dir_inc.data,
-				 dir_test.len,
-				 dir_test.data);
+				 dir_drv.len,
+				 dir_drv.data,
+				 dir_tst.len,
+				 dir_tst.data);
 
 		dst.off += dputf(dst, "\n");
 
