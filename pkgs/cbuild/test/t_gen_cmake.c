@@ -550,7 +550,7 @@ TEST(gen_cmake_proj_ext)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_ext(&com, STRV("C")), 0);
 
-	char buf[4096] = {0};
+	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
@@ -1663,7 +1663,7 @@ TEST(gen_cmake_pkg_ext_unknown)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_pkg_ext_unknown(&com, STRV("C")), 0);
 
-	char buf[4096] = {0};
+	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
@@ -1737,7 +1737,7 @@ TEST(gen_cmake_pkg_ext_zip)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_pkg_ext_zip(&com, STRV("C")), 0);
 
-	char buf[4096] = {0};
+	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);

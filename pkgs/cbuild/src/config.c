@@ -57,6 +57,7 @@ config_dir_t *config_add_dir(config_t *config, uint *id)
 
 	dir->strs     = strs_cnt;
 	dir->has_pkgs = 0;
+	dir->has_main = 0;
 
 	id ? *id = tmp : (uint)0;
 

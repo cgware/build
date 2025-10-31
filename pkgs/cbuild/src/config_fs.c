@@ -27,11 +27,9 @@ config_dir_t *config_fs(config_t *config, fs_t *fs, proc_t *proc, strv_t base_pa
 
 	path_push(&full_path, STRV("src"));
 	config_set_str(config, dir->strs + CONFIG_DIR_SRC, fs_isdir(fs, STRVS(full_path)) ? STRV("src") : STRV_NULL);
-	if(fs_isdir(fs, STRVS(full_path))) {
+	if (fs_isdir(fs, STRVS(full_path))) {
 		path_push(&full_path, STRV("main.c"));
-		if(fs_isfile(fs, STRVS(full_path))) {
-			dir->has_main = 1;
-		}
+		dir->has_main = fs_isfile(fs, STRVS(full_path));
 	}
 	full_path.len = dir_path_len;
 
