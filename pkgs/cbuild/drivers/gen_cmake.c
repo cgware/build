@@ -571,7 +571,8 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
-	fs_write(drv->fs, f, STRV("set(CONFIGS \"Debug\" CACHE STRING \"List of build configurations\")\n"));
+	fs_write(drv->fs, f, STRV("set(ARCHS \"host\" CACHE STRING \"List of architectures to build\")\n"));
+	fs_write(drv->fs, f, STRV("set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"));
 	fs_write(drv->fs, f, STRV("list(LENGTH CONFIGS _config_count)\n"));
 	fs_write(drv->fs, f, STRV("get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n\n"));
 
@@ -658,19 +659,22 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	fs_write(drv->fs,
 		 f,
 		 STRV("if(_config_count GREATER 0 AND NOT is_multi_config)\n"
-		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}/Debug\")\n"
-		      "set(TEST_DEPENDS \"Debug\")\n"
+		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}/host-Debug\")\n"
+		      "set(TEST_DEPENDS \"host-Debug\")\n"
 		      "include(ExternalProject)\n"
-		      "foreach(cfg IN LISTS CONFIGS)\n"
-		      "\tExternalProject_Add(${cfg}\n"
-		      "\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
-		      "\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${cfg}\n"
-		      "\t\tINSTALL_COMMAND \"\"\n"
-		      "\t\tCMAKE_ARGS\n"
-		      "\t\t\t-DARCH=${ARCH}\n"
-		      "\t\t\t-DCMAKE_BUILD_TYPE=${cfg}\n"
-		      "\t\t\t-DCONFIGS=\n"
-		      "\t)\n"
+		      "foreach(arch IN LISTS ARCHS)\n"
+		      "\tforeach(cfg IN LISTS CONFIGS)\n"
+		      "\t\tExternalProject_Add(${arch}-${cfg}\n"
+		      "\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		      "\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}-${cfg}\n"
+		      "\t\t\tINSTALL_COMMAND \"\"\n"
+		      "\t\t\tCMAKE_ARGS\n"
+		      "\t\t\t\t-DARCHS=\n"
+		      "\t\t\t\t-DCONFIGS=\n"
+		      "\t\t\t\t-DARCH=${arch}\n"
+		      "\t\t\t\t-DCMAKE_BUILD_TYPE=${cfg}\n"
+		      "\t\t)\n"
+		      "\tendforeach()\n"
 		      "endforeach()\n"
 		      "else()\n"
 		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}\")\n"

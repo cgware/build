@@ -12,6 +12,7 @@ fi
 arch="$1"
 config="$2"
 
+archs="host x64 x86"
 configs="Debug Release"
 
 ret=0
@@ -23,22 +24,21 @@ if ! res="$(make build ARCH="$arch" CONFIG="$config" 2>&1)"; then
 fi
 
 run() {
-	p_arch=$1
-	proj=$2
-	targets=$3
-	name=$4
-	gen=$5
+	proj=$1
+	targets=$2
+	name=$3
+	gen=$4
 
 	dir="./examples/$proj"
 	bin="$dir/bin"
 	tmp="$dir/tmp"
 	build="$dir/build"
 
-	printf "%s %-13s %-5s " "$p_arch" "$proj" "$name"
+	printf "%-13s %-5s " "$proj" "$name"
 
 	rm -rf "$bin" "$build" "$tmp"
 
-	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g "$gen" -a "$p_arch" -c "$configs" -t "all cov" -O 0 2>&1)"; then
+	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g "$gen" -a "$archs" -c "$configs" -t "all cov" -O 0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "build: Failed to generate $name"
 		echo "$out"
@@ -46,15 +46,17 @@ run() {
 		return
 	fi
 
-	for c in $configs; do
-		for t in $targets; do
-			if [ ! -f "$dir/bin/$p_arch-$c/$t" ]; then
-				printf "\033[0;31mFAIL\033[0m\n"
-				echo "Target not found: $p_arch-$c/$t"
-				echo "$out"
-				ret=1
-				return
-			fi
+	for a in $archs; do
+		for c in $configs; do
+			for t in $targets; do
+				if [ ! -f "$dir/bin/$a-$c/$t" ]; then
+					printf "\033[0;31mFAIL\033[0m\n"
+					echo "Target not found: $a-$c/$t"
+					echo "$out"
+					ret=1
+					return
+				fi
+			done
 		done
 	done
 
@@ -68,19 +70,18 @@ gen() {
 }
 
 test() {
-	gen "$@" 00_exe "bin/00_exe"
-	gen "$@" 01_lib "lib/01_lib.a"
-	gen "$@" 02_multi "bin/a bin/b"
-	gen "$@" 03_depends "bin/exe lib/lib.a"
-	gen "$@" 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
-	gen "$@" 05_extern "lib/cbase.a ../../tmp/report/cov/index.html"
-	gen "$@" 06_lib_test "lib/06_lib_test.a test/06_lib_test"
-	gen "$@" 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.a"
-	gen "$@" 08_exe_driver "bin/08_exe_driver"
-	gen "$@" 09_lib_driver "bin/exe test/lib"
+	gen 00_exe "bin/00_exe"
+	gen 01_lib "lib/01_lib.a"
+	gen 02_multi "bin/a bin/b"
+	gen 03_depends "bin/exe lib/lib.a"
+	gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	gen 05_extern "lib/cbase.a ../../tmp/report/cov/index.html"
+	gen 06_lib_test "lib/06_lib_test.a test/06_lib_test"
+	gen 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.a"
+	gen 08_exe_driver "bin/08_exe_driver"
+	gen 09_lib_driver "bin/exe test/lib"
 }
 
-test x64
-test x86
+test
 
 exit $ret

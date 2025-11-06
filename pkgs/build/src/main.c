@@ -72,12 +72,18 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 			str_cat(buf, STRV(" "));
 			str_cat(buf, target);
 		}
-		str_cat(buf, STRV(" ARCH=\""));
-		str_cat(buf, arch);
-		str_cat(buf, STRV("\" CONFIGS=\""));
-		str_cat(buf, conf);
-		str_cat(buf, open ? STRV("\" OPEN=1") : STRV("\" OPEN=0"));
-		log_info("build", "main", NULL, "building project");
+		if (arch.len > 0) {
+			str_cat(buf, STRV(" ARCHS=\""));
+			str_cat(buf, arch);
+			str_cat(buf, STRV("\""));
+		}
+		if (conf.len > 0) {
+			str_cat(buf, STRV(" CONFIGS=\""));
+			str_cat(buf, conf);
+			str_cat(buf, STRV("\""));
+		}
+		str_cat(buf, open ? STRV(" OPEN=1") : STRV(" OPEN=0"));
+		log_info("build", "main", NULL, "building project: %.*s", buf->len, buf->data);
 		int ret = proc_cmd(proc, STRVS(*buf));
 		if (ret) {
 			return ret;
@@ -91,20 +97,36 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 			str_cat(buf, genbuild_rel);
 			str_cat(buf, STRV("\" -G \""));
 			str_cat(buf, gen_gen);
-			str_cat(buf, STRV("\" -DARCH=\""));
-			str_cat(buf, arch);
-			str_cat(buf, STRV("\" -DCONFIGS=\""));
-			int start = 0;
-			for (size_t i = 0; i < conf.len; i++) {
-				if (conf.data[i] == ' ') {
-					str_cat(buf, STRVN(&conf.data[start], i - start));
-					str_cat(buf, STRV(";"));
-					start = i + 1;
+			str_cat(buf, STRV("\""));
+			if (arch.len > 0) {
+				str_cat(buf, STRV(" -DARCHS=\""));
+				int start = 0;
+				for (size_t i = 0; i < arch.len; i++) {
+					if (arch.data[i] == ' ') {
+						str_cat(buf, STRVN(&arch.data[start], i - start));
+						str_cat(buf, STRV(";"));
+						start = i + 1;
+					}
 				}
+				str_cat(buf, STRVN(&arch.data[start], arch.len - start));
+				str_cat(buf, STRV("\""));
 			}
-			str_cat(buf, STRVN(&conf.data[start], conf.len - start));
-			str_cat(buf, open ? STRV("\" -DOPEN=1") : STRV("\" -DOPEN=0"));
-			log_info("build", "main", NULL, "creating generator");
+			if (conf.len > 0) {
+				str_cat(buf, STRV(" -DCONFIGS=\""));
+				int start = 0;
+				for (size_t i = 0; i < conf.len; i++) {
+					if (conf.data[i] == ' ') {
+						str_cat(buf, STRVN(&conf.data[start], i - start));
+						str_cat(buf, STRV(";"));
+						start = i + 1;
+					}
+				}
+				str_cat(buf, STRVN(&conf.data[start], conf.len - start));
+				str_cat(buf, STRV("\""));
+			}
+
+			str_cat(buf, open ? STRV(" -DOPEN=1") : STRV(" -DOPEN=0"));
+			log_info("build", "main", NULL, "creating generator: %.*s", buf->len, buf->data);
 			int ret = proc_cmd(proc, STRVS(*buf));
 			if (ret) {
 				return ret;
@@ -119,7 +141,7 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 			str_cat(buf, STRV(" --target "));
 			str_cat(buf, target);
 		}
-		log_info("build", "main", NULL, "building project");
+		log_info("build", "main", NULL, "building project: %.*s", buf->len, buf->data);
 		int ret = proc_cmd(proc, STRVS(*buf));
 		if (ret) {
 			return ret;
@@ -143,8 +165,8 @@ int main(int argc, const char **argv)
 	strv_t proj_dir	 = STRV(".");
 	strv_t build_dir = STRV("tmp/build");
 	strv_t target	 = STRV("");
-	strv_t arch	 = STRV("x64");
-	strv_t conf	 = STRV("Debug");
+	strv_t arch	 = STRV("");
+	strv_t conf	 = STRV("");
 	strv_t gen_build = STRV("build");
 #ifdef C_WIN
 	strv_t gen_gen = STRV("Visual Studio 17 2022");
@@ -198,9 +220,9 @@ int main(int argc, const char **argv)
 		OPT('p', "project", OPT_STR, "<path>", "Specify project directory", &proj_dir, {0}, OPT_OPT),
 		OPT('b', "build", OPT_STR, "<path>", "Specify build directory", &build_dir, {0}, OPT_OPT),
 		OPT('g', "generator", OPT_ENUM, "<generator>", "Specify build system generator", &gen, gens_desc, OPT_OPT),
-		OPT('t', "target", OPT_STR, "<target>", "Specify target", &target, {0}, OPT_OPT),
-		OPT('a', "arch", OPT_STR, "<arch>", "Specify architecture", &arch, {0}, OPT_OPT),
-		OPT('c', "config", OPT_STR, "<config>", "Specify configuration", &conf, {0}, OPT_OPT),
+		OPT('t', "target", OPT_STR, "<target>", "Specify targets to build", &target, {0}, OPT_OPT),
+		OPT('a', "arch", OPT_STR, "<arch>", "Specify architectures to build", &arch, {0}, OPT_OPT),
+		OPT('c', "config", OPT_STR, "<config>", "Specify configurations to build", &conf, {0}, OPT_OPT),
 		OPT('B', "gen-build", OPT_STR, "<path>", "Specify generator build directory", &gen_build, {0}, OPT_OPT),
 		OPT('G', "gen-gen", OPT_STR, "<generator-generator>", "Specify generator generator", &gen_gen, {0}, OPT_OPT),
 		OPT('O', "open", OPT_BOOL, "<0/1>", "Open", &open, {0}, OPT_OPT),
