@@ -29,7 +29,7 @@ TEST(gen_make_proj_build_dir)
 	fs_read(&com.fs, STRV("tmp/build/Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ := .." SEP ".." SEP "\n"
@@ -145,7 +145,7 @@ TEST(gen_make_proj_empty)
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ :=\n"
@@ -261,7 +261,7 @@ TEST(gen_make_proj_name)
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ :=\n"
@@ -377,7 +377,7 @@ TEST(gen_make_proj_unknown)
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ :=\n"
@@ -506,7 +506,7 @@ TEST(gen_make_proj_exe)
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ :=\n"
@@ -663,7 +663,7 @@ TEST(gen_make_proj_lib)
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ :=\n"
@@ -818,7 +818,7 @@ TEST(gen_make_proj_ext)
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ :=\n"
@@ -985,7 +985,7 @@ TEST(gen_make_proj_test)
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCH := x64\n"
-		    "CONFIGS := Debug Release\n"
+		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
 		    "DIR_PROJ :=\n"
