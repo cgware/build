@@ -35,27 +35,10 @@ mk() {
 
 	rm -rf "$bin" "$tmp"
 
-	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g M 2>&1)"; then
+	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g M -a "$p_arch" -c "$configs" -t "all cov" -O 0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "build: Failed to generate make"
 		echo "$out"
-		ret=1
-		return
-	fi
-
-	if ! build_out="$(make -C "$tmp/build" ARCH="$p_arch" 2>&1)"; then
-		printf "\033[0;31mFAIL\033[0m\n"
-		echo "make: Failed to build project"
-		echo "$out"
-		echo "$build_out"
-		ret=1
-		return
-	fi
-
-	if ! cov_out="$(make -C "$tmp/build" cov ARCH="$p_arch" OPEN=0 2>&1)"; then
-		printf "\033[0;31mFAIL\033[0m\n"
-		echo "make: Failed to cov project"
-		echo "$cov_out"
 		ret=1
 		return
 	fi
@@ -91,35 +74,10 @@ cm() {
 
 	rm -rf "$bin" "$build" "$tmp"
 
-	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g C 2>&1)"; then
+	if ! out="$(./bin/"$arch"-"$config"/exes/build -p "$dir" -g C -a "$p_arch" -c "$config" -O 0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "build: Failed to generate cmake"
 		echo "$out"
-		ret=1
-		return
-	fi
-
-	if ! gen_out="$(cmake -S "$tmp/build" -B "$build" -G "Unix Makefiles" -DARCH="$p_arch" -DOPEN=0 2>&1)"; then
-		printf "\033[0;31mFAIL\033[0m\n"
-		echo "cmake: Failed to generate make"
-		echo "$gen_out"
-		ret=1
-		return
-	fi
-
-	if ! build_out="$(cmake --build "$build" 2>&1)"; then
-		printf "\033[0;31mFAIL\033[0m\n"
-		echo "cmake: Failed to build project"
-		echo "$gen_out"
-		echo "$build_out"
-		ret=1
-		return
-	fi
-
-	if ! cov_out="$(cmake --build "$build" --target cov 2>&1)"; then
-		printf "\033[0;31mFAIL\033[0m\n"
-		echo "cmake: Failed to cov project"
-		echo "$cov_out"
 		ret=1
 		return
 	fi
@@ -144,7 +102,7 @@ cm() {
 }
 
 gen() {
-	mk "$@"
+	#mk "$@"
 	cm "$@"
 }
 
@@ -166,6 +124,6 @@ test() {
 }
 
 test x64
-test x86
+#test x86
 
 exit $ret

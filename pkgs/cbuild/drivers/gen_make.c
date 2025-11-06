@@ -331,7 +331,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	make_var_var(&make, mconfig, MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("Debug")));
-	make_var_add_val(&make, act, MSTR(STRV("Release")));
 	make_add_act(&make, root, act);
 
 	make_var_var(&make, mopen, MAKE_VAR_INST, &act);

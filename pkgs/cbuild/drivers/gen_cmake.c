@@ -571,7 +571,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
-	fs_write(drv->fs, f, STRV("set(CONFIGS \"Debug;Release\" CACHE STRING \"List of build configurations\")\n"));
+	fs_write(drv->fs, f, STRV("set(CONFIGS \"Debug\" CACHE STRING \"List of build configurations\")\n"));
 	fs_write(drv->fs, f, STRV("list(LENGTH CONFIGS _config_count)\n"));
 	fs_write(drv->fs, f, STRV("get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n\n"));
 
