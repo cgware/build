@@ -60,13 +60,57 @@ static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t
 	return ret;
 }
 
+static int cmake_build(proc_t *proc, strv_t build_path, strv_t target, strv_t config, strv_t gen_gen, str_t *buf)
+{
+	buf->len = 0;
+	str_cat(buf, STRV("cmake --build \""));
+	str_cat(buf, build_path);
+	str_cat(buf, STRV("\""));
+	if (target.len > 0) {
+		str_cat(buf, STRV(" --target "));
+		size_t start = 0;
+		for (size_t i = 0; i <= target.len; i++) {
+			if (i == target.len || target.data[i] == ' ') {
+				strv_t tgt = STRVN(&target.data[start], i - start);
+				start	   = i + 1;
+				if (strv_eq(tgt, STRV("all")) && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
+					tgt = STRV("all_build");
+				} else if (strv_eq(tgt, STRV("cov")) && !strv_eq(config, STRV("Debug"))) {
+					continue;
+				}
+				str_cat(buf, tgt);
+				str_cat(buf, STRV(" "));
+			}
+		}
+	}
+	if (config.len > 0) {
+		str_cat(buf, STRV(" --config "));
+		str_cat(buf, config);
+	}
+	log_info("build", "main", NULL, "building project: %.*s", buf->len, buf->data);
+	return proc_cmd(proc, STRVS(*buf));
+}
+
 static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, strv_t genbuild_rel, strv_t gen_gen, strv_t arch, strv_t conf,
 		   strv_t target, int open, int compile, str_t *buf)
 {
+	path_t build_path    = {0};
+	path_t genbuild_path = {0};
+
+	path_init(&build_path, build_rel);
+	if (build_path.data[build_path.len - 1] == '/' || build_path.data[build_path.len - 1] == '\\') {
+		build_path.len--;
+	}
+
+	path_init(&genbuild_path, genbuild_rel);
+	if (genbuild_path.data[genbuild_path.len - 1] == '/' || genbuild_path.data[genbuild_path.len - 1] == '\\') {
+		genbuild_path.len--;
+	}
+
 	if (strv_eq(gen_driver->param, STRV("M"))) {
 		buf->len = 0;
 		str_cat(buf, STRV("make -C \""));
-		str_cat(buf, build_rel);
+		str_cat(buf, STRVS(build_path));
 		str_cat(buf, STRV("\""));
 		if (target.len > 0) {
 			str_cat(buf, STRV(" "));
@@ -92,40 +136,43 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 		if (compile == 0) {
 			buf->len = 0;
 			str_cat(buf, STRV("cmake -S \""));
-			str_cat(buf, build_rel);
+			str_cat(buf, STRVS(build_path));
 			str_cat(buf, STRV("\" -B \""));
-			str_cat(buf, genbuild_rel);
+			str_cat(buf, STRVS(genbuild_path));
 			str_cat(buf, STRV("\" -G \""));
 			str_cat(buf, gen_gen);
 			str_cat(buf, STRV("\""));
 			if (arch.len > 0) {
 				str_cat(buf, STRV(" -DARCHS=\""));
-				int start = 0;
-				for (size_t i = 0; i < arch.len; i++) {
-					if (arch.data[i] == ' ') {
+				size_t start = 0;
+				for (size_t i = 0; i <= arch.len; i++) {
+					if (i == arch.len || arch.data[i] == ' ') {
 						str_cat(buf, STRVN(&arch.data[start], i - start));
-						str_cat(buf, STRV(";"));
+						if(i < arch.len) {
+							str_cat(buf, STRV(";"));
+						}
 						start = i + 1;
 					}
 				}
-				str_cat(buf, STRVN(&arch.data[start], arch.len - start));
 				str_cat(buf, STRV("\""));
 			}
 			if (conf.len > 0) {
 				str_cat(buf, STRV(" -DCONFIGS=\""));
-				int start = 0;
-				for (size_t i = 0; i < conf.len; i++) {
-					if (conf.data[i] == ' ') {
+				size_t start = 0;
+				for (size_t i = 0; i <= conf.len; i++) {
+					if (i == conf.len || conf.data[i] == ' ') {
 						str_cat(buf, STRVN(&conf.data[start], i - start));
-						str_cat(buf, STRV(";"));
+						if (i < conf.len) {
+							str_cat(buf, STRV(";"));
+						}
 						start = i + 1;
 					}
 				}
-				str_cat(buf, STRVN(&conf.data[start], conf.len - start));
 				str_cat(buf, STRV("\""));
 			}
 
 			str_cat(buf, open ? STRV(" -DOPEN=1") : STRV(" -DOPEN=0"));
+			str_cat(buf, STRV(" -DCMAKE_BUILD_TYPE=Debug"));
 			log_info("build", "main", NULL, "creating generator: %.*s", buf->len, buf->data);
 			int ret = proc_cmd(proc, STRVS(*buf));
 			if (ret) {
@@ -133,18 +180,15 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 			}
 		}
 
-		buf->len = 0;
-		str_cat(buf, STRV("cmake --build \""));
-		str_cat(buf, genbuild_rel);
-		str_cat(buf, STRV("\""));
-		if (target.len > 0) {
-			str_cat(buf, STRV(" --target "));
-			str_cat(buf, target);
-		}
-		log_info("build", "main", NULL, "building project: %.*s", buf->len, buf->data);
-		int ret = proc_cmd(proc, STRVS(*buf));
-		if (ret) {
-			return ret;
+		size_t start = 0;
+		for (size_t i = 0; i <= conf.len; i++) {
+			if (i == conf.len || conf.data[i] == ' ') {
+				int ret = cmake_build(proc, STRVS(genbuild_path), target, STRVN(&conf.data[start], i - start), gen_gen, buf);
+				if (ret) {
+					return ret;
+				}
+				start = i + 1;
+			}
 		}
 	}
 

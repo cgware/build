@@ -571,10 +571,13 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
-	fs_write(drv->fs, f, STRV("set(ARCHS \"host\" CACHE STRING \"List of architectures to build\")\n"));
-	fs_write(drv->fs, f, STRV("set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"));
-	fs_write(drv->fs, f, STRV("list(LENGTH CONFIGS _config_count)\n"));
-	fs_write(drv->fs, f, STRV("get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n\n"));
+	fs_write(drv->fs,
+		 f,
+		 STRV("set(ARCHS \"host\" CACHE STRING \"List of architectures to build\")\n"
+		      "list(LENGTH ARCHS _arch_count)\n"
+		      "set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"
+		      "list(LENGTH CONFIGS _config_count)\n"
+		      "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n\n"));
 
 	path_t tmp = {0};
 	str_t buf  = strz(16);
@@ -658,7 +661,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(_config_count GREATER 0 AND NOT is_multi_config)\n"
+		 STRV("if(_arch_count GREATER 0 AND (_config_count GREATER 0 AND NOT is_multi_config))\n"
 		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}/host-Debug\")\n"
 		      "set(TEST_DEPENDS \"host-Debug\")\n"
 		      "include(ExternalProject)\n"
@@ -675,6 +678,22 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\t\t\t-DCMAKE_BUILD_TYPE=${cfg}\n"
 		      "\t\t)\n"
 		      "\tendforeach()\n"
+		      "endforeach()\n"
+		      "elseif(_arch_count GREATER 0)\n"
+		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}/host\")\n"
+		      "set(TEST_DEPENDS \"host\")\n"
+		      "include(ExternalProject)\n"
+		      "foreach(arch IN LISTS ARCHS)\n"
+		      "\tExternalProject_Add(${arch}\n"
+		      "\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		      "\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}\n"
+		      "\t\tINSTALL_COMMAND \"\"\n"
+		      "\t\tCMAKE_ARGS\n"
+		      "\t\t\t-DARCHS=\n"
+		      "\t\t\t-DCONFIGS=${CONFIGS}\n"
+		      "\t\t\t-DARCH=${arch}\n"
+			  "\t\t\t-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}\n"
+		      "\t)\n"
 		      "endforeach()\n"
 		      "else()\n"
 		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}\")\n"
