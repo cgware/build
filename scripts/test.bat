@@ -80,5 +80,7 @@ exit /b %ret%
 	call :gen 05_extern "lib/cbase.lib"
 	call :gen 06_lib_test "lib/06_lib_test.lib test/06_lib_test.exe"
 	call :gen 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.lib"
+	call :gen 08_exe_driver "bin/08_exe_driver.exe"
+	call :gen 09_lib_driver "bin/exe.exe test/lib.exe"
 
 	exit /b 0
