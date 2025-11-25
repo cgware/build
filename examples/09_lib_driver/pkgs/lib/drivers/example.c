@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-void example_f()
+static void example_f()
 {
 	printf("Example\n");
 }
@@ -12,4 +12,4 @@ static example_t example = {
 	.f = example_f,
 };
 
-DRIVER(example, 0, &example);
+DRIVER(example, 1, &example);
