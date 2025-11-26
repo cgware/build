@@ -61,6 +61,13 @@ TEST(gen_cmake_proj_build_dir)
 		    "set(DIR_OUT_BIN \"${DIR_OUT}bin/\")\n"
 		    "set(DIR_OUT_EXT \"${DIR_OUT}ext/\")\n"
 		    "set(DIR_OUT_TST \"${DIR_OUT}test/\")\n"
+		    "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\tif(ARCH STREQUAL \"x64\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		    "\telseif(ARCH STREQUAL \"x86\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
+		    "\tendif()\n"
+		    "endif()\n"
 		    "if(WIN32)\n"
 		    "\tset(EXT_LIB \".lib\")\n"
 		    "\tset(EXT_EXE \".exe\")\n"
@@ -185,6 +192,13 @@ TEST(gen_cmake_proj_empty)
 		    "set(DIR_OUT_BIN \"${DIR_OUT}bin/\")\n"
 		    "set(DIR_OUT_EXT \"${DIR_OUT}ext/\")\n"
 		    "set(DIR_OUT_TST \"${DIR_OUT}test/\")\n"
+		    "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\tif(ARCH STREQUAL \"x64\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		    "\telseif(ARCH STREQUAL \"x86\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
+		    "\tendif()\n"
+		    "endif()\n"
 		    "if(WIN32)\n"
 		    "\tset(EXT_LIB \".lib\")\n"
 		    "\tset(EXT_EXE \".exe\")\n"
@@ -309,6 +323,13 @@ TEST(gen_cmake_proj_name)
 		    "set(DIR_OUT_BIN \"${DIR_OUT}bin/\")\n"
 		    "set(DIR_OUT_EXT \"${DIR_OUT}ext/\")\n"
 		    "set(DIR_OUT_TST \"${DIR_OUT}test/\")\n"
+		    "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\tif(ARCH STREQUAL \"x64\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		    "\telseif(ARCH STREQUAL \"x86\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
+		    "\tendif()\n"
+		    "endif()\n"
 		    "if(WIN32)\n"
 		    "\tset(EXT_LIB \".lib\")\n"
 		    "\tset(EXT_EXE \".exe\")\n"
@@ -433,6 +454,13 @@ TEST(gen_cmake_proj_unknown)
 		    "set(DIR_OUT_BIN \"${DIR_OUT}bin/\")\n"
 		    "set(DIR_OUT_EXT \"${DIR_OUT}ext/\")\n"
 		    "set(DIR_OUT_TST \"${DIR_OUT}test/\")\n"
+		    "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\tif(ARCH STREQUAL \"x64\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		    "\telseif(ARCH STREQUAL \"x86\")\n"
+		    "\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
+		    "\tendif()\n"
+		    "endif()\n"
 		    "if(WIN32)\n"
 		    "\tset(EXT_LIB \".lib\")\n"
 		    "\tset(EXT_EXE \".exe\")\n"
@@ -661,20 +689,21 @@ TEST(gen_cmake_proj_ext)
 		    "set(${PN}_${TN}_CMD )\n"
 		    "set(TGT_CMD \"${${PN}_${TN}_CMD}\")\n"
 		    "set(TGT_OUT \"${${PN}_${TN}_OUT}\")\n"
+		    "set(TGT_DST \"${${PN}_${TN}_DST}\")\n"
 		    "set(DIR_TMP_EXT_PKG_ROOT_OUT \"${DIR_TMP_EXT_PKG_ROOT}${TGT_OUT}\")\n"
-		    "set(DIR_OUT_EXT_FILE \"${DIR_OUT_EXT_PKG}${TN}\")\n"
+		    "set(DIR_OUT_EXT_FILE \"${DIR_OUT_EXT_PKG}${TGT_DST}\")\n"
 		    "\n"
 		    "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"
 		    "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 		    "\tSHOW_PROGRESS\n"
 		    ")\n"
 		    "file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"
-		    "add_custom_target(${PN}_${TN} ALL\n"
+		    "add_custom_target(${PN}_${TN}_build ALL\n"
 		    "\tCOMMAND ${TGT_CMD}\n"
 		    "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
 		    ")\n"
 		    "if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
-		    "\tadd_custom_command(TARGET ${PN}_${TN} PRE_BUILD\n"
+		    "\tadd_custom_command(TARGET ${PN}_${TN}_build PRE_BUILD\n"
 		    "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
 		    "\t\tDEPENDS ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
@@ -685,11 +714,16 @@ TEST(gen_cmake_proj_ext)
 		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+		    "add_custom_command(TARGET ${PN}_${TN}_build POST_BUILD\n"
 		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_PKG}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_FILE}\n"
 		    ")\n"
+		    "\n"
+		    "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+		    "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE}\n"
+		    "\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_ROOT}include\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
 		    tmp.len);
@@ -1747,7 +1781,7 @@ TEST(gen_cmake_pkg_ext_unknown)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_pkg_ext_unknown(&com, STRV("C")), 0);
 
-	char buf[2048] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
@@ -1774,22 +1808,24 @@ TEST(gen_cmake_pkg_ext_unknown)
 		    "set(TN \"pkg\")\n"
 		    "set(${PN}_${TN}_CMD cmd)\n"
 		    "set(${PN}_${TN}_OUT out)\n"
+		    "set(${PN}_${TN}_DST dst)\n"
 		    "set(TGT_CMD \"${${PN}_${TN}_CMD}\")\n"
 		    "set(TGT_OUT \"${${PN}_${TN}_OUT}\")\n"
+		    "set(TGT_DST \"${${PN}_${TN}_DST}\")\n"
 		    "set(DIR_TMP_EXT_PKG_ROOT_OUT \"${DIR_TMP_EXT_PKG_ROOT}${TGT_OUT}\")\n"
-		    "set(DIR_OUT_EXT_FILE \"${DIR_OUT_EXT_PKG}${TN}\")\n"
+		    "set(DIR_OUT_EXT_FILE \"${DIR_OUT_EXT_PKG}${TGT_DST}\")\n"
 		    "\n"
 		    "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"
 		    "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 		    "\tSHOW_PROGRESS\n"
 		    ")\n"
 		    "file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"
-		    "add_custom_target(${PN}_${TN} ALL\n"
+		    "add_custom_target(${PN}_${TN}_build ALL\n"
 		    "\tCOMMAND ${TGT_CMD}\n"
 		    "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
 		    ")\n"
 		    "if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
-		    "\tadd_custom_command(TARGET ${PN}_${TN} PRE_BUILD\n"
+		    "\tadd_custom_command(TARGET ${PN}_${TN}_build PRE_BUILD\n"
 		    "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
 		    "\t\tDEPENDS ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
@@ -1800,11 +1836,16 @@ TEST(gen_cmake_pkg_ext_unknown)
 		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+		    "add_custom_command(TARGET ${PN}_${TN}_build POST_BUILD\n"
 		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_PKG}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_FILE}\n"
 		    ")\n"
+		    "\n"
+		    "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+		    "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE}\n"
+		    "\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_ROOT}include\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
 		    tmp.len);
@@ -1821,7 +1862,7 @@ TEST(gen_cmake_pkg_ext_zip)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_pkg_ext_zip(&com, STRV("C")), 0);
 
-	char buf[2048] = {0};
+	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
@@ -1848,22 +1889,24 @@ TEST(gen_cmake_pkg_ext_zip)
 		    "set(TN \"pkg\")\n"
 		    "set(${PN}_${TN}_CMD cmd)\n"
 		    "set(${PN}_${TN}_OUT out)\n"
+		    "set(${PN}_${TN}_DST dst)\n"
 		    "set(TGT_CMD \"${${PN}_${TN}_CMD}\")\n"
 		    "set(TGT_OUT \"${${PN}_${TN}_OUT}\")\n"
+		    "set(TGT_DST \"${${PN}_${TN}_DST}\")\n"
 		    "set(DIR_TMP_EXT_PKG_ROOT_OUT \"${DIR_TMP_EXT_PKG_ROOT}${TGT_OUT}\")\n"
-		    "set(DIR_OUT_EXT_FILE \"${DIR_OUT_EXT_PKG}${TN}\")\n"
+		    "set(DIR_OUT_EXT_FILE \"${DIR_OUT_EXT_PKG}${TGT_DST}\")\n"
 		    "\n"
 		    "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"
 		    "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 		    "\tSHOW_PROGRESS\n"
 		    ")\n"
 		    "file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"
-		    "add_custom_target(${PN}_${TN} ALL\n"
+		    "add_custom_target(${PN}_${TN}_build ALL\n"
 		    "\tCOMMAND ${TGT_CMD}\n"
 		    "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
 		    ")\n"
 		    "if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
-		    "\tadd_custom_command(TARGET ${PN}_${TN} PRE_BUILD\n"
+		    "\tadd_custom_command(TARGET ${PN}_${TN}_build PRE_BUILD\n"
 		    "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
 		    "\t\tDEPENDS ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
@@ -1874,11 +1917,101 @@ TEST(gen_cmake_pkg_ext_zip)
 		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+		    "add_custom_command(TARGET ${PN}_${TN}_build POST_BUILD\n"
 		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_PKG}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_FILE}\n"
 		    ")\n"
+		    "\n"
+		    "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+		    "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE}\n"
+		    "\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_ROOT}include\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_ext_deps)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_deps(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(PKG_DIR \"${${PN}_DIR}\")\n"
+		    "set(DIR_PKG \"${DIR_PROJ}${PKG_DIR}\")\n"
+		    "set(DIR_PKG_SRC \"${DIR_PKG}src/\")\n"
+		    "set(DIR_OUT_INT_SRC \"${DIR_OUT_INT}${PN}/src/\")\n"
+		    "set(DIR_OUT_LIB_FILE \"${DIR_OUT_LIB}${PN}.a\")\n"
+		    "set(DIR_OUT_BIN_FILE \"${DIR_OUT_BIN}${PN}\")\n"
+		    "\n"
+		    "set(TN \"lib\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n"
+		    "set(TN \"ext\")\n"
+		    "set(${PN}_${TN}_CMD )\n"
+		    "\n"
+		    "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"
+		    "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
+		    "\tSHOW_PROGRESS\n"
+		    ")\n"
+		    "file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"
+		    "add_custom_target(${PN}_${TN}_build ALL\n"
+		    "\tCOMMAND ${TGT_CMD}\n"
+		    "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
+		    ")\n"
+		    "if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
+		    "\tadd_custom_command(TARGET ${PN}_${TN}_build PRE_BUILD\n"
+		    "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
+		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
+		    "\t\tDEPENDS ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
+		    "\t)\n"
+		    "else()\n"
+		    "\texecute_process(\n"
+		    "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
+		    "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "add_custom_command(TARGET ${PN}_${TN}_build POST_BUILD\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_FILE}\n"
+		    ")\n"
+		    "\n"
+		    "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+		    "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"
+		    "target_link_libraries(${PN}_${TN} INTERFACE _lib)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE}\n"
+		    "\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_ROOT}include\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
 		    tmp.len);
@@ -1917,6 +2050,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_rdepends);
 	RUN(gen_cmake_pkg_ext_unknown);
 	RUN(gen_cmake_pkg_ext_zip);
+	RUN(gen_cmake_pkg_ext_deps);
 
 	SEND;
 }

@@ -289,7 +289,7 @@ TEST(proj_get_deps)
 	START;
 
 	proj_t proj = {0};
-	proj_init(&proj, 2, 2, ALLOC_STD);
+	proj_init(&proj, 5, 5, ALLOC_STD);
 
 	uint p1, p2, p3, p4, p5;
 	uint t1, t2, t3, t4, t5;
@@ -309,6 +309,9 @@ TEST(proj_get_deps)
 	arr_t deps = {0};
 	arr_init(&deps, 5, sizeof(uint), ALLOC_STD);
 
+	log_set_quiet(0, 1);
+	EXPECT_EQ(proj_get_deps(&proj, proj.targets.cnt, &deps), 1);
+	log_set_quiet(0, 0);
 	EXPECT_EQ(proj_get_deps(&proj, t2, &deps), 0);
 
 	proj_add_dep(&proj, t1, t2);
@@ -335,12 +338,49 @@ TEST(proj_get_deps)
 	END;
 }
 
+TEST(proj_get_pdeps)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 4, 4, ALLOC_STD);
+
+	uint p1, p2, p3;
+	uint t1, t2, t3;
+
+	proj_add_pkg(&proj, &p1);
+	proj_add_pkg(&proj, &p2);
+	proj_add_pkg(&proj, &p3);
+
+	proj_add_target(&proj, p1, &t1);
+	proj_add_target(&proj, p2, &t2);
+	proj_add_target(&proj, p3, &t3);
+
+	proj_add_dep(&proj, t1, t2);
+	proj_add_dep(&proj, t1, t3);
+	proj_add_dep(&proj, t3, t2);
+
+	arr_t deps = {0};
+	arr_init(&deps, 2, sizeof(uint), ALLOC_STD);
+
+	EXPECT_EQ(proj_get_deps(&proj, t1, &deps), 0);
+
+	EXPECT_EQ(deps.cnt, 2);
+	EXPECT_EQ(*(uint *)arr_get(&deps, 0), t3);
+	EXPECT_EQ(*(uint *)arr_get(&deps, 1), t2);
+
+	arr_free(&deps);
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_get_rdeps)
 {
 	START;
 
 	proj_t proj = {0};
-	proj_init(&proj, 2, 2, ALLOC_STD);
+	proj_init(&proj, 4, 4, ALLOC_STD);
 
 	uint p1, p2, p3, p4;
 	uint t1, t2, t3, t4;
@@ -441,7 +481,7 @@ TEST(proj_print)
 
 	char buf[512] = {0};
 	EXPECT_EQ(proj_print(NULL, DST_BUF(buf)), 0);
-	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 268);
+	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 280);
 	EXPECT_STR(buf,
 		   "[project]\n"
 		   "NAME: \n"
@@ -462,6 +502,7 @@ TEST(proj_print)
 		   "TYPE: UNKNOWN\n"
 		   "CMD: \n"
 		   "OUT: \n"
+		   "DST: \n"
 		   "DEPS: :\n"
 		   "\n"
 		   "[pkg]\n"
@@ -479,6 +520,7 @@ TEST(proj_print)
 		   "TYPE: UNKNOWN\n"
 		   "CMD: \n"
 		   "OUT: \n"
+		   "DST: \n"
 		   "DEPS:\n")
 
 	proj_free(&proj);
@@ -503,6 +545,7 @@ STEST(proj)
 	RUN(proj_get_str);
 	RUN(proj_add_dep);
 	RUN(proj_get_deps);
+	RUN(proj_get_pdeps);
 	RUN(proj_get_rdeps);
 	RUN(proj_get_pkg_build_order);
 	RUN(proj_print);

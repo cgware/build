@@ -40,6 +40,7 @@ TEST(gen_make_proj_build_dir)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -66,7 +67,7 @@ TEST(gen_make_proj_build_dir)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -157,6 +158,7 @@ TEST(gen_make_proj_empty)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -183,7 +185,7 @@ TEST(gen_make_proj_empty)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -274,6 +276,7 @@ TEST(gen_make_proj_name)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -300,7 +303,7 @@ TEST(gen_make_proj_name)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -391,6 +394,7 @@ TEST(gen_make_proj_unknown)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -417,7 +421,7 @@ TEST(gen_make_proj_unknown)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -521,6 +525,7 @@ TEST(gen_make_proj_exe)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -547,7 +552,7 @@ TEST(gen_make_proj_exe)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -683,6 +688,7 @@ TEST(gen_make_proj_lib)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -709,7 +715,7 @@ TEST(gen_make_proj_lib)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -841,6 +847,7 @@ TEST(gen_make_proj_ext)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -867,7 +874,7 @@ TEST(gen_make_proj_ext)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -935,8 +942,7 @@ TEST(gen_make_proj_ext)
 		    "$(DIR_OUT_EXT_FILE): $(DIR_TMP_EXT_PKG)\n"
 		    "\t@mkdir -pv $$(@D)\n"
 		    "\tcd $(DIR_TMP_EXT_PKG_ROOT) && $(TGT_CMD)\n"
-		    "\tcp $(DIR_TMP_EXT_PKG_ROOT_OUT) $(DIR_OUT_EXT_PKG)\n"
-		    "\ttouch $$@\n"
+		    "\tcp $(DIR_TMP_EXT_PKG_ROOT_OUT) $(DIR_OUT_EXT_FILE)\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
@@ -977,6 +983,7 @@ TEST(gen_make_proj_ext)
 		    "TN := pkg\n"
 		    "$(PN)_$(TN)_CMD =\n"
 		    "$(PN)_$(TN)_OUT =\n"
+		    "$(PN)_$(TN)_DST =\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1009,6 +1016,7 @@ TEST(gen_make_proj_test)
 		    "PKG_DLROOT = $($(PN)_DLROOT)\n"
 		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
 		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
 		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
 		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
 		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
@@ -1035,7 +1043,7 @@ TEST(gen_make_proj_test)
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TN)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
 		    "\n"
@@ -1584,6 +1592,7 @@ TEST(gen_make_pkg_ext_unknown)
 		    "TN := pkg\n"
 		    "$(PN)_$(TN)_CMD = cmd\n"
 		    "$(PN)_$(TN)_OUT = out\n"
+		    "$(PN)_$(TN)_DST = dst\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1614,6 +1623,35 @@ TEST(gen_make_pkg_ext_zip)
 		    "TN := pkg\n"
 		    "$(PN)_$(TN)_CMD = cmd\n"
 		    "$(PN)_$(TN)_OUT = out\n"
+		    "$(PN)_$(TN)_DST = dst\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_ext_deps)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_deps(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := lib\n"
+		    "$(eval $(call lib))\n"
+		    "TN := ext\n"
+		    "$(PN)_$(TN)_CMD =\n"
+		    "$(PN)_$(TN)_OUT =\n"
+		    "$(PN)_$(TN)_DST =\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1651,6 +1689,7 @@ STEST(gen_make)
 	RUN(gen_make_pkg_rdepends);
 	RUN(gen_make_pkg_ext_unknown);
 	RUN(gen_make_pkg_ext_zip);
+	RUN(gen_make_pkg_ext_deps);
 
 	SEND;
 }

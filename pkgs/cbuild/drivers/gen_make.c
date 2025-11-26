@@ -100,26 +100,26 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 		make_var_add_val(make, act, MSTR(proj_get_str(proj, target->strs + TARGET_NAME)));
 		make_inc_add_act(make, inc, act);
 
-		if (target->type != TARGET_TYPE_EXT) {
+		strv_t include = proj_get_str(proj, pkg->strs + PKG_INC);
+		if (include.len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_HEADERS"), MAKE_VAR_INST, &act);
 			strv_t include = proj_get_str(proj, pkg->strs + PKG_INC);
 			if (include.len > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_HEADERS"), MAKE_VAR_INST, &act);
-				strv_t include = proj_get_str(proj, pkg->strs + PKG_INC);
-				if (include.len > 0) {
-					make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
-				}
-				make_inc_add_act(make, inc, act);
-
-				make_var(make, STRV("$(PN)_$(TN)_INCLUDE"), MAKE_VAR_INST, &act);
-				if (include.len > 0) {
-					buf->len = 0;
-					str_cat(buf, STRV("$(DIR_PKG)"));
-					str_cat(buf, include);
-					make_var_add_val(make, act, MSTR(STRVS(*buf)));
-				}
-				make_inc_add_act(make, inc, act);
+				make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
 			}
+			make_inc_add_act(make, inc, act);
 
+			make_var(make, STRV("$(PN)_$(TN)_INCLUDE"), MAKE_VAR_INST, &act);
+			if (include.len > 0) {
+				buf->len = 0;
+				str_cat(buf, target->type == TARGET_TYPE_EXT ? STRV("$(DIR_TMP_EXT_PKG_ROOT)") : STRV("$(DIR_PKG)"));
+				str_cat(buf, include);
+				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			}
+			make_inc_add_act(make, inc, act);
+		}
+
+		if (target->type != TARGET_TYPE_EXT) {
 			deps->cnt = 0;
 			proj_get_deps(proj, i, deps);
 
@@ -273,6 +273,15 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 			make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
 			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
 			resolve_var(vars, out, svalues, buf);
+			var_convert(buf, '{', '}', '(', ')');
+			if (buf->len > 0) {
+				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			}
+			make_inc_add_act(make, inc, act);
+
+			make_var(make, STRV("$(PN)_$(TN)_DST"), MAKE_VAR_REF, &act);
+			strv_t dst = proj_get_str(proj, target->strs + TARGET_DST);
+			resolve_var(vars, dst, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
@@ -853,10 +862,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_cmd(&make, MCMD(STRV("cd $(DIR_TMP_EXT_PKG_ROOT) && $(TGT_CMD)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
-		make_cmd(&make, MCMD(STRV("cp $(DIR_TMP_EXT_PKG_ROOT_OUT) $(DIR_OUT_EXT_PKG)")), &act);
-		make_rule_add_act(&make, def_rule_target, act);
-
-		make_cmd(&make, MCMD(STRV("touch $$@")), &act);
+		make_cmd(&make, MCMD(STRV("cp $(DIR_TMP_EXT_PKG_ROOT_OUT) $(DIR_OUT_EXT_FILE)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
 		make_empty(&make, &act);

@@ -38,6 +38,18 @@ static int config_uri(config_t *config, config_pkg_t *pkg, const cfg_t *cfg, cfg
 	return ret;
 }
 
+static int config_inc(config_t *config, config_pkg_t *pkg, const cfg_t *cfg, cfg_var_t var)
+{
+	int ret = 0;
+	strv_t val;
+	if (cfg_get_str(cfg, var, &val)) {
+		log_error("cbuild", "config_cfg", NULL, "invalid include");
+		return 1;
+	}
+	config_set_str(config, pkg->strs + CONFIG_PKG_INC, val);
+	return ret;
+}
+
 static int config_deps(config_t *config, list_node_t pkg, const cfg_t *cfg, cfg_var_t var)
 {
 	int ret = 0;
@@ -87,6 +99,12 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 			}
 
 			ret |= config_uri(config, pkg, cfg, tbl);
+		} else if (strv_eq(key, STRV("include"))) {
+			if (pkg == NULL) {
+				pkg = config_add_pkg(config, dir, &pkg_id);
+			}
+
+			ret |= config_inc(config, pkg, cfg, tbl);
 		} else if (strv_eq(key, STRV("pkg"))) {
 			pkg = config_add_pkg(config, dir, &pkg_id);
 
@@ -96,6 +114,9 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 			}
 			if (cfg_has_var(cfg, tbl, STRV("uri"), &var)) {
 				ret |= config_uri(config, pkg, cfg, var);
+			}
+			if (cfg_has_var(cfg, tbl, STRV("include"), &var)) {
+				ret |= config_inc(config, pkg, cfg, var);
 			}
 		} else if (strv_eq(key, STRV("target"))) {
 			if (pkg == NULL) {
@@ -115,6 +136,11 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 				strv_t out = {0};
 				cfg_get_str(cfg, var, &out);
 				config_set_str(config, target->strs + CONFIG_TARGET_OUT, out);
+			}
+			if (cfg_has_var(cfg, tbl, STRV("dst"), &var)) {
+				strv_t dst = {0};
+				cfg_get_str(cfg, var, &dst);
+				config_set_str(config, target->strs + CONFIG_TARGET_DST, dst);
 			}
 		} else if (strv_eq(key, STRV("ext"))) {
 			void *data;

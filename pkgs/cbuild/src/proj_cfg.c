@@ -68,13 +68,14 @@ int proj_cfg(proj_t *proj, const config_t *config)
 			list_foreach(&config->pkgs, pkgs, cfg_pkg)
 			{
 				strv_t uri = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_URI);
+				strv_t pkg_inc = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_INC);
 
 				if (pkg == NULL || uri.len > 0) {
 					pkg = proj_add_pkg(proj, &pkg_id);
 
 					proj_set_str(proj, pkg->strs + PKG_PATH, path);
 					proj_set_str(proj, pkg->strs + PKG_SRC, src);
-					proj_set_str(proj, pkg->strs + PKG_INC, inc);
+					proj_set_str(proj, pkg->strs + PKG_INC, pkg_inc.len > 0 ? pkg_inc : inc);
 					proj_set_str(proj, pkg->strs + PKG_DRV, drv);
 					proj_set_str(proj, pkg->strs + PKG_TST, test);
 
@@ -102,6 +103,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 					{
 						strv_t cmd = config_get_str(config, cfg_target->strs + CONFIG_TARGET_CMD);
 						strv_t out = config_get_str(config, cfg_target->strs + CONFIG_TARGET_OUT);
+						strv_t dst = config_get_str(config, cfg_target->strs + CONFIG_TARGET_DST);
 
 						if (target == NULL || uri.len > 0) {
 							target = proj_add_target(proj, pkg_id, &target_id);
@@ -111,6 +113,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 
 						proj_set_str(proj, target->strs + TARGET_CMD, cmd);
 						proj_set_str(proj, target->strs + TARGET_OUT, out);
+						proj_set_str(proj, target->strs + TARGET_DST, dst);
 
 						if (uri.len > 0) {
 							target->type = TARGET_TYPE_EXT;

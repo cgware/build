@@ -245,16 +245,17 @@ int proj_add_dep(proj_t *proj, uint target, uint dep)
 
 int proj_get_deps(const proj_t *proj, list_node_t target, arr_t *deps)
 {
-	if (proj == NULL) {
+	if (proj == NULL || deps == NULL) {
 		return 1;
 	}
 
-	if (proj_get_target(proj, target) == NULL) {
+	const target_t *tgt = proj_get_target(proj, target);
+	if (tgt == NULL) {
 		log_error("cbuild", "proj", NULL, "failed to get target dependencies: %d", target);
 		return 1;
 	}
 
-	if (proj->deps.cnt == 0) {
+	if (!tgt->has_deps) {
 		return 0;
 	}
 
@@ -264,43 +265,65 @@ int proj_get_deps(const proj_t *proj, list_node_t target, arr_t *deps)
 		*(uint8_t *)arr_add(&visited, NULL) = 0;
 	}
 
-	arr_t queue = {0};
-	arr_init(&queue, proj->deps.cnt * 2, sizeof(list_node_t), ALLOC_STD);
-	*(list_node_t *)arr_add(&queue, NULL) = target;
+	typedef enum state_e {
+		EXPAND,
+		FINALIZE,
+	} state_t;
 
-	uint front = 0;
+	typedef struct {
+		uint node;
+		state_t state;
+	} stack_item_t;
 
-	while (front < queue.cnt) {
-		list_node_t current = *(list_node_t *)arr_get(&queue, front++);
-		uint8_t *v	    = arr_get(&visited, current);
+	arr_t stack = {0};
+	arr_init(&stack, proj->targets.cnt, sizeof(stack_item_t), ALLOC_STD);
 
-		if (*v) {
+	list_node_t i = tgt->deps;
+	list_node_t *dep;
+	list_foreach(&proj->deps, i, dep)
+	{
+		*(stack_item_t *)arr_add(&stack, NULL) = (stack_item_t){*dep, 0};
+	}
+
+	while (stack.cnt > 0) {
+		stack_item_t *item = arr_get(&stack, stack.cnt - 1);
+		stack.cnt--;
+		uint node = item->node;
+
+		if (*(uint8_t *)arr_get(&visited, node)) {
 			continue;
 		}
-		*v = 1;
 
-		if (current != target) {
-			arr_addu(deps, &current, NULL);
-		}
+		if (item->state == EXPAND) {
+			*(stack_item_t *)arr_add(&stack, NULL) = (stack_item_t){node, FINALIZE};
 
-		const target_t *tgt = list_get(&proj->targets, current);
-		if (!tgt->has_deps) {
-			continue;
-		}
-
-		const list_node_t *dep_target_id;
-		list_node_t i = tgt->deps;
-		list_foreach(&proj->deps, i, dep_target_id)
-		{
-			uint8_t *visited_to = arr_get(&visited, *dep_target_id);
-			if (!*visited_to) {
-				*(uint *)arr_add(&queue, NULL) = *dep_target_id;
+			const target_t *tgt = proj_get_target(proj, node);
+			if (!tgt->has_deps) {
+				continue;
 			}
+
+			list_node_t i = tgt->deps;
+			list_node_t *dep;
+			list_foreach(&proj->deps, i, dep)
+			{
+				*(stack_item_t *)arr_add(&stack, NULL) = (stack_item_t){*dep, EXPAND};
+			}
+		} else {
+			*(uint8_t *)arr_get(&visited, node) = 1;
+			*(uint *)arr_add(deps, NULL)	    = node;
 		}
 	}
 
+	arr_free(&stack);
 	arr_free(&visited);
-	arr_free(&queue);
+
+	uint *data = deps->data;
+	for (uint i = 0; i < deps->cnt / 2; i++) {
+		uint tmp		= data[i];
+		data[i]			= data[deps->cnt - 1 - i];
+		data[deps->cnt - 1 - i] = tmp;
+	}
+
 	return 0;
 }
 
@@ -453,21 +476,25 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 			list_foreach(&proj->targets, j, target)
 			{
 				dst.off += dputf(dst, "\n[target]\n");
-				strv_t target_name = proj_get_str(proj, target->strs + TARGET_NAME);
-				strv_t cmd	   = proj_get_str(proj, target->strs + TARGET_CMD);
-				strv_t out	   = proj_get_str(proj, target->strs + TARGET_OUT);
+				strv_t tgt_name = proj_get_str(proj, target->strs + TARGET_NAME);
+				strv_t cmd	= proj_get_str(proj, target->strs + TARGET_CMD);
+				strv_t out	= proj_get_str(proj, target->strs + TARGET_OUT);
+				strv_t tgt_dst	= proj_get_str(proj, target->strs + TARGET_DST);
 				dst.off += dputf(dst,
 						 "NAME: %.*s\n"
 						 "TYPE: %s\n"
 						 "CMD: %.*s\n"
-						 "OUT: %.*s\n",
-						 target_name.len,
-						 target_name.data,
+						 "OUT: %.*s\n"
+						 "DST: %.*s\n",
+						 tgt_name.len,
+						 tgt_name.data,
 						 target_type_str[target->type],
 						 cmd.len,
 						 cmd.data,
 						 out.len,
-						 out.data);
+						 out.data,
+						 tgt_dst.len,
+						 tgt_dst.data);
 				dst.off += dputf(dst, "DEPS:");
 
 				if (target->has_deps) {

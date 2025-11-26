@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include "file/priv.h"
 
 int main()
 {

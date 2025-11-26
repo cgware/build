@@ -17,6 +17,7 @@ typedef enum target_str_e {
 	TARGET_NAME,
 	TARGET_CMD,
 	TARGET_OUT,
+	TARGET_DST,
 	__TARGET_STR_CNT,
 } target_str_t;
 

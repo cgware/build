@@ -127,7 +127,7 @@ TEST(config_add_target)
 
 	config_t config = {0};
 	log_set_quiet(0, 1);
-	config_init(&config, 0, 0, 0, ALLOC_STD);
+	config_init(&config, 0, 0, 1, ALLOC_STD);
 	log_set_quiet(0, 0);
 
 	uint dir	= 0;
@@ -142,7 +142,12 @@ TEST(config_add_target)
 	EXPECT_EQ(config_add_target(&config, config.pkgs.cnt, NULL), NULL);
 	log_set_quiet(0, 0);
 	mem_oom(1);
+	config.targets.cnt = config.targets.cap;
 	EXPECT_EQ(config_add_target(&config, pkg, NULL), NULL);
+	config.targets.cnt   = 0;
+	config.strs.buf.used = config.strs.buf.size;
+	EXPECT_EQ(config_add_target(&config, pkg, NULL), NULL);
+	config.strs.buf.used = 0;
 	mem_oom(0);
 	EXPECT_NE(config_add_target(&config, pkg, NULL), NULL);
 	EXPECT_NE(config_add_target(&config, pkg, &id), NULL);
@@ -270,7 +275,7 @@ TEST(config_print)
 	EXPECT_EQ(config_print(NULL, DST_NONE()), 0);
 
 	char buf[256] = {0};
-	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 113);
+	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 125);
 	EXPECT_STR(buf,
 		   "[dir]\n"
 		   "NAME: \n"
@@ -284,12 +289,14 @@ TEST(config_print)
 		   "[pkg]\n"
 		   "NAME: \n"
 		   "URI: \n"
+		   "INC: \n"
 		   "DEPS: dep\n"
 		   "\n"
 		   "[target]\n"
 		   "NAME: \n"
 		   "CMD: \n"
 		   "OUT: \n"
+		   "DST: \n"
 		   "\n")
 
 	config_free(&config);

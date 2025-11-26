@@ -8,6 +8,7 @@ typedef enum config_target_str_e {
 	CONFIG_TARGET_NAME,
 	CONFIG_TARGET_CMD,
 	CONFIG_TARGET_OUT,
+	CONFIG_TARGET_DST,
 	__CONFIG_TARGET_STR_CNT,
 } config_target_str_t;
 
@@ -18,6 +19,7 @@ typedef struct config_target_s {
 typedef enum config_pkg_str_e {
 	CONFIG_PKG_NAME,
 	CONFIG_PKG_URI,
+	CONFIG_PKG_INC,
 	__CONFIG_PKG_STR_CNT,
 } config_pkg_str_t;
 
@@ -30,7 +32,7 @@ typedef struct config_pkg_s {
 	uint has_deps : 1;
 } config_pkg_t;
 
-typedef enum config_dit_str_e {
+typedef enum config_dir_str_e {
 	CONFIG_DIR_NAME,
 	CONFIG_DIR_PATH,
 	CONFIG_DIR_SRC,

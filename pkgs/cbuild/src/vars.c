@@ -28,6 +28,7 @@ static const svar_t s_vars[__VARS_CNT] = {
 	// TGT
 	PSVAR(TGT_CMD, "${${PN}_${TN}_CMD}"),
 	PSVAR(TGT_OUT, "${${PN}_${TN}_OUT}"),
+	PSVAR(TGT_DST, "${${PN}_${TN}_DST}"),
 	// DIR_TMP
 	PSVAR(DIR_TMP, "${DIR_PROJ}tmp/"),
 	PSVAR(DIR_TMP_EXT, "${DIR_TMP}ext/"),
@@ -59,7 +60,7 @@ static const svar_t s_vars[__VARS_CNT] = {
 	PSVAR(DIR_OUT_BIN_FILE, "${DIR_OUT_BIN}${PN}"),
 	PSVAR(DIR_OUT_EXT, "${DIR_OUT}ext/"),
 	PSVAR(DIR_OUT_EXT_PKG, "${DIR_OUT_EXT}${PN}/"),
-	PSVAR(DIR_OUT_EXT_FILE, "${DIR_OUT_EXT_PKG}${TN}"),
+	PSVAR(DIR_OUT_EXT_FILE, "${DIR_OUT_EXT_PKG}${TGT_DST}"),
 	PSVAR(DIR_OUT_TST, "${DIR_OUT}test/"),
 	PSVAR(DIR_OUT_TST_FILE, "${DIR_OUT_TST}${PN}"),
 };

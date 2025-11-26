@@ -150,6 +150,10 @@ config_target_t *config_add_target(config_t *config, list_node_t pkg, list_node_
 
 	list_node_t tmp;
 	config_target_t *target = list_node(&config->targets, &tmp);
+	if (target == NULL) {
+		log_error("cbuild", "config", NULL, "failed to add target");
+		return NULL;
+	}
 
 	uint strs_cnt = config->strs.off.cnt;
 
@@ -297,13 +301,17 @@ size_t config_print(const config_t *config, dst_t dst)
 				dst.off += dputf(dst, "[pkg]\n");
 				strv_t pkg_name = config_get_str(config, pkg->strs + CONFIG_PKG_NAME);
 				strv_t uri	= config_get_str(config, pkg->strs + CONFIG_PKG_URI);
+				strv_t inc	= config_get_str(config, pkg->strs + CONFIG_PKG_INC);
 				dst.off += dputf(dst,
 						 "NAME: %.*s\n"
-						 "URI: %.*s\n",
+						 "URI: %.*s\n"
+						 "INC: %.*s\n",
 						 pkg_name.len,
 						 pkg_name.data,
 						 uri.len,
-						 uri.data);
+						 uri.data,
+						 inc.len,
+						 inc.data);
 				dst.off += dputf(dst, "DEPS:");
 				if (pkg->has_deps) {
 					const uint *dep;
@@ -322,19 +330,23 @@ size_t config_print(const config_t *config, dst_t dst)
 					list_foreach(&config->targets, targets, target)
 					{
 						dst.off += dputf(dst, "[target]\n");
-						strv_t target_name = config_get_str(config, target->strs + CONFIG_TARGET_NAME);
-						strv_t cmd	   = config_get_str(config, target->strs + CONFIG_TARGET_CMD);
-						strv_t out	   = config_get_str(config, target->strs + CONFIG_TARGET_OUT);
+						strv_t tgt_name = config_get_str(config, target->strs + CONFIG_TARGET_NAME);
+						strv_t cmd	= config_get_str(config, target->strs + CONFIG_TARGET_CMD);
+						strv_t out	= config_get_str(config, target->strs + CONFIG_TARGET_OUT);
+						strv_t tgt_dst	= config_get_str(config, target->strs + CONFIG_TARGET_DST);
 						dst.off += dputf(dst,
 								 "NAME: %.*s\n"
 								 "CMD: %.*s\n"
-								 "OUT: %.*s\n",
-								 target_name.len,
-								 target_name.data,
+								 "OUT: %.*s\n"
+								 "DST: %.*s\n",
+								 tgt_name.len,
+								 tgt_name.data,
 								 cmd.len,
 								 cmd.data,
 								 out.len,
-								 out.data);
+								 out.data,
+								 tgt_dst.len,
+								 tgt_dst.data);
 						dst.off += dputf(dst, "\n");
 					}
 				}

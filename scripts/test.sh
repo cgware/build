@@ -77,7 +77,7 @@ test() {
 	gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
 	gen 05_extern "lib/cbase.a ../../tmp/report/cov/index.html"
 	gen 06_lib_test "lib/06_lib_test.a test/06_lib_test"
-	gen 07_zip "../../tmp/dl/cbase-main.zip ext/cbase/cbase.a"
+	gen 07_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
 	gen 08_exe_driver "bin/08_exe_driver"
 	gen 09_lib_driver "bin/exe test/lib"
 }

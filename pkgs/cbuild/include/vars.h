@@ -20,6 +20,7 @@ typedef enum var_name_e {
 	// TGT
 	TGT_CMD,
 	TGT_OUT,
+	TGT_DST,
 	// DIR_TMP
 	DIR_TMP,
 	DIR_TMP_EXT,

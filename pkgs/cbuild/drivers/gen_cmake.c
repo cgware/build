@@ -218,6 +218,14 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					fs_write(fs, f, STRV(")\n"));
 				}
 
+				strv_t dst = proj_get_str(proj, target->strs + TARGET_DST);
+				resolve_var(vars, dst, svalues, &buf);
+				if (dst.len > 0) {
+					fs_write(fs, f, STRV("set(${PN}_${TN}_DST "));
+					fs_write(fs, f, STRVS(buf));
+					fs_write(fs, f, STRV(")\n"));
+				}
+
 				break;
 			}
 			default:
@@ -233,6 +241,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				switch (i) {
 				case TGT_CMD:
 				case TGT_OUT:
+				case TGT_DST:
 				case DIR_TMP_EXT_PKG_ROOT_OUT:
 				case DIR_OUT_EXT_FILE:
 					if (uri.len == 0) {
@@ -397,7 +406,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 				fs_write(fs,
 					 f,
-					 STRV("add_custom_target(${PN}_${TN} ALL\n"
+					 STRV("add_custom_target(${PN}_${TN}_build ALL\n"
 					      "\tCOMMAND ${TGT_CMD}\n"
 					      "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
 					      ")\n"));
@@ -405,7 +414,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				fs_write(fs,
 					 f,
 					 STRV("if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
-					      "\tadd_custom_command(TARGET ${PN}_${TN} PRE_BUILD\n"
+					      "\tadd_custom_command(TARGET ${PN}_${TN}_build PRE_BUILD\n"
 					      "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
 					      "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
 					      "\t\tDEPENDS ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
@@ -419,10 +428,30 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 				fs_write(fs,
 					 f,
-					 STRV("add_custom_command(TARGET ${PN}_${TN} POST_BUILD\n"
+					 STRV("add_custom_command(TARGET ${PN}_${TN}_build POST_BUILD\n"
 					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_PKG}\n"
-					      ")\n"));
+					      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_ROOT_OUT} ${DIR_OUT_EXT_FILE}\n"
+					      ")\n"
+					      "\n"
+					      "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+					      "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
+
+				if (target->has_deps) {
+					fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
+					const list_node_t *dep_target_id;
+					list_node_t j = target->deps;
+					list_foreach(&proj->deps, j, dep_target_id)
+					{
+						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+						fs_write(fs, f, STRV(" "));
+						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+						fs_write(fs, f, STRV("_"));
+						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+					}
+					fs_write(fs, f, STRV(")\n"));
+				}
+
 				break;
 			}
 			case TARGET_TYPE_TST: {
@@ -475,10 +504,16 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 			strv_t values[__VARS_CNT] = {0};
 
-			fs_write(fs,
-				 f,
-				 STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"
-				      "\tOUTPUT_NAME \"${PN}\"\n"));
+			fs_write(fs, f, STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"));
+
+			if (target->type == TARGET_TYPE_EXT) {
+				fs_write(fs,
+					 f,
+					 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE}\n"
+					      "\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_ROOT}include\n"));
+			}
+
+			fs_write(fs, f, STRV("\tOUTPUT_NAME \"${PN}\"\n"));
 
 			path_t outdir = {0};
 
@@ -651,7 +686,14 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(WIN32)\n"
+		 STRV("if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		      "\tif(ARCH STREQUAL \"x64\")\n"
+		      "\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		      "\telseif(ARCH STREQUAL \"x86\")\n"
+		      "\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
+		      "\tendif()\n"
+		      "endif()\n"
+		      "if(WIN32)\n"
 		      "\tset(EXT_LIB \".lib\")\n"
 		      "\tset(EXT_EXE \".exe\")\n"
 		      "else()\n"
@@ -692,7 +734,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\t\t-DARCHS=\n"
 		      "\t\t\t-DCONFIGS=${CONFIGS}\n"
 		      "\t\t\t-DARCH=${arch}\n"
-			  "\t\t\t-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}\n"
+		      "\t\t\t-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}\n"
 		      "\t)\n"
 		      "endforeach()\n"
 		      "else()\n"
