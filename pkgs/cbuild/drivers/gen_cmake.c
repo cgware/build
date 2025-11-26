@@ -402,29 +402,17 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					      "\tSHOW_PROGRESS\n"
 					      ")\n"));
 
-				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_EXT_PKG}\")\n"));
+				fs_write(fs,
+					 f,
+					 STRV("file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_DLFILE}\" DESTINATION "
+					      "\"${DIR_TMP_EXT_PKG}\")\n"));
 
 				fs_write(fs,
 					 f,
-					 STRV("add_custom_target(${PN}_${TN}_build ALL\n"
+					 STRV("add_custom_target(${PN}_${TN}_build\n"
 					      "\tCOMMAND ${TGT_CMD}\n"
 					      "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_ROOT}\n"
 					      ")\n"));
-
-				fs_write(fs,
-					 f,
-					 STRV("if(CMAKE_GENERATOR MATCHES \"Visual Studio\")\n"
-					      "\tadd_custom_command(TARGET ${PN}_${TN}_build PRE_BUILD\n"
-					      "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
-					      "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
-					      "\t\tDEPENDS ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
-					      "\t)\n"
-					      "else()\n"
-					      "\texecute_process(\n"
-					      "\t\tCOMMAND ${CMAKE_COMMAND} -E tar xzf ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
-					      "\t\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG}\n"
-					      "\t)\n"
-					      "endif()\n"));
 
 				fs_write(fs,
 					 f,
@@ -504,12 +492,22 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 			strv_t values[__VARS_CNT] = {0};
 
+			if (target->type == TARGET_TYPE_EXT) {
+				fs_write(fs,
+					 f,
+					 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
+					      "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE "
+					      "\"${DIR_OUT_EXT_FILE}\")\n"));
+			}
+
 			fs_write(fs, f, STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"));
 
 			if (target->type == TARGET_TYPE_EXT) {
 				fs_write(fs,
 					 f,
-					 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE}\n"
+					 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
+					      "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
+					      "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"
 					      "\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_ROOT}include\n"));
 			}
 
