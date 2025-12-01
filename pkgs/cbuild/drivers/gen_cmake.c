@@ -600,8 +600,6 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	}
 	fs_write(drv->fs, f, STRV(" LANGUAGES C)\n\n"));
 
-	fs_write(drv->fs, f, STRV("enable_testing()\n\n"));
-
 	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
 	fs_write(drv->fs,
@@ -719,6 +717,11 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\t)\n"
 		      "\tendforeach()\n"
 		      "endforeach()\n"
+		      "add_custom_target(test\n"
+		      "\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${TEST_DIR}\n"
+		      "\tDEPENDS ${TEST_DEPENDS}\n"
+		      "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		      ")\n"
 		      "elseif(_arch_count GREATER 0)\n"
 		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}/host\")\n"
 		      "set(TEST_DEPENDS \"host\")\n"
@@ -735,7 +738,13 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\t\t-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}\n"
 		      "\t)\n"
 		      "endforeach()\n"
+		      "add_custom_target(test\n"
+		      "\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${TEST_DIR}\n"
+		      "\tDEPENDS ${TEST_DEPENDS}\n"
+		      "\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		      ")\n"
 		      "else()\n"
+		      "enable_testing()\n"
 		      "set(TEST_DIR \"${CMAKE_BINARY_DIR}\")\n"
 		      "set(TEST_DEPENDS \"\")\n"));
 
@@ -787,7 +796,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${TEST_DIR}\n"
 		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
 		      "\t\tCOMMAND if exist \"${CMAKE_BINARY_DIR}\\\\*.gcda\" (\n"
-		      "\t\t\tlcov -q -c -o \"${DIR_TMP_COV}lcov.info\" -d \"${DIR_OUT_INT}\"\n"
+		      "\t\t\tlcov -q -c -o \"${DIR_TMP_COV}lcov.info\" -d \"${CMAKE_BINARY_DIR}\" --exclude \"*/test/*\" --exclude \"*/tmp/*\"\n"
 		      "\t\t\tgenhtml -q -o \"${DIR_TMP_COV}\" \"${DIR_TMP_COV}lcov.info\"\n"
 		      "\t\t\t\"if \\\"${OPEN}\\\"==\\\"1\\\" start \\\"\\\" \\\"${DIR_TMP_COV}index.html\\\"\"\n"
 		      "\t\t)\n"
@@ -799,7 +808,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${TEST_DIR}\n"
 		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
 		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${DIR_OUT_INT}\\;\n"
+		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude \\\"*/tmp/*\\\"\\;\n"
 		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
 		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
 		      "\t\tfi\n"
