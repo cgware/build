@@ -109,7 +109,7 @@ jobs:
         run: ./scripts/build.bat -a ${{ matrix.arch }} -c ${{ matrix.conf }}
 
       - name: Upload
-        if: matrix.conf == 'Release'
+        if: matrix.arch != 'host' && matrix.conf == 'Release'
         uses: actions/upload-artifact@v4
         with:
           name: build-windows-${{ matrix.arch }}
