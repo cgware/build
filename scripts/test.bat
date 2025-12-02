@@ -13,12 +13,6 @@ set "configs=Debug Release"
 
 set ret=0
 
-if exist build (
-	rmdir /s /q build
-)
-cmake -S . -B build -G "Visual Studio 17 2022" -DARCH=%arch% -DCMAKE_BUILD_TYPE=%config%
-cmake --build build --config %config%
-
 call :test
 exit /b %ret%
 

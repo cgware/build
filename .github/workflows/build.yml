@@ -1,0 +1,234 @@
+name: Build
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - '.github/**'
+      - '**.md'
+
+  workflow_dispatch:
+
+jobs:
+  Bootstrap-Linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib lcov -y
+
+      - name: Bootstrap
+        run: ./scripts/bootstrap.sh
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-linux
+          path: bin
+
+  Bootstrap-Windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap
+        run: scripts\bootstrap.bat
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-windows
+          path: bin
+
+  Build-Linux:
+    needs: Bootstrap-Linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        gen: [M, C]
+        arch: [host, x64, x86]
+        conf: [Debug, Release]
+        include:
+          - targets: all test
+          - arch: host
+            conf: Debug
+            targets: cov
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: bootstrap-linux
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib lcov -y
+
+      - name: Build
+        run: ./scripts/build.sh -g ${{matrix.gen}} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "${{ matrix.targets }}"" -O 0
+
+      - name: Coverage
+        if: matrix.gen == 'M' && matrix.arch == 'host' && matrix.conf == 'Debug'
+        uses: coverallsapp/github-action@v2
+
+      - name: Upload
+        if: matrix.gen == 'M' && matrix.arch != 'host'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-linux-${{ matrix.arch }}-${{ matrix.conf }}
+          path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
+
+  Build-Windows:
+    needs: Bootstrap-Windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [host, x64, x86]
+        conf: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: bootstrap-windows
+
+      - name: Build
+        run: scripts\build.bat -a ${{ matrix.arch }} -c ${{ matrix.conf }}
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-windows-${{ matrix.arch }}-${{ matrix.conf }}
+          path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
+
+  Test-Linux:
+    needs: Build-Linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+        conf: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: build-linux-${{ matrix.arch }}-${{ matrix.conf }}
+
+      - name: Test
+        run: ./scripts/test.sh ${{ matrix.arch }} ${{ matrix.conf }}
+
+  Test-Windows:
+    needs: Build-Windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+        conf: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: build-windows-${{ matrix.arch }}-${{ matrix.conf }}
+
+      - name: Test
+        run: ./scripts/test.bat ${{ matrix.arch }} ${{ matrix.conf }}
+
+  Release:
+    needs: [Build-Linux, Build-Windows]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download-Linux-x86
+        uses: actions/download-artifact@v5
+        with:
+          name: build-linux-x86-Release
+          path: linux-x86
+
+      - name: Download-Linux-x64
+        uses: actions/download-artifact@v5
+        with:
+          name: build-linux-x64-Release
+          path: linux-x64
+
+      - name: Download-Windows-x86
+        uses: actions/download-artifact@v5
+        with:
+          name: build-windows-x86-Release
+          path: windows-x86
+
+      - name: Download-Windows-x64
+        uses: actions/download-artifact@v5
+        with:
+          name: build-windows-x64-Release
+          path: windows-x64
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Linux x86
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-x86/build
+          asset_name: build-linux-x86
+          asset_content_type: application/binary
+
+      - name: Upload Linux x64
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-x64/build
+          asset_name: build-linux-x64
+          asset_content_type: application/binary
+
+      - name: Upload Windows x86
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: windows-x86/build
+          asset_name: build-windows-x86
+          asset_content_type: application/binary
+
+      - name: Upload Windows x64
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: windows-x64/build
+          asset_name: build-windows-x64
+          asset_content_type: application/binary
