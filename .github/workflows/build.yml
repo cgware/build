@@ -66,6 +66,10 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: bootstrap-linux
+          path: bin
+
+      - name: Debug
+        run: find . ! -path "*.git/*"
 
       - name: Prepare
         run: |
@@ -101,6 +105,7 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: bootstrap-windows
+          path: bin
 
       - name: Build
         run: ./scripts/build.bat -a ${{ matrix.arch }} -c ${{ matrix.conf }}
