@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  Bootstrap-Linux:
+  bootstrap-linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,7 +30,7 @@ jobs:
           name: bootstrap-linux
           path: bin
 
-  Bootstrap-Windows:
+  bootstrap-windows:
     runs-on: windows-latest
 
     steps:
@@ -45,8 +45,8 @@ jobs:
           name: bootstrap-windows
           path: bin
 
-  Build-Linux:
-    needs: Bootstrap-Linux
+  build-linux:
+    needs: bootstrap-linux
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -86,8 +86,8 @@ jobs:
           name: build-linux-${{ matrix.arch }}-${{ matrix.conf }}
           path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
 
-  Build-Windows:
-    needs: Bootstrap-Windows
+  build-windows:
+    needs: bootstrap-windows
     runs-on: windows-latest
     strategy:
       matrix:
@@ -111,8 +111,8 @@ jobs:
           name: build-windows-${{ matrix.arch }}-${{ matrix.conf }}
           path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
 
-  Test-Linux:
-    needs: Build-Linux
+  test-linux:
+    needs: build-linux
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -130,8 +130,8 @@ jobs:
       - name: Test
         run: ./scripts/test.sh ${{ matrix.arch }} ${{ matrix.conf }}
 
-  Test-Windows:
-    needs: Build-Windows
+  test-windows:
+    needs: build-windows
     runs-on: windows-latest
     strategy:
       matrix:
@@ -149,35 +149,11 @@ jobs:
       - name: Test
         run: ./scripts/test.bat ${{ matrix.arch }} ${{ matrix.conf }}
 
-  Release:
-    needs: [Build-Linux, Build-Windows]
+  release:
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download-Linux-x86
-        uses: actions/download-artifact@v5
-        with:
-          name: build-linux-x86-Release
-          path: linux-x86
-
-      - name: Download-Linux-x64
-        uses: actions/download-artifact@v5
-        with:
-          name: build-linux-x64-Release
-          path: linux-x64
-
-      - name: Download-Windows-x86
-        uses: actions/download-artifact@v5
-        with:
-          name: build-windows-x86-Release
-          path: windows-x86
-
-      - name: Download-Windows-x64
-        uses: actions/download-artifact@v5
-        with:
-          name: build-windows-x64-Release
-          path: windows-x64
-
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -189,46 +165,31 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload Linux x86
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: linux-x86/build
-          asset_name: build-linux-x86
-          asset_content_type: application/binary
+      - name: Save Release URL
+        run: echo "release_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
 
-      - name: Upload Linux x64
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: linux-x64/build
-          asset_name: build-linux-x64
-          asset_content_type: application/binary
+  upload:
+    needs: release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        plat: [linux, windows]
+        arch: [x64, x86]
 
-      - name: Upload Windows x86
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Download
+        uses: actions/download-artifact@v5
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: windows-x86/build
-          asset_name: build-windows-x86
-          asset_content_type: application/binary
+          name: build-${{ matrix.plat }}-${{ matrix.arch }}-Release
+          path: ${{ matrix.plat }}-${{ matrix.arch }}
 
-      - name: Upload Windows x64
+      - name: Upload
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: windows-x64/build
-          asset_name: build-windows-x64
+          upload_url: ${{ needs.release.outputs.upload_url }}
+          asset_path: ${{ matrix.plat }}-${{ matrix.arch }}/build
+          asset_name: build- ${{ matrix.plat }}-${{ matrix.arch }}
           asset_content_type: application/binary
