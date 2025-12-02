@@ -131,6 +131,9 @@ jobs:
           name: build-linux-${{ matrix.arch }}-${{ matrix.conf }}
           path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
 
+      - name: Prepare
+        run: chmod +x ./bin/${{ matrix.arch }}-${{ matrix.conf }}/bin/build
+
       - name: Test
         run: ./scripts/test.sh ${{ matrix.arch }} ${{ matrix.conf }}
 

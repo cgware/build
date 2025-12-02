@@ -941,7 +941,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_def_add_act(&make, def, def_test);
 
 		make_act_t def_cov;
-		make_rule(&make, MRULE(MSTR(STRV("cov_$(CONFIG)"))), 1, &def_cov);
+		make_rule(&make, MRULE(MSTR(STRV("cov_$(ARCH)_$(CONFIG)"))), 1, &def_cov);
 		make_rule_add_depend(&make, def_cov, MRULEACT(MSTR(STRV("$(PN)_$(TN)_$(ARCH)_$(CONFIG)")), STRV("/cov")));
 		make_def_add_act(&make, def, def_cov);
 
@@ -966,7 +966,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)_$(ARCH)_$(CONFIG)")), STRV("/cov")));
 		make_act_t def_run_cov;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)_$(ARCH)_$(CONFIG)")), STRV("/cov")), 1, &def_run_cov);
-		make_rule_add_depend(&make, def_run_cov, MRULE(MSTR(STRV("precov_$(CONFIG)"))));
+		make_rule_add_depend(&make, def_run_cov, MRULE(MSTR(STRV("precov_$(ARCH)_$(CONFIG)"))));
 		make_rule_add_depend(&make, def_run_cov, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])));
 		make_cmd(&make, MCMD(STRV("$(DIR_OUT_TST_FILE)")), &act);
 		make_rule_add_act(&make, def_run_cov, act);
@@ -1029,13 +1029,13 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, def);
 
 		make_act_t precov;
-		make_rule(&make, MRULE(MSTR(STRV("precov_$(CONFIG)"))), 1, &precov);
+		make_rule(&make, MRULE(MSTR(STRV("precov_$(ARCH)_$(CONFIG)"))), 1, &precov);
 		make_cmd(&make, MCMD(STRV("@rm -fv $$(GCDA_$(CONFIG))")), &act);
 		make_rule_add_act(&make, precov, act);
 		make_def_add_act(&make, def, precov);
 
 		make_act_t cov;
-		make_rule(&make, MRULE(MSTR(STRV("cov_$(CONFIG)"))), 1, &cov);
+		make_rule(&make, MRULE(MSTR(STRV("cov_$(ARCH)_$(CONFIG)"))), 1, &cov);
 		make_cmd(&make, MCMD(STRV("@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\")), &act);
 		make_rule_add_act(&make, cov, act);
 		make_cmd(&make, MCMD(STRV("\tmkdir -pv $(DIR_TMP_COV); \\")), &act);
@@ -1054,15 +1054,13 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_def_add_act(&make, def, cov);
 
 		make_rule(&make, MRULE(MSTR(STRV("cov"))), 1, &cov);
-		make_rule_add_depend(&make, cov, MRULE(MSTR(STRV("cov_$(CONFIG)"))));
+		make_rule_add_depend(&make, cov, MRULE(MSTR(STRV("cov_$(ARCH)_$(CONFIG)"))));
 		make_def_add_act(&make, def, cov);
 
 		make_empty(&make, &act);
 		make_add_act(&make, root, act);
 
-		make_eval_def(&make, def, &act);
-		make_eval_def_add_arg(&make, act, MSTR(STRV("host")));
-		make_eval_def_add_arg(&make, act, MSTR(STRV("Debug")));
+		make_cmd(&make, MCMD(STRV("$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))")), &act);
 		make_add_act(&make, root, act);
 
 		make_empty(&make, &act);

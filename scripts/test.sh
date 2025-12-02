@@ -32,9 +32,9 @@ run() {
 
 	rm -rf "$bin" "$build" "$tmp"
 
-	if ! out="$(./bin/"$arch"-"$config"/bin/build -p "$dir" -g "$gen" -a "$archs" -c "$configs" -t "all" -O 0 2>&1)"; then
+	if ! out="$(./bin/"$arch"-"$config"/bin/build -p "$dir" -g "$gen" -a "$archs" -c "$configs" -t "all cov" -O 0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
-		echo "build: Failed to generate $name"
+		echo "build: Failed to build $name"
 		echo "$out"
 		ret=1
 		return
