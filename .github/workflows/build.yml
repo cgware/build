@@ -82,7 +82,7 @@ jobs:
         uses: coverallsapp/github-action@v2
 
       - name: Upload
-        if: matrix.gen == 'M' && matrix.arch != 'host'
+        if: matrix.gen == 'M' && matrix.arch != 'host' && matrix.conf == 'Release'
         uses: actions/upload-artifact@v4
         with:
           name: build-linux-${{ matrix.arch }}-${{ matrix.conf }}
@@ -109,9 +109,10 @@ jobs:
         run: ./scripts/build.bat -a ${{ matrix.arch }} -c ${{ matrix.conf }}
 
       - name: Upload
+        if: matrix.conf == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: build-windows-${{ matrix.arch }}-${{ matrix.conf }}
+          name: build-windows-${{ matrix.arch }}
           path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
 
   test-linux:
@@ -120,7 +121,6 @@ jobs:
     strategy:
       matrix:
         arch: [x64, x86]
-        conf: [Debug, Release]
 
     steps:
       - uses: actions/checkout@v4
@@ -128,17 +128,17 @@ jobs:
       - name: Download
         uses: actions/download-artifact@v5
         with:
-          name: build-linux-${{ matrix.arch }}-${{ matrix.conf }}
-          path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
+          name: build-linux-${{ matrix.arch }}
+          path: bin/${{ matrix.arch }}-Release/bin
 
       - name: Prepare
         run: |
-          chmod +x ./bin/${{ matrix.arch }}-${{ matrix.conf }}/bin/build
+          chmod +x ./bin/${{ matrix.arch }}-Release/bin/build
           sudo apt-get update
           sudo apt-get install gcc-multilib lcov -y
 
       - name: Test
-        run: ./scripts/test.sh ${{ matrix.arch }} ${{ matrix.conf }}
+        run: ./scripts/test.sh ${{ matrix.arch }} Release
 
   test-windows:
     needs: build-windows
@@ -146,7 +146,6 @@ jobs:
     strategy:
       matrix:
         arch: [x64, x86]
-        conf: [Debug, Release]
 
     steps:
       - uses: actions/checkout@v4
@@ -154,11 +153,11 @@ jobs:
       - name: Download
         uses: actions/download-artifact@v5
         with:
-          name: build-windows-${{ matrix.arch }}-${{ matrix.conf }}
-          path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
+          name: build-windows-${{ matrix.arch }}
+          path: bin/${{ matrix.arch }}-Release/bin
 
       - name: Test
-        run: ./scripts/test.bat ${{ matrix.arch }} ${{ matrix.conf }}
+        run: ./scripts/test.bat ${{ matrix.arch }} Release
 
   release:
     needs: [test-linux, test-windows]
@@ -191,7 +190,7 @@ jobs:
       - name: Download
         uses: actions/download-artifact@v5
         with:
-          name: build-${{ matrix.plat }}-${{ matrix.arch }}-Release
+          name: build-${{ matrix.plat }}-${{ matrix.arch }}
           path: ${{ matrix.plat }}-${{ matrix.arch }}
 
       - name: Upload
