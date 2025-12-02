@@ -68,11 +68,9 @@ jobs:
           name: bootstrap-linux
           path: bin
 
-      - name: Debug
-        run: find . ! -path "*.git/*"
-
       - name: Prepare
         run: |
+          chmod +x ./bin/bootstrap/build
           sudo apt-get update
           sudo apt-get install gcc-multilib lcov -y
 
