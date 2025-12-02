@@ -132,7 +132,10 @@ jobs:
           path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
 
       - name: Prepare
-        run: chmod +x ./bin/${{ matrix.arch }}-${{ matrix.conf }}/bin/build
+        run: |
+          chmod +x ./bin/${{ matrix.arch }}-${{ matrix.conf }}/bin/build
+          sudo apt-get update
+          sudo apt-get install gcc-multilib lcov -y
 
       - name: Test
         run: ./scripts/test.sh ${{ matrix.arch }} ${{ matrix.conf }}
