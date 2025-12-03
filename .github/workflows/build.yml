@@ -54,8 +54,8 @@ jobs:
     strategy:
       matrix:
         gen: [M, C]
-        arch: [host, x64, x86]
-        conf: [Debug, Release]
+        arch: [x64, x86]
+        conf: [Release]
         include:
           - targets: all test
           - arch: host
@@ -96,8 +96,8 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        arch: [host, x64, x86]
-        conf: [Debug, Release]
+        arch: [x64, x86]
+        conf: [Release]
 
     steps:
       - uses: actions/checkout@v4
@@ -175,20 +175,31 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Delete release
-        run: gh release delete ${{ github.ref_name }} -y || true
+        run: gh release delete latest -y || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete tag
+        run: gh api -X DELETE /repos/${{ github.repository }}/git/refs/tags/latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create tag
+        if: false
+        run: |
+          sha=$(git rev-parse HEAD)
+          gh api \
+            -X POST \
+            repos/${{ github.repository }}/git/refs \
+            -f ref="refs/tags/latest" \
+            -f sha="$sha"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+        run: gh release create latest --generate-notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
-          draft: false
-          prerelease: false
 
   upload:
     needs: release
@@ -204,6 +215,8 @@ jobs:
             bin: build.exe
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download
         uses: actions/download-artifact@v5
         with:
@@ -211,12 +224,6 @@ jobs:
           path: ${{ matrix.plat }}-${{ matrix.arch }}
 
       - name: Upload
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+        run: gh release upload latest ${{ matrix.plat }}-${{ matrix.arch }}/${{ matrix.bin }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.release.outputs.upload_url }}
-          asset_path: ${{ matrix.plat }}-${{ matrix.arch }}/${{ matrix.bin }}
-          asset_name: build-${{ matrix.plat }}-${{ matrix.arch }}
-          asset_content_type: application/binary
