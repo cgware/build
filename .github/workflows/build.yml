@@ -207,9 +207,9 @@ jobs:
         arch: [x64, x86]
         include:
           - plat: linux
-            bin: build
+            ext: ""
           - plat: windows
-            bin: build.exe
+            ext: ".exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -221,6 +221,6 @@ jobs:
           path: build-${{ matrix.plat }}-${{ matrix.arch }}
 
       - name: Upload
-        run: gh release upload latest build-${{ matrix.plat }}-${{ matrix.arch }}
+        run: gh release upload latest build-${{ matrix.plat }}-${{ matrix.arch }}/build${{ matrix.ext }} --name build-${{ matrix.plat }}-${{ matrix.arch }}${{ matrix.ext }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
