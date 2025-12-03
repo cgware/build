@@ -110,10 +110,10 @@ TEST(gen_make_proj_build_dir)
 		    "all:\n"
 		    "\n"
 		    "define _cov\n"
-		    "precov_$(CONFIG):\n"
+		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
-		    "cov_$(CONFIG):\n"
+		    "cov_$(ARCH)_$(CONFIG):\n"
 		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
@@ -121,11 +121,11 @@ TEST(gen_make_proj_build_dir)
 		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
 		    "\tfi\n"
 		    "\n"
-		    "cov: cov_$(CONFIG)\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    "$(eval $(call _cov,host,Debug))\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		    "\n",
 		    tmp.len);
 
@@ -228,10 +228,10 @@ TEST(gen_make_proj_empty)
 		    "all:\n"
 		    "\n"
 		    "define _cov\n"
-		    "precov_$(CONFIG):\n"
+		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
-		    "cov_$(CONFIG):\n"
+		    "cov_$(ARCH)_$(CONFIG):\n"
 		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
@@ -239,11 +239,11 @@ TEST(gen_make_proj_empty)
 		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
 		    "\tfi\n"
 		    "\n"
-		    "cov: cov_$(CONFIG)\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    "$(eval $(call _cov,host,Debug))\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		    "\n",
 		    tmp.len);
 
@@ -346,10 +346,10 @@ TEST(gen_make_proj_name)
 		    "all:\n"
 		    "\n"
 		    "define _cov\n"
-		    "precov_$(CONFIG):\n"
+		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
-		    "cov_$(CONFIG):\n"
+		    "cov_$(ARCH)_$(CONFIG):\n"
 		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
@@ -357,11 +357,11 @@ TEST(gen_make_proj_name)
 		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
 		    "\tfi\n"
 		    "\n"
-		    "cov: cov_$(CONFIG)\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    "$(eval $(call _cov,host,Debug))\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		    "\n",
 		    tmp.len);
 
@@ -467,10 +467,10 @@ TEST(gen_make_proj_unknown)
 		    "endef\n"
 		    "\n"
 		    "define _cov\n"
-		    "precov_$(CONFIG):\n"
+		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
-		    "cov_$(CONFIG):\n"
+		    "cov_$(ARCH)_$(CONFIG):\n"
 		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
@@ -478,11 +478,11 @@ TEST(gen_make_proj_unknown)
 		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
 		    "\tfi\n"
 		    "\n"
-		    "cov: cov_$(CONFIG)\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    "$(eval $(call _cov,host,Debug))\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
@@ -508,7 +508,7 @@ TEST(gen_make_proj_exe)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_exe(&com, STRV("M")), 0);
 
-	char buf[4096] = {0};
+	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -631,26 +631,29 @@ TEST(gen_make_proj_exe)
 		"endef\n"
 		"\n"
 		"define _cov\n"
-		"precov_$(CONFIG):\n"
+		"precov_$(ARCH)_$(CONFIG):\n"
 		"\t@rm -fv $$(GCDA_$(CONFIG))\n"
-		"\n"
-		"cov_$(CONFIG):\n"
-		"\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
-		"\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
-		"\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
-		"\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
-		"\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
-		"\tfi\n"
-		"\n"
-		"cov: cov_$(CONFIG)\n"
-		"\n"
-		"endef\n"
-		"\n"
-		"$(eval $(call _cov,host,Debug))\n"
-		"\n"
-		"include $(DIR_BUILD)pkg.mk\n"
 		"\n",
-		tmp.len);
+		3694);
+
+	EXPECT_STRN(tmp.data + 3694,
+		    "cov_$(ARCH)_$(CONFIG):\n"
+		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
+		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
+		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
+		    "\tfi\n"
+		    "\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
+		    "\n"
+		    "include $(DIR_BUILD)pkg.mk\n"
+		    "\n",
+		    tmp.len - 3694);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -793,10 +796,10 @@ TEST(gen_make_proj_lib)
 		"endef\n"
 		"\n"
 		"define _cov\n"
-		"precov_$(CONFIG):\n"
+		"precov_$(ARCH)_$(CONFIG):\n"
 		"\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		"\n"
-		"cov_$(CONFIG):\n"
+		"cov_$(ARCH)_$(CONFIG):\n"
 		"\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
 		"\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		"\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
@@ -804,11 +807,11 @@ TEST(gen_make_proj_lib)
 		"\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
 		"\tfi\n"
 		"\n"
-		"cov: cov_$(CONFIG)\n"
+		"cov: cov_$(ARCH)_$(CONFIG)\n"
 		"\n"
 		"endef\n"
 		"\n"
-		"$(eval $(call _cov,host,Debug))\n"
+		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		"\n"
 		"include $(DIR_BUILD)pkg.mk\n"
 		"\n",
@@ -956,10 +959,10 @@ TEST(gen_make_proj_ext)
 		    "endef\n"
 		    "\n"
 		    "define _cov\n"
-		    "precov_$(CONFIG):\n"
+		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
-		    "cov_$(CONFIG):\n"
+		    "cov_$(ARCH)_$(CONFIG):\n"
 		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
@@ -967,11 +970,11 @@ TEST(gen_make_proj_ext)
 		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
 		    "\tfi\n"
 		    "\n"
-		    "cov: cov_$(CONFIG)\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
-		    "$(eval $(call _cov,host,Debug))\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
@@ -1100,7 +1103,7 @@ TEST(gen_make_proj_test)
 		"\n"
 		"test: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/test\n"
 		"\n"
-		"cov_$(CONFIG): $(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov\n"
+		"cov_$(ARCH)_$(CONFIG): $(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov\n"
 		"\n"
 		".PHONY: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile $(PN)_$(TN)_$(ARCH)_$(CONFIG)/test $(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov\n"
 		"\n"
@@ -1109,7 +1112,7 @@ TEST(gen_make_proj_test)
 		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/test: $(DIR_OUT_TST_FILE)\n"
 		"\t$(DIR_OUT_TST_FILE)\n"
 		"\n"
-		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov: precov_$(CONFIG) $(DIR_OUT_TST_FILE)\n"
+		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov: precov_$(ARCH)_$(CONFIG) $(DIR_OUT_TST_FILE)\n"
 		"\t$(DIR_OUT_TST_FILE)\n"
 		"\n"
 		"$(DIR_OUT_TST_FILE): $($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) $(PKGTST_OBJ) "
@@ -1132,29 +1135,29 @@ TEST(gen_make_proj_test)
 		"endef\n"
 		"\n"
 		"define _cov\n"
-		"precov_$(CONFIG):\n"
+		"precov_$(ARCH)_$(CONFIG):\n"
 		"\t@rm -fv $$(GCDA_$(CONFIG))\n"
-		"\n"
-		"cov_$(CONFIG):\n"
-		"\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
-		"\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
-		"\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
-		"\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
-		"\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
-		"\tfi\n"
-		"\n"
-		"cov: cov_$(CONFIG)\n"
-		"\n"
-		"endef\n"
 		"\n",
-		4095);
+		3779);
 
-	EXPECT_STRN(tmp.data + 4095,
-		    "$(eval $(call _cov,host,Debug))\n"
+	EXPECT_STRN(tmp.data + 3779,
+		    "cov_$(ARCH)_$(CONFIG):\n"
+		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
+		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
+		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
+		    "\tfi\n"
+		    "\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 4095);
+		    tmp.len - 3779);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,

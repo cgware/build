@@ -75,8 +75,6 @@ static int cmake_build(proc_t *proc, strv_t build_path, strv_t target, strv_t co
 				start	   = i + 1;
 				if (strv_eq(tgt, STRV("all")) && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
 					tgt = STRV("all_build");
-				} else if (strv_eq(tgt, STRV("cov")) && !strv_eq(config, STRV("Debug"))) {
-					continue;
 				}
 				str_cat(buf, tgt);
 				str_cat(buf, STRV(" "));
@@ -148,7 +146,7 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 				for (size_t i = 0; i <= arch.len; i++) {
 					if (i == arch.len || arch.data[i] == ' ') {
 						str_cat(buf, STRVN(&arch.data[start], i - start));
-						if(i < arch.len) {
+						if (i < arch.len) {
 							str_cat(buf, STRV(";"));
 						}
 						start = i + 1;
@@ -172,7 +170,6 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 			}
 
 			str_cat(buf, open ? STRV(" -DOPEN=1") : STRV(" -DOPEN=0"));
-			str_cat(buf, STRV(" -DCMAKE_BUILD_TYPE=Debug"));
 			log_info("build", "main", NULL, "creating generator: %.*s", buf->len, buf->data);
 			int ret = proc_cmd(proc, STRVS(*buf));
 			if (ret) {
@@ -183,7 +180,8 @@ static int compile(proc_t *proc, gen_driver_t *gen_driver, strv_t build_rel, str
 		size_t start = 0;
 		for (size_t i = 0; i <= conf.len; i++) {
 			if (i == conf.len || conf.data[i] == ' ') {
-				int ret = cmake_build(proc, STRVS(genbuild_path), target, STRVN(&conf.data[start], i - start), gen_gen, buf);
+				int ret =
+					cmake_build(proc, STRVS(genbuild_path), target, STRVN(&conf.data[start], i - start), gen_gen, buf);
 				if (ret) {
 					return ret;
 				}
