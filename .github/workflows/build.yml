@@ -1,0 +1,218 @@
+name: build
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - '.github/**'
+      - '**.md'
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare
+        run: |
+          sudo apt-get update
+          sudo apt-get install gcc-multilib lcov -y
+
+      - name: Bootstrap
+        run: ./scripts/bootstrap.sh
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-linux
+          path: bin
+
+  bootstrap-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bootstrap
+        run: ./scripts/bootstrap.bat
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-windows
+          path: bin
+
+  build-linux:
+    needs: bootstrap-linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        gen: [M, C]
+        arch: [host, x64, x86]
+        conf: [Debug, Release]
+        include:
+          - test: "test"
+          - gen: M
+            arch: host
+            conf: Debug
+            test: cov
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: bootstrap-linux
+          path: bin
+
+      - name: Prepare
+        run: |
+          chmod +x ./bin/bootstrap/build
+          sudo apt-get update
+          sudo apt-get install gcc-multilib lcov -y
+
+      - name: Build
+        run: ./scripts/build.sh -g ${{ matrix.gen }} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all ${{ matrix.test }}" -O 0
+
+      - name: Coverage
+        if: matrix.test == 'cov'
+        uses: coverallsapp/github-action@v2
+
+      - name: Upload
+        if: matrix.gen == 'M' && matrix.arch != 'host' && matrix.conf == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-linux-${{ matrix.arch }}
+          path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
+
+  build-windows:
+    needs: bootstrap-windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [host, x64, x86]
+        conf: [Debug, Release]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: bootstrap-windows
+          path: bin
+
+      - name: Build
+        run: ./scripts/build.bat -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all test" -O 0
+
+      - name: Upload
+        if: matrix.arch != 'host' && matrix.conf == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-windows-${{ matrix.arch }}
+          path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
+
+  test-linux:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: build-linux-${{ matrix.arch }}
+          path: bin/${{ matrix.arch }}-Release/bin
+
+      - name: Prepare
+        run: |
+          chmod +x ./bin/${{ matrix.arch }}-Release/bin/build
+          sudo apt-get update
+          sudo apt-get install gcc-multilib lcov -y
+
+      - name: Test
+        run: ./scripts/test.sh ${{ matrix.arch }} Release
+
+  test-windows:
+    needs: build-windows
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64, x86]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: build-windows-${{ matrix.arch }}
+          path: bin/${{ matrix.arch }}-Release/bin
+
+      - name: Test
+        run: ./scripts/test.bat ${{ matrix.arch }} Release
+
+  release:
+    needs: [test-linux, test-windows]
+    runs-on: ubuntu-latest
+
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Delete release
+        run: gh release delete latest -y || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete tag
+        run: gh api -X DELETE /repos/${{ github.repository }}/git/refs/tags/latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        run: gh release create latest --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  upload:
+    needs: release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        plat: [linux, windows]
+        arch: [x64, x86]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download
+        uses: actions/download-artifact@v5
+        with:
+          name: build-${{ matrix.plat }}-${{ matrix.arch }}
+          path: build-${{ matrix.plat }}-${{ matrix.arch }}
+
+      - name: Fix permissions
+        if: matrix.plat == 'linux'
+        run: chmod +x build-${{ matrix.plat }}-${{ matrix.arch }}/build
+
+      - name: Zip
+        run: zip -r build-${{ matrix.plat }}-${{ matrix.arch }}.zip build-${{ matrix.plat }}-${{ matrix.arch }}/
+
+      - name: Upload
+        run: gh release upload latest build-${{ matrix.plat }}-${{ matrix.arch }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

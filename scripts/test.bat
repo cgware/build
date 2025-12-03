@@ -13,12 +13,6 @@ set "configs=Debug Release"
 
 set ret=0
 
-if exist build (
-	rmdir /s /q build
-)
-cmake -S . -B build -G "Visual Studio 17 2022" -DARCH=%arch% -DCMAKE_BUILD_TYPE=%config%
-cmake --build build --config %config%
-
 call :test
 exit /b %ret%
 
@@ -37,10 +31,10 @@ exit /b %ret%
 		mkdir "%tmp%"
 	)
 
-	bin\build\%arch%-%config%\build.exe -p %dir% -g C -a "%archs%" -c "%configs%" -t "all cov" -O 0 >%tmp%\out.txt 2>&1
+	bin\%arch%-%config%\bin\build.exe -p %dir% -g C -a "%archs%" -c "%configs%" -t "all cov" -O 0 >%tmp%\out.txt 2>&1
 	if errorlevel 1 (
 		echo FAIL
-		echo build: Failed to generate cmake
+		echo build: Failed to build cmake
 		type %tmp%\out.txt
 		set ret=1
 		exit /b 0
