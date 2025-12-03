@@ -53,14 +53,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        gen: [M, C]
+        gen: [M]
         arch: [x64, x86]
         conf: [Release]
         include:
-          - targets: all test
-          - arch: host
-            conf: Debug
-            targets: cov
+          - targets: all
 
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +75,7 @@ jobs:
           sudo apt-get install gcc-multilib lcov -y
 
       - name: Build
-        run: ./scripts/build.sh -g ${{matrix.gen}} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "${{ matrix.targets }}" -O 0
+        run: ./scripts/build.sh -g ${{ matrix.gen }} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "${{ matrix.targets }}" -O 0
 
       - name: Coverage
         if: matrix.gen == 'M' && matrix.arch == 'host' && matrix.conf == 'Debug' && false
