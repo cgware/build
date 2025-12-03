@@ -9,6 +9,9 @@ on:
 
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   bootstrap-linux:
     runs-on: ubuntu-latest
@@ -176,7 +179,7 @@ jobs:
           prerelease: false
 
       - name: Save Release URL
-        run: echo "release_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
+        run: echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
 
   upload:
     needs: release
