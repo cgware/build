@@ -75,6 +75,8 @@ static int cmake_build(proc_t *proc, strv_t build_path, strv_t target, strv_t co
 				start	   = i + 1;
 				if (strv_eq(tgt, STRV("all")) && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
 					tgt = STRV("all_build");
+				} else if (strv_eq(tgt, STRV("test")) && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
+					tgt = STRV("run_tests");
 				}
 				str_cat(buf, tgt);
 				str_cat(buf, STRV(" "));

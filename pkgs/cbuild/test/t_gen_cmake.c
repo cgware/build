@@ -23,7 +23,7 @@ TEST(gen_cmake_proj_build_dir)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_build_dir(&com, STRV("C")), 0);
 
-	char buf[4096] = {0};
+	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("tmp/build/CMakeLists.txt"), 0, &tmp);
@@ -100,6 +100,17 @@ TEST(gen_cmake_proj_build_dir)
 		"\t\tendif()\n"
 		"\tendforeach()\n"
 		"endforeach()\n"
+		"if(CMAKE_C_COMPILER_ID MATCHES \"MSVC\")\n"
+		"\tadd_custom_target(run_tests\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"else()\n"
+		"\tadd_custom_target(test\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"endif()\n"
 		"if(WIN32)\n"
 		"\tadd_custom_target(cov\n"
 		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
@@ -139,22 +150,25 @@ TEST(gen_cmake_proj_build_dir)
 		"\t\t)\n"
 		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
 		"\t)\n"
-		"else()\n"
-		"\tadd_custom_target(cov\n"
-		"\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
-		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		"\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		"\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
-		"\\\"*/tmp/*\\\"\\;\n"
-		"\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		"\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		"\t\tfi\n"
-		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		"\t)\n"
-		"endif()\n"
-		"endif()\n"
-		"\n",
-		tmp.len);
+		"else()\n",
+		3654);
+
+	EXPECT_STRN(tmp.data + 3654,
+		    "\tadd_custom_target(cov\n"
+		    "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
+		    "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		    "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
+		    "\\\"*/tmp/*\\\"\\;\n"
+		    "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		    "\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		    "\t\tfi\n"
+		    "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "endif()\n"
+		    "\n",
+		    tmp.len - 3654);
 
 	t_gen_free(&com);
 
@@ -168,7 +182,7 @@ TEST(gen_cmake_proj_empty)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_empty(&com, STRV("C")), 0);
 
-	char buf[4096] = {0};
+	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
@@ -245,6 +259,17 @@ TEST(gen_cmake_proj_empty)
 		"\t\tendif()\n"
 		"\tendforeach()\n"
 		"endforeach()\n"
+		"if(CMAKE_C_COMPILER_ID MATCHES \"MSVC\")\n"
+		"\tadd_custom_target(run_tests\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"else()\n"
+		"\tadd_custom_target(test\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"endif()\n"
 		"if(WIN32)\n"
 		"\tadd_custom_target(cov\n"
 		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
@@ -284,22 +309,25 @@ TEST(gen_cmake_proj_empty)
 		"\t\t)\n"
 		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
 		"\t)\n"
-		"else()\n"
-		"\tadd_custom_target(cov\n"
-		"\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
-		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		"\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		"\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
-		"\\\"*/tmp/*\\\"\\;\n"
-		"\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		"\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		"\t\tfi\n"
-		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		"\t)\n"
-		"endif()\n"
-		"endif()\n"
-		"\n",
-		tmp.len);
+		"else()\n",
+		3648);
+
+	EXPECT_STRN(tmp.data + 3648,
+		    "\tadd_custom_target(cov\n"
+		    "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
+		    "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		    "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
+		    "\\\"*/tmp/*\\\"\\;\n"
+		    "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		    "\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		    "\t\tfi\n"
+		    "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "endif()\n"
+		    "\n",
+		    tmp.len - 3648);
 
 	t_gen_free(&com);
 
@@ -313,7 +341,7 @@ TEST(gen_cmake_proj_name)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_name(&com, STRV("C")), 0);
 
-	char buf[4096] = {0};
+	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
@@ -390,6 +418,17 @@ TEST(gen_cmake_proj_name)
 		"\t\tendif()\n"
 		"\tendforeach()\n"
 		"endforeach()\n"
+		"if(CMAKE_C_COMPILER_ID MATCHES \"MSVC\")\n"
+		"\tadd_custom_target(run_tests\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"else()\n"
+		"\tadd_custom_target(test\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"endif()\n"
 		"if(WIN32)\n"
 		"\tadd_custom_target(cov\n"
 		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
@@ -429,22 +468,25 @@ TEST(gen_cmake_proj_name)
 		"\t\t)\n"
 		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
 		"\t)\n"
-		"else()\n"
-		"\tadd_custom_target(cov\n"
-		"\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
-		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		"\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		"\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
-		"\\\"*/tmp/*\\\"\\;\n"
-		"\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		"\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		"\t\tfi\n"
-		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		"\t)\n"
-		"endif()\n"
-		"endif()\n"
-		"\n",
-		tmp.len);
+		"else()\n",
+		3652);
+
+	EXPECT_STRN(tmp.data + 3652,
+		    "\tadd_custom_target(cov\n"
+		    "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
+		    "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		    "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
+		    "\\\"*/tmp/*\\\"\\;\n"
+		    "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		    "\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		    "\t\tfi\n"
+		    "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "endif()\n"
+		    "\n",
+		    tmp.len - 3652);
 
 	t_gen_free(&com);
 
@@ -458,7 +500,7 @@ TEST(gen_cmake_proj_unknown)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_unknown(&com, STRV("C")), 0);
 
-	char buf[4096] = {0};
+	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
@@ -535,6 +577,17 @@ TEST(gen_cmake_proj_unknown)
 		"\t\tendif()\n"
 		"\tendforeach()\n"
 		"endforeach()\n"
+		"if(CMAKE_C_COMPILER_ID MATCHES \"MSVC\")\n"
+		"\tadd_custom_target(run_tests\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"else()\n"
+		"\tadd_custom_target(test\n"
+		"\t\tDEPENDS ${tests}\n"
+		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		")\n"
+		"endif()\n"
 		"if(WIN32)\n"
 		"\tadd_custom_target(cov\n"
 		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
@@ -575,22 +628,25 @@ TEST(gen_cmake_proj_unknown)
 		"\t\t)\n"
 		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
 		"\t)\n"
-		"else()\n"
-		"\tadd_custom_target(cov\n"
-		"\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
-		"\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		"\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		"\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
-		"\\\"*/tmp/*\\\"\\;\n"
-		"\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		"\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		"\t\tfi\n"
-		"\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		"\t)\n"
-		"endif()\n"
-		"endif()\n"
-		"\n",
-		tmp.len);
+		"else()\n",
+		3667);
+
+	EXPECT_STRN(tmp.data + 3667,
+		    "\tadd_custom_target(cov\n"
+		    "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
+		    "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		    "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		    "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
+		    "\\\"*/tmp/*\\\"\\;\n"
+		    "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		    "\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		    "\t\tfi\n"
+		    "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "endif()\n"
+		    "\n",
+		    tmp.len - 3667);
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
