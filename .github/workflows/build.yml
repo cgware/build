@@ -215,6 +215,10 @@ jobs:
           name: build-${{ matrix.plat }}-${{ matrix.arch }}
           path: build-${{ matrix.plat }}-${{ matrix.arch }}
 
+      - name: Fix permissions
+        if: matrix.plat = 'linux'
+        run: chmod +x build-${{ matrix.plat }}-${{ matrix.arch }}/build
+
       - name: Zip
         run: zip -r build-${{ matrix.plat }}-${{ matrix.arch }}.zip build-${{ matrix.plat }}-${{ matrix.arch }}/
 
