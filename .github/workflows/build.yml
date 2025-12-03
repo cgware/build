@@ -88,7 +88,7 @@ jobs:
         if: matrix.gen == 'M' && matrix.arch != 'host' && matrix.conf == 'Release'
         uses: actions/upload-artifact@v4
         with:
-          name: build-linux-${{ matrix.arch }}-${{ matrix.conf }}
+          name: build-linux-${{ matrix.arch }}
           path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
 
   build-windows:
