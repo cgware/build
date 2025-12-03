@@ -81,7 +81,7 @@ jobs:
         run: ./scripts/build.sh -g ${{matrix.gen}} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "${{ matrix.targets }}" -O 0
 
       - name: Coverage
-        if: matrix.gen == 'M' && matrix.arch == 'host' && matrix.conf == 'Debug'
+        if: matrix.gen == 'M' && matrix.arch == 'host' && matrix.conf == 'Debug' && false
         uses: coverallsapp/github-action@v2
 
       - name: Upload
@@ -172,6 +172,8 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Delete release
         run: gh release delete ${{ github.ref_name }} -y || true
         env:
