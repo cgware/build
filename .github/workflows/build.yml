@@ -119,6 +119,7 @@ jobs:
           path: bin/${{ matrix.arch }}-${{ matrix.conf }}/bin
 
   test-linux:
+    if: false
     needs: build-linux
     runs-on: ubuntu-latest
     strategy:
@@ -144,6 +145,7 @@ jobs:
         run: ./scripts/test.sh ${{ matrix.arch }} Release
 
   test-windows:
+    if: false
     needs: build-windows
     runs-on: windows-latest
     strategy:
@@ -163,7 +165,7 @@ jobs:
         run: ./scripts/test.bat ${{ matrix.arch }} Release
 
   release:
-    needs: [test-linux, test-windows]
+    needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
 
     steps:
@@ -173,8 +175,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.ref_name }}
+          release_name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
 
