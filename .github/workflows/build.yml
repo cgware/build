@@ -205,11 +205,6 @@ jobs:
       matrix:
         plat: [linux, windows]
         arch: [x64, x86]
-        include:
-          - plat: linux
-            ext: ""
-          - plat: windows
-            ext: ".exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -220,7 +215,10 @@ jobs:
           name: build-${{ matrix.plat }}-${{ matrix.arch }}
           path: build-${{ matrix.plat }}-${{ matrix.arch }}
 
+      - name: Zip
+        run: zip -r build-${{ matrix.plat }}-${{ matrix.arch }}.zip build-${{ matrix.plat }}-${{ matrix.arch }}/
+
       - name: Upload
-        run: gh release upload latest build-${{ matrix.plat }}-${{ matrix.arch }}/build${{ matrix.ext }} --name build-${{ matrix.plat }}-${{ matrix.arch }}${{ matrix.ext }}
+        run: gh release upload latest build-${{ matrix.plat }}-${{ matrix.arch }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
