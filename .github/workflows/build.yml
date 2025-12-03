@@ -218,9 +218,9 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: build-${{ matrix.plat }}-${{ matrix.arch }}
-          path: ${{ matrix.plat }}-${{ matrix.arch }}
+          path: build-${{ matrix.plat }}-${{ matrix.arch }}
 
       - name: Upload
-        run: gh release upload latest ${{ matrix.plat }}-${{ matrix.arch }}/${{ matrix.bin }}
+        run: gh release upload latest build-${{ matrix.plat }}-${{ matrix.arch }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
