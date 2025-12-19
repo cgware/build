@@ -32,12 +32,12 @@ int proj_cfg(proj_t *proj, const config_t *config)
 		if (src.len > 0 || inc.len > 0 || test.len > 0) {
 			pkg = proj_add_pkg(proj, &pkg_id);
 
-			proj_set_str(proj, pkg->strs + PKG_NAME, name);
-			proj_set_str(proj, pkg->strs + PKG_PATH, path);
-			proj_set_str(proj, pkg->strs + PKG_SRC, src);
-			proj_set_str(proj, pkg->strs + PKG_INC, inc);
-			proj_set_str(proj, pkg->strs + PKG_DRV, drv);
-			proj_set_str(proj, pkg->strs + PKG_TST, test);
+			proj_set_str(proj, pkg->strs + PKG_STR_NAME, name);
+			proj_set_str(proj, pkg->strs + PKG_STR_PATH, path);
+			proj_set_str(proj, pkg->strs + PKG_STR_SRC, src);
+			proj_set_str(proj, pkg->strs + PKG_STR_INC, inc);
+			proj_set_str(proj, pkg->strs + PKG_STR_DRV, drv);
+			proj_set_str(proj, pkg->strs + PKG_STR_TST, test);
 
 			if (src.len > 0 || inc.len > 0) {
 				list_node_t target_id;
@@ -67,24 +67,26 @@ int proj_cfg(proj_t *proj, const config_t *config)
 			list_node_t pkgs = dir->pkgs;
 			list_foreach(&config->pkgs, pkgs, cfg_pkg)
 			{
-				strv_t uri = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_URI);
+				strv_t uri     = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_URI);
 				strv_t pkg_inc = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_INC);
 
 				if (pkg == NULL || uri.len > 0) {
 					pkg = proj_add_pkg(proj, &pkg_id);
 
-					proj_set_str(proj, pkg->strs + PKG_PATH, path);
-					proj_set_str(proj, pkg->strs + PKG_SRC, src);
-					proj_set_str(proj, pkg->strs + PKG_INC, pkg_inc.len > 0 ? pkg_inc : inc);
-					proj_set_str(proj, pkg->strs + PKG_DRV, drv);
-					proj_set_str(proj, pkg->strs + PKG_TST, test);
+					proj_set_str(proj, pkg->strs + PKG_STR_PATH, path);
+					proj_set_str(proj, pkg->strs + PKG_STR_SRC, src);
+					proj_set_str(proj, pkg->strs + PKG_STR_INC, pkg_inc.len > 0 ? pkg_inc : inc);
+					proj_set_str(proj, pkg->strs + PKG_STR_DRV, drv);
+					proj_set_str(proj, pkg->strs + PKG_STR_TST, test);
 
 					if (uri.len > 0) {
 						ret |= proj_set_uri(proj, pkg, uri);
-						name = proj_get_str(proj, pkg->strs + PKG_NAME);
-					} else {
-						proj_set_str(proj, pkg->strs + PKG_NAME, name);
+						strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_STR_URI_NAME);
+						if (name.len == 0) {
+							name = uri_name;
+						}
 					}
+					proj_set_str(proj, pkg->strs + PKG_STR_NAME, name);
 				}
 
 				cfg_pkg->pkg = pkg_id;

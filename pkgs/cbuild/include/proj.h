@@ -39,6 +39,7 @@ typedef enum pkg_uri_proto_e {
 typedef enum pkg_uri_ext_e {
 	PKG_URI_EXT_UNKNOWN,
 	PKG_URI_EXT_ZIP,
+	PKG_URI_EXT_TAR_GZ,
 	__PKG_URI_EXT_MAX,
 } pkg_uri_ext_t;
 
@@ -48,15 +49,17 @@ typedef struct pkg_uri_s {
 } pkg_uri_t;
 
 typedef enum pkg_str_e {
-	PKG_NAME,
-	PKG_PATH,
-	PKG_SRC,
-	PKG_INC,
-	PKG_DRV,
-	PKG_TST,
-	PKG_URI_STR,
-	PKG_URI_NAME,
-	PKG_URI_DIR,
+	PKG_STR_NAME,
+	PKG_STR_PATH,
+	PKG_STR_SRC,
+	PKG_STR_INC,
+	PKG_STR_DRV,
+	PKG_STR_TST,
+	PKG_STR_URI,
+	PKG_STR_URI_FILE,
+	PKG_STR_URI_NAME,
+	PKG_STR_URI_VER,
+	PKG_STR_URI_DIR,
 	__PKG_STR_CNT,
 } pkg_str_t;
 

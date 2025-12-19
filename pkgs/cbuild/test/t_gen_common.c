@@ -120,7 +120,7 @@ int t_gen_proj_ext(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &exe);
-	proj_set_str(&com->proj, pkg->strs + PKG_URI_STR, STRV("url"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI, STRV("url"));
 	pkg->uri.proto = PKG_URI_PROTO_HTTPS;
 	pkg->uri.ext   = PKG_URI_EXT_ZIP;
 
@@ -169,8 +169,8 @@ int t_gen_pkg_exe(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &exe);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_SRC, STRV("src"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
 	target = proj_add_target(&com->proj, exe, &exe);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_EXE;
@@ -195,9 +195,9 @@ int t_gen_pkg_exe_drv(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &exe);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_SRC, STRV("src"));
-	proj_set_str(&com->proj, pkg->strs + PKG_DRV, STRV("drivers"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_DRV, STRV("drivers"));
 	target = proj_add_target(&com->proj, exe, &exe);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_EXE;
@@ -222,10 +222,10 @@ int t_gen_pkg_exe_drv_inc(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &exe);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_SRC, STRV("src"));
-	proj_set_str(&com->proj, pkg->strs + PKG_INC, STRV("include"));
-	proj_set_str(&com->proj, pkg->strs + PKG_DRV, STRV("drivers"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_INC, STRV("include"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_DRV, STRV("drivers"));
 	target = proj_add_target(&com->proj, exe, &exe);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_EXE;
@@ -250,8 +250,8 @@ int t_gen_pkg_lib(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &lib);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_SRC, STRV("src"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
 	target = proj_add_target(&com->proj, lib, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_LIB;
@@ -276,9 +276,9 @@ int t_gen_pkg_lib_inc(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &lib);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_SRC, STRV("src"));
-	proj_set_str(&com->proj, pkg->strs + PKG_INC, STRV("include"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_INC, STRV("include"));
 	target = proj_add_target(&com->proj, lib, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_LIB;
@@ -303,9 +303,9 @@ int t_gen_pkg_lib_drv(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &lib);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_SRC, STRV("src"));
-	proj_set_str(&com->proj, pkg->strs + PKG_DRV, STRV("drivers"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_DRV, STRV("drivers"));
 	target = proj_add_target(&com->proj, lib, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_LIB;
@@ -330,10 +330,10 @@ int t_gen_pkg_lib_drv_inc(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &lib);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_SRC, STRV("src"));
-	proj_set_str(&com->proj, pkg->strs + PKG_INC, STRV("include"));
-	proj_set_str(&com->proj, pkg->strs + PKG_DRV, STRV("drivers"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_INC, STRV("include"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_DRV, STRV("drivers"));
 	target = proj_add_target(&com->proj, lib, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_LIB;
@@ -358,12 +358,12 @@ int t_gen_pkg_lib_test(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &pkg_id);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("lib"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib"));
 	target = proj_add_target(&com->proj, pkg_id, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib"));
 	target->type = TARGET_TYPE_LIB;
 
-	proj_set_str(&com->proj, pkg->strs + PKG_TST, STRV("test"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_TST, STRV("test"));
 	target = proj_add_target(&com->proj, pkg_id, &tst);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("test"));
 	target->type = TARGET_TYPE_TST;
@@ -390,14 +390,14 @@ int t_gen_pkg_lib_test_inc(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &pkg_id);
-	proj_set_str(&com->proj, pkg->strs + PKG_INC, STRV("include"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_INC, STRV("include"));
 
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("lib"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib"));
 	target = proj_add_target(&com->proj, pkg_id, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib"));
 	target->type = TARGET_TYPE_LIB;
 
-	proj_set_str(&com->proj, pkg->strs + PKG_TST, STRV("test"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_TST, STRV("test"));
 	target = proj_add_target(&com->proj, pkg_id, &tst);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("test"));
 	target->type = TARGET_TYPE_TST;
@@ -424,14 +424,14 @@ int t_gen_pkg_lib_test_drv(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &pkg_id);
-	proj_set_str(&com->proj, pkg->strs + PKG_DRV, STRV("drivers"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_DRV, STRV("drivers"));
 
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("lib"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib"));
 	target = proj_add_target(&com->proj, pkg_id, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib"));
 	target->type = TARGET_TYPE_LIB;
 
-	proj_set_str(&com->proj, pkg->strs + PKG_TST, STRV("test"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_TST, STRV("test"));
 	target = proj_add_target(&com->proj, pkg_id, &tst);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("test"));
 	target->type = TARGET_TYPE_TST;
@@ -458,15 +458,15 @@ int t_gen_pkg_lib_test_drv_inc(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &pkg_id);
-	proj_set_str(&com->proj, pkg->strs + PKG_INC, STRV("include"));
-	proj_set_str(&com->proj, pkg->strs + PKG_DRV, STRV("drivers"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_INC, STRV("include"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_DRV, STRV("drivers"));
 
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("lib"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib"));
 	target = proj_add_target(&com->proj, pkg_id, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib"));
 	target->type = TARGET_TYPE_LIB;
 
-	proj_set_str(&com->proj, pkg->strs + PKG_TST, STRV("test"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_TST, STRV("test"));
 	target = proj_add_target(&com->proj, pkg_id, &tst);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("test"));
 	target->type = TARGET_TYPE_TST;
@@ -494,15 +494,15 @@ int t_gen_pkg_multi(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &a);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("a"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("a"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("a"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("a"));
 	target = proj_add_target(&com->proj, a, &a);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("a"));
 	target->type = TARGET_TYPE_EXE;
 
 	pkg = proj_add_pkg(&com->proj, &b);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("b"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("b"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("b"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("b"));
 	target = proj_add_target(&com->proj, b, &b);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("b"));
 	target->type = TARGET_TYPE_EXE;
@@ -528,15 +528,15 @@ int t_gen_pkg_depends(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &lib);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("lib"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("lib"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("lib"));
 	target = proj_add_target(&com->proj, lib, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib"));
 	target->type = TARGET_TYPE_LIB;
 
 	pkg = proj_add_pkg(&com->proj, &exe);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("exe"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("exe"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("exe"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("exe"));
 	target = proj_add_target(&com->proj, exe, &exe);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("exe"));
 	target->type = TARGET_TYPE_EXE;
@@ -564,29 +564,29 @@ int t_gen_pkg_rdepends(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &base);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("base"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("base"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("base"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("base"));
 	target = proj_add_target(&com->proj, base, &base);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("base"));
 	target->type = TARGET_TYPE_LIB;
 
 	pkg = proj_add_pkg(&com->proj, &lib1);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("lib1"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("lib1"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib1"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("lib1"));
 	target = proj_add_target(&com->proj, lib1, &lib1);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib1"));
 	target->type = TARGET_TYPE_LIB;
 
 	pkg = proj_add_pkg(&com->proj, &lib2);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("lib2"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("lib2"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib2"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("lib2"));
 	target = proj_add_target(&com->proj, lib2, &lib2);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib2"));
 	target->type = TARGET_TYPE_LIB;
 
 	pkg = proj_add_pkg(&com->proj, &exe);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("exe"));
-	proj_set_str(&com->proj, pkg->strs + PKG_PATH, STRV("exe"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("exe"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_PATH, STRV("exe"));
 	target = proj_add_target(&com->proj, exe, &exe);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("exe"));
 	target->type = TARGET_TYPE_EXE;
@@ -614,10 +614,10 @@ int t_gen_pkg_ext_unknown(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &ext);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_URI_STR, STRV("url"));
-	proj_set_str(&com->proj, pkg->strs + PKG_URI_DIR, STRV("main"));
-	proj_set_str(&com->proj, pkg->strs + PKG_URI_NAME, STRV("archive"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI, STRV("url"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_FILE, STRV("file"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_DIR, STRV("main"));
 	pkg->uri.proto = PKG_URI_PROTO_HTTPS;
 	pkg->uri.ext   = PKG_URI_EXT_UNKNOWN;
 
@@ -646,12 +646,44 @@ int t_gen_pkg_ext_zip(t_gen_common_t *com, strv_t p)
 	target_t *target;
 
 	pkg = proj_add_pkg(&com->proj, &ext);
-	proj_set_str(&com->proj, pkg->strs + PKG_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, pkg->strs + PKG_URI_STR, STRV("url"));
-	proj_set_str(&com->proj, pkg->strs + PKG_URI_DIR, STRV("main"));
-	proj_set_str(&com->proj, pkg->strs + PKG_URI_NAME, STRV("archive"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI, STRV("url"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_FILE, STRV("file"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_DIR, STRV("main"));
 	pkg->uri.proto = PKG_URI_PROTO_HTTPS;
 	pkg->uri.ext   = PKG_URI_EXT_ZIP;
+
+	target = proj_add_target(&com->proj, ext, NULL);
+	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, target->strs + TARGET_CMD, STRV("cmd"));
+	proj_set_str(&com->proj, target->strs + TARGET_OUT, STRV("out"));
+	proj_set_str(&com->proj, target->strs + TARGET_DST, STRV("dst"));
+	target->type = TARGET_TYPE_EXT;
+
+	gen_driver_t drv = *gen_find_param(p);
+
+	drv.fs = &com->fs;
+
+	return drv.gen(&drv, &com->proj, STRV_NULL, STRV_NULL);
+}
+
+int t_gen_pkg_ext_tar_gz(t_gen_common_t *com, strv_t p)
+{
+	fs_init(&com->fs, 2, 1, ALLOC_STD);
+
+	proj_init(&com->proj, 1, 1, ALLOC_STD);
+
+	uint ext;
+	pkg_t *pkg;
+	target_t *target;
+
+	pkg = proj_add_pkg(&com->proj, &ext);
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI, STRV("url"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_FILE, STRV("file"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_DIR, STRV("main"));
+	pkg->uri.proto = PKG_URI_PROTO_HTTPS;
+	pkg->uri.ext   = PKG_URI_EXT_TAR_GZ;
 
 	target = proj_add_target(&com->proj, ext, NULL);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));

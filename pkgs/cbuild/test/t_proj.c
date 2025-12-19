@@ -226,7 +226,7 @@ TEST(proj_set_str)
 	log_set_quiet(0, 1);
 	EXPECT_EQ(proj_set_str(&proj, proj.strs.off.cnt, STRV_NULL), 1);
 	log_set_quiet(0, 0);
-	EXPECT_EQ(proj_set_str(&proj, pkg->strs + PKG_NAME, STRV_NULL), 0);
+	EXPECT_EQ(proj_set_str(&proj, pkg->strs + PKG_STR_NAME, STRV_NULL), 0);
 
 	proj_free(&proj);
 
@@ -246,7 +246,7 @@ TEST(proj_get_str)
 	log_set_quiet(0, 1);
 	EXPECT_EQ(proj_get_str(&proj, proj.strs.off.cnt).data, NULL);
 	log_set_quiet(0, 0);
-	strv_t name = proj_get_str(&proj, pkg->strs + PKG_NAME);
+	strv_t name = proj_get_str(&proj, pkg->strs + PKG_STR_NAME);
 	EXPECT_STRN(name.data, "", name.len);
 
 	proj_free(&proj);
@@ -481,7 +481,7 @@ TEST(proj_print)
 
 	char buf[512] = {0};
 	EXPECT_EQ(proj_print(NULL, DST_BUF(buf)), 0);
-	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 280);
+	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 324);
 	EXPECT_STR(buf,
 		   "[project]\n"
 		   "NAME: \n"
@@ -493,8 +493,10 @@ TEST(proj_print)
 		   "SRC: \n"
 		   "INC: \n"
 		   "TEST: \n"
-		   "URI_STR: \n"
+		   "URI_PATH: \n"
+		   "URI_FILE: \n"
 		   "URI_NAME: \n"
+		   "URI_VER: \n"
 		   "URI_DIR: \n"
 		   "\n"
 		   "[target]\n"
@@ -511,8 +513,10 @@ TEST(proj_print)
 		   "SRC: \n"
 		   "INC: \n"
 		   "TEST: \n"
-		   "URI_STR: \n"
+		   "URI_PATH: \n"
+		   "URI_FILE: \n"
 		   "URI_NAME: \n"
+		   "URI_VER: \n"
 		   "URI_DIR: \n"
 		   "\n"
 		   "[target]\n"

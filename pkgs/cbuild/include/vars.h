@@ -15,8 +15,8 @@ typedef enum var_name_e {
 	// PKG
 	PKG_DIR,
 	PKG_URI,
-	PKG_DLFILE,
-	PKG_DLROOT,
+	PKG_URI_FILE,
+	PKG_URI_ROOT,
 	// TGT
 	TGT_CMD,
 	TGT_OUT,
@@ -52,6 +52,7 @@ typedef enum var_name_e {
 	DIR_OUT_BIN_FILE,
 	DIR_OUT_EXT,
 	DIR_OUT_EXT_PKG,
+	ABS_DIR_OUT_EXT_PKG,
 	DIR_OUT_EXT_FILE,
 	DIR_OUT_TST,
 	DIR_OUT_TST_FILE,

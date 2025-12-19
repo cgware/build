@@ -60,7 +60,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 	path_t tmp  = {0};
 
 	path_init_s(&path, build_dir, '/');
-	get_path(proj, pkg->strs + PKG_PATH, &tmp);
+	get_path(proj, pkg->strs + PKG_STR_PATH, &tmp);
 	if (tmp.len > 0) {
 		fs_mkpath(fs, STRVS(path), STRVS(tmp));
 	}
@@ -75,7 +75,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 	str_t buf = strz(64);
 
 	fs_write(fs, f, STRV("set(PN \""));
-	strv_t name = proj_get_str(proj, pkg->strs + PKG_NAME);
+	strv_t name = proj_get_str(proj, pkg->strs + PKG_STR_NAME);
 	if (name.len > 0) {
 		fs_write(fs, f, name);
 	}
@@ -87,48 +87,40 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 	}
 	fs_write(fs, f, STRV("\")\n"));
 
-	strv_t uri = proj_get_str(proj, pkg->strs + PKG_URI_STR);
+	strv_t uri = proj_get_str(proj, pkg->strs + PKG_STR_URI);
 	if (uri.len > 0) {
 		fs_write(fs, f, STRV("set(${PN}_URI "));
 		fs_write(fs, f, uri);
 		fs_write(fs, f, STRV(")\n"));
 
-		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_URI_NAME);
-		fs_write(fs, f, STRV("set(${PN}_DLFILE "));
-		if (uri_file.len > 0) {
-			fs_write(fs, f, uri_file);
-			switch (pkg->uri.ext) {
-			case PKG_URI_EXT_ZIP:
-				fs_write(fs, f, STRV(".zip"));
-				break;
-			default:
-				break;
-			}
-		}
+		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_STR_URI_FILE);
+		fs_write(fs, f, STRV("set(${PN}_URI_FILE "));
+		fs_write(fs, f, uri_file);
 		fs_write(fs, f, STRV(")\n"));
 
-		get_path(proj, pkg->strs + PKG_URI_DIR, &tmp);
+		get_path(proj, pkg->strs + PKG_STR_URI_DIR, &tmp);
 		if (tmp.len > 0) {
-			fs_write(fs, f, STRV("set(${PN}_DLROOT "));
+			fs_write(fs, f, STRV("set(${PN}_URI_ROOT "));
 			fs_write(fs, f, STRVS(tmp));
 			fs_write(fs, f, STRV(")\n"));
 		}
 	}
 
-	strv_t inc = proj_get_str(proj, pkg->strs + PKG_INC);
-	strv_t drv = proj_get_str(proj, pkg->strs + PKG_DRV);
-	strv_t tst = proj_get_str(proj, pkg->strs + PKG_TST);
+	strv_t inc = proj_get_str(proj, pkg->strs + PKG_STR_INC);
+	strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+	strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
 
 	for (int i = 0; i < __VARS_CNT; i++) {
 		strv_t val = vars->vars[i].val;
 		switch (i) {
 		case PKG_URI:
-		case PKG_DLFILE:
-		case PKG_DLROOT:
+		case PKG_URI_FILE:
+		case PKG_URI_ROOT:
 		case DIR_TMP_EXT_PKG:
 		case DIR_TMP_EXT_PKG_ROOT:
 		case DIR_TMP_DL_PKG:
 		case DIR_OUT_EXT_PKG:
+		case ABS_DIR_OUT_EXT_PKG:
 			if (uri.len == 0) {
 				continue;
 			}
@@ -281,7 +273,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					path_init_s(&tmp, tst, '/');
 					break;
 				default:
-					path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_SRC), '/');
+					path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_STR_SRC), '/');
 					break;
 				}
 
@@ -312,10 +304,10 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 						{
 							const target_t *dtarget = list_get(&proj->targets, *dep);
 							const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-							strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_DRV);
+							strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
 							if (ddriver.len > 0) {
 								fs_write(fs, f, STRV(" ${"));
-								fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+								fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 								fs_write(fs, f, STRV("_DRIVERS}"));
 							}
 						}
@@ -352,7 +344,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 						fs_write(fs, f, STRV("_"));
 						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 					}
@@ -386,7 +378,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 						fs_write(fs, f, STRV("_"));
 						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 					}
@@ -398,13 +390,13 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"));
 				fs_write(fs,
 					 f,
-					 STRV("file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_DLFILE}\n"
+					 STRV("file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_URI_FILE}\n"
 					      "\tSHOW_PROGRESS\n"
 					      ")\n"));
 
 				fs_write(fs,
 					 f,
-					 STRV("file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_DLFILE}\" DESTINATION "
+					 STRV("file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_URI_FILE}\" DESTINATION "
 					      "\"${DIR_TMP_EXT_PKG}\")\n"));
 
 				fs_write(fs,
@@ -433,7 +425,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 						fs_write(fs, f, STRV("_"));
 						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 					}
@@ -468,7 +460,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
 						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_NAME));
+						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 						fs_write(fs, f, STRV("_"));
 						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
 					}
@@ -791,7 +783,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			const pkg_t *pkg = proj_get_pkg(proj, *id);
 
 			path_t dir = {0};
-			get_path(proj, pkg->strs + PKG_PATH, &dir);
+			get_path(proj, pkg->strs + PKG_STR_PATH, &dir);
 			path_push_s(&dir, STRV("pkg.cmake"), '/');
 			fs_write(drv->fs, f, STRV("include("));
 			fs_write(drv->fs, f, STRVS(dir));
