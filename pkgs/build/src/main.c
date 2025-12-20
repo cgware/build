@@ -73,10 +73,12 @@ static int cmake_build(proc_t *proc, strv_t build_path, strv_t target, strv_t co
 			if (i == target.len || target.data[i] == ' ') {
 				strv_t tgt = STRVN(&target.data[start], i - start);
 				start	   = i + 1;
-				if (strv_eq(tgt, STRV("all")) && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
-					tgt = STRV("all_build");
-				} else if (strv_eq(tgt, STRV("test")) && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
-					tgt = STRV("run_tests");
+				if (strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
+					if (strv_eq(tgt, STRV("all"))) {
+						tgt = STRV("all_build");
+					} else if (strv_eq(tgt, STRV("test"))) {
+						tgt = STRV("run_tests");
+					}
 				}
 				str_cat(buf, tgt);
 				str_cat(buf, STRV(" "));
@@ -208,9 +210,9 @@ int main(int argc, const char **argv)
 
 	strv_t proj_dir	 = STRV(".");
 	strv_t build_dir = STRV("tmp/build");
-	strv_t target	 = STRV("");
-	strv_t arch	 = STRV("");
-	strv_t conf	 = STRV("");
+	strv_t target	 = STRV("all");
+	strv_t arch	 = STRV("host");
+	strv_t conf	 = STRV("Debug");
 	strv_t gen_build = STRV("build");
 #ifdef C_WIN
 	strv_t gen_gen = STRV("Visual Studio 17 2022");

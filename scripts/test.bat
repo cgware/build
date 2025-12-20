@@ -31,7 +31,7 @@ exit /b %ret%
 		mkdir "%tmp%"
 	)
 
-	bin\%arch%-%config%\bin\build.exe -p %dir% -g C -a "%archs%" -c "%configs%" -t "all cov" -O 0 >%tmp%\out.txt 2>&1
+	bin\%arch%-%config%\bin\build.exe -p %dir% -g C -a "%archs%" -c "%configs%" -t "all test" -O 0 >%tmp%\out.txt 2>&1
 	if errorlevel 1 (
 		echo FAIL
 		echo build: Failed to build cmake

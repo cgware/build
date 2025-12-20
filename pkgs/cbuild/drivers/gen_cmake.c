@@ -607,6 +607,73 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
 		      "\n"));
 
+	fs_write(drv->fs,
+		 f,
+		 STRV("if(WIN32)\n"
+		      "\tset(EXT_LIB \".lib\")\n"
+		      "\tset(EXT_EXE \".exe\")\n"
+		      "else()\n"
+		      "\tset(EXT_LIB \".a\")\n"
+		      "\tset(EXT_EXE \"\")\n"
+		      "endif()\n"
+		      "\n"
+		      "enable_testing()\n"
+		      "\n"
+		      "if(_arch_count GREATER 0 AND _config_count GREATER 0)\n"
+		      "\tinclude(ExternalProject)\n"
+		      "\tforeach(arch IN LISTS ARCHS)\n"
+		      "\t\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
+		      "\t\t\tif(arch STREQUAL \"x86\")\n"
+		      "\t\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
+		      "\t\t\telseif(arch STREQUAL \"host\")\n"
+		      "\t\t\t\tset(ARGS_ARCH \"\")\n"
+		      "\t\t\telse()\n"
+		      "\t\t\t\tset(ARGS_ARCH \"-A ${arch}\")\n"
+		      "\t\t\tendif()\n"
+		      "\t\telse()\n"
+		      "\t\t\tset(ARGS_ARCH \"-DARCH=${arch}\")\n"
+		      "\t\tendif()\n"
+		      "\n"
+		      "\t\tif(is_multi_config)\n"
+		      "\t\t\tExternalProject_Add(${arch}\n"
+		      "\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		      "\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}\n"
+		      "\t\t\t\tINSTALL_COMMAND \"\"\n"
+		      "\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH}\n"
+		      "\t\t\t)\n"
+		      "\t\t\tadd_test(\n"
+		      "\t\t\t\tNAME ${arch}\n"
+		      "\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch} -C $<CONFIG>\n"
+		      "\t\t\t)\n"
+		      "\t\telse()\n"
+		      "\t\t\tforeach(conf IN LISTS CONFIGS)\n"
+		      "\t\t\t\tExternalProject_Add(${arch}-${conf}\n"
+		      "\t\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		      "\t\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
+		      "\t\t\t\t\tINSTALL_COMMAND \"\"\n"
+		      "\t\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH} -DCMAKE_BUILD_TYPE=${conf}\n"
+		      "\t\t\t\t)\n"
+		      "\t\t\t\tadd_test(\n"
+		      "\t\t\t\t\tNAME ${arch}-${conf}\n"
+		      "\t\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${conf} -C ${conf}\n"
+		      "\t\t\t\t)\n"
+		      "\t\t\tendforeach()\n"
+		      "\t\tendif()\n"
+		      "\tendforeach()\n"
+		      "else()\n"
+		      "\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
+		      "\t\tif(CMAKE_GENERATOR_PLATFORM STREQUAL \"Win32\")\n"
+		      "\t\t\tset(ARCH \"x86\")\n"
+		      "\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
+		      "\t\telseif(CMAKE_GENERATOR_PLATFORM STREQUAL \"\")\n"
+		      "\t\t\tset(ARCH \"host\")\n"
+		      "\t\telse()\n"
+		      "\t\t\tset(ARCH \"${CMAKE_GENERATOR_PLATFORM}\")\n"
+		      "\t\t\tset(ARGS_ARCH \"-A ${CMAKE_GENERATOR_PLATFORM}\")\n"
+		      "\t\tendif()\n"
+		      "\tendif()\n"
+		      "\n"));
+
 	path_t tmp = {0};
 	str_t buf  = strz(16);
 
@@ -618,9 +685,15 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		strv_t val = vars.vars[i].val;
 		switch (i) {
 		case CONFIG: {
-			fs_write(drv->fs, f, STRV("set("));
+			fs_write(drv->fs, f, STRV("\tif(is_multi_config)\n"));
+			fs_write(drv->fs, f, STRV("\t\tset("));
+			fs_write(drv->fs, f, vars.vars[i].name);
+			fs_write(drv->fs, f, STRV(" \"$<CONFIG>\")\n"));
+			fs_write(drv->fs, f, STRV("\telse()\n"));
+			fs_write(drv->fs, f, STRV("\t\tset("));
 			fs_write(drv->fs, f, vars.vars[i].name);
 			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
+			fs_write(drv->fs, f, STRV("\tendif()\n"));
 			continue;
 		}
 		case DIR_PROJ: {
@@ -662,7 +735,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 		var_convert(&buf, '{', '}', '{', '}');
 
-		fs_write(drv->fs, f, STRV("set("));
+		fs_write(drv->fs, f, STRV("\tset("));
 		fs_write(drv->fs, f, vars.vars[i].name);
 		fs_write(drv->fs, f, STRV(" \""));
 		if (buf.len > 0) {
@@ -673,94 +746,14 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(WIN32)\n"
-		      "\tset(EXT_LIB \".lib\")\n"
-		      "\tset(EXT_EXE \".exe\")\n"
-		      "else()\n"
-		      "\tset(EXT_LIB \".a\")\n"
-		      "\tset(EXT_EXE \"\")\n"
-		      "endif()\n"
-		      "\n"
-		      "enable_testing()\n"
-		      "\n"
-		      "if(_arch_count GREATER 1)\n"
-		      "	include(ExternalProject)\n"
-		      "	foreach(arch IN LISTS ARCHS)\n"
-		      "		if (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
-		      "			if(arch STREQUAL \"x86\")\n"
-		      "				set(ARGS_ARCH \"-A Win32\")\n"
-		      "			elseif(arch STREQUAL \"host\")\n"
-		      "				set(ARGS_ARCH \"\")\n"
-		      "			else()\n"
-		      "				set(ARGS_ARCH \"-A ${arch}\")\n"
-		      "			endif()\n"
-		      "		else()\n"
-		      "			set(ARGS_ARCH \"-DARCH=${arch}\")\n"
-		      "		endif()\n"
-		      "\n"
-		      "		if(_config_count GREATER 1 AND NOT is_multi_config)\n"
-		      "			foreach(conf IN LISTS CONFIGS)\n"
-		      "				ExternalProject_Add(${arch}-${conf}\n"
-		      "					SOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
-		      "					BINARY_DIR ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
-		      "					INSTALL_COMMAND \"\"\n"
-		      "					CMAKE_ARGS ${ARGS_ARCH} -DCMAKE_BUILD_TYPE=${conf}\n"
-		      "				)\n"
-		      "				add_test(\n"
-		      "					NAME ${arch}-${conf}\n"
-		      "					COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${conf} -C "
-		      "${conf}\n"
-		      "				)\n"
-		      "			endforeach()\n"
-		      "		else()\n"
-		      "			ExternalProject_Add(${arch}\n"
-		      "				SOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
-		      "				BINARY_DIR ${CMAKE_BINARY_DIR}/${arch}\n"
-		      "				INSTALL_COMMAND \"\"\n"
-		      "				CMAKE_ARGS ${ARGS_ARCH}\n"
-		      "			)\n"
-		      "			add_test(\n"
-		      "				NAME ${arch}\n"
-		      "				COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch} -C $<CONFIG>\n"
-		      "			)\n"
-		      "		endif()\n"
-		      "	endforeach()\n"
-		      "elseif(_config_count GREATER 1 AND NOT is_multi_config)\n"
-		      "	include(ExternalProject)\n"
-		      "	foreach(conf IN LISTS CONFIGS)\n"
-		      "		ExternalProject_Add(${conf}\n"
-		      "			SOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
-		      "			BINARY_DIR ${CMAKE_BINARY_DIR}/${conf}\n"
-		      "			INSTALL_COMMAND \"\"\n"
-		      "			CMAKE_ARGS -DCMAKE_BUILD_TYPE=${conf}\n"
-		      "		)\n"
-		      "		add_test(\n"
-		      "			NAME ${conf}\n"
-		      "			COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${conf} -C ${conf}\n"
-		      "		)\n"
-		      "	endforeach()\n"
-		      "else()\n"
-		      "	if (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
-		      "		if(CMAKE_GENERATOR_PLATFORM STREQUAL \"Win32\")\n"
-		      "			set(ARCH \"x86\")\n"
-		      "		elseif(CMAKE_GENERATOR_PLATFORM STREQUAL \"\")\n"
-		      "			set(ARCH \"host\")\n"
-		      "		else()\n"
-		      "			set(ARCH \"${CMAKE_GENERATOR_PLATFORM}\")\n"
-		      "		endif()\n"
-		      "	else()\n"
-		      "		if(NOT DEFINED ARCH)\n"
-		      "			set(ARCH \"host\")\n"
-		      "		endif()\n"
-		      "	endif()\n"
-		      "\n"
-		      "	if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		      "		if(ARCH STREQUAL \"x64\")\n"
-		      "			set(CMAKE_C_FLAGS \"-m64\")\n"
-		      "		elseif(ARCH STREQUAL \"x86\")\n"
-		      "			set(CMAKE_C_FLAGS \"-m32\")\n"
-		      "		endif()\n"
-		      "	endif()\n"
+		 STRV("\n"
+		      "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		      "\t\tif(ARCH STREQUAL \"x64\")\n"
+		      "\t\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		      "\t\telseif(ARCH STREQUAL \"x86\")\n"
+		      "\t\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
+		      "\t\tendif()\n"
+		      "\tendif()\n"
 		      "\n"));
 
 	int types[__TARGET_TYPE_MAX] = {0};
