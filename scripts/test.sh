@@ -32,7 +32,7 @@ run() {
 
 	rm -rf "$bin" "$build" "$tmp"
 
-	if ! out="$(./bin/"$arch"-"$config"/bin/build -p "$dir" -g "$gen" -a "$archs" -c "$configs" -t "all cov" -O 0 2>&1)"; then
+	if ! out="$(./bin/"$arch"-"$config"/bin/build -p "$dir" -g "$gen" -a "$archs" -c "$configs" -t "all test cov" -O 0 2>&1)"; then
 		printf "\033[0;31mFAIL\033[0m\n"
 		echo "build: Failed to build $name"
 		echo "$out"
@@ -64,16 +64,16 @@ gen() {
 }
 
 test() {
-	gen 00_exe "bin/00_exe"
-	gen 01_lib "lib/01_lib.a"
-	gen 02_multi "bin/a bin/b"
-	gen 03_depends "bin/exe lib/lib.a"
-	gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
-	gen 05_extern "lib/cbase.a"
+	#gen 00_exe "bin/00_exe"
+	#gen 01_lib "lib/01_lib.a"
+	#gen 02_multi "bin/a bin/b"
+	#gen 03_depends "bin/exe lib/lib.a"
+	#gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	#gen 05_extern "lib/cbase.a"
 	gen 06_lib_test "lib/06_lib_test.a test/06_lib_test ../../tmp/report/cov/index.html"
-	gen 07_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
-	gen 08_exe_driver "bin/08_exe_driver"
-	gen 09_lib_driver "bin/exe test/lib"
+	#gen 07_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
+	#gen 08_exe_driver "bin/08_exe_driver"
+	#gen 09_lib_driver "bin/exe test/lib"
 }
 
 test

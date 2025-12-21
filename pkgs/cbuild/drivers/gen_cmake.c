@@ -607,9 +607,62 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
 		      "\n"));
 
+	path_t tmp = {0};
+	str_t buf  = strz(16);
+
+	for (int i = 0; i < __VARS_CNT; i++) {
+		if (vars.vars[i].deps & ((1 << ARCH) | (1 << CONFIG) | (1 << PN) | (1 << TN))) {
+			continue;
+		}
+
+		strv_t val = vars.vars[i].val;
+		switch (i) {
+		case CONFIG: {
+			fs_write(drv->fs, f, STRV("if(is_multi_config)\n"));
+			fs_write(drv->fs, f, STRV("\tset("));
+			fs_write(drv->fs, f, vars.vars[i].name);
+			fs_write(drv->fs, f, STRV(" \"$<CONFIG>\")\n"));
+			fs_write(drv->fs, f, STRV("else()\n"));
+			fs_write(drv->fs, f, STRV("\tset("));
+			fs_write(drv->fs, f, vars.vars[i].name);
+			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
+			fs_write(drv->fs, f, STRV("endif()\n"));
+			break;
+		}
+		case DIR_PROJ: {
+			path_calc_rel_s(build_dir, proj_dir, '/', &tmp);
+			buf.len = 0;
+			str_cat(&buf, STRV("${CMAKE_SOURCE_DIR}/"));
+			str_cat(&buf, STRVS(tmp));
+			val = STRVS(buf);
+			break;
+		}
+		default:
+			break;
+		}
+
+		if (val.data == NULL) {
+			continue;
+		}
+
+		buf.len = 0;
+		str_cat(&buf, val);
+
+		var_convert(&buf, '{', '}', '{', '}');
+
+		fs_write(drv->fs, f, STRV("set("));
+		fs_write(drv->fs, f, vars.vars[i].name);
+		fs_write(drv->fs, f, STRV(" \""));
+		if (buf.len > 0) {
+			fs_write(drv->fs, f, STRVS(buf));
+		}
+		fs_write(drv->fs, f, STRV("\")\n"));
+	}
+
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(WIN32)\n"
+		 STRV("\n"
+		      "if(WIN32)\n"
 		      "\tset(EXT_LIB \".lib\")\n"
 		      "\tset(EXT_EXE \".exe\")\n"
 		      "else()\n"
@@ -655,7 +708,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\t\t\t)\n"
 		      "\t\t\t\tadd_test(\n"
 		      "\t\t\t\t\tNAME ${arch}-${conf}\n"
-		      "\t\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${conf} -C ${conf}\n"
+		      "\t\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
 		      "\t\t\t\t)\n"
 		      "\t\t\tendforeach()\n"
 		      "\t\tendif()\n"
@@ -674,36 +727,17 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\tendif()\n"
 		      "\n"));
 
-	path_t tmp = {0};
-	str_t buf  = strz(16);
-
 	for (int i = 0; i < __VARS_CNT; i++) {
 		if (vars.vars[i].deps & ((1 << PN) | (1 << TN))) {
 			continue;
 		}
 
-		strv_t val = vars.vars[i].val;
-		switch (i) {
-		case CONFIG: {
-			fs_write(drv->fs, f, STRV("\tif(is_multi_config)\n"));
-			fs_write(drv->fs, f, STRV("\t\tset("));
-			fs_write(drv->fs, f, vars.vars[i].name);
-			fs_write(drv->fs, f, STRV(" \"$<CONFIG>\")\n"));
-			fs_write(drv->fs, f, STRV("\telse()\n"));
-			fs_write(drv->fs, f, STRV("\t\tset("));
-			fs_write(drv->fs, f, vars.vars[i].name);
-			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
-			fs_write(drv->fs, f, STRV("\tendif()\n"));
+		if (!(vars.vars[i].deps & ((1 << ARCH) | (1 << CONFIG)))) {
 			continue;
 		}
-		case DIR_PROJ: {
-			path_calc_rel_s(build_dir, proj_dir, '/', &tmp);
-			buf.len = 0;
-			str_cat(&buf, STRV("${CMAKE_SOURCE_DIR}/"));
-			str_cat(&buf, STRVS(tmp));
-			val = STRVS(buf);
-			break;
-		}
+
+		strv_t val = vars.vars[i].val;
+		switch (i) {
 		case DIR_OUT: {
 			strv_t poutdir = proj_get_str(proj, proj->outdir);
 			if (poutdir.len == 0) {
@@ -727,7 +761,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		}
 
 		if (val.data == NULL) {
-			continue;
+			continue; // LCOV_EXCL_LINE
 		}
 
 		buf.len = 0;
@@ -753,8 +787,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\telseif(ARCH STREQUAL \"x86\")\n"
 		      "\t\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
 		      "\t\tendif()\n"
-		      "\tendif()\n"
-		      "\n"));
+		      "\tendif()\n"));
 
 	int types[__TARGET_TYPE_MAX] = {0};
 
@@ -784,7 +817,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			path_t dir = {0};
 			get_path(proj, pkg->strs + PKG_PATH, &dir);
 			path_push_s(&dir, STRV("pkg.cmake"), '/');
-			fs_write(drv->fs, f, STRV("\tinclude("));
+			fs_write(drv->fs, f, STRV("\n\tinclude("));
 			fs_write(drv->fs, f, STRVS(dir));
 			fs_write(drv->fs, f, STRV(")\n"));
 
@@ -801,7 +834,6 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\n"
 		      "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
 		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
 		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
 		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "

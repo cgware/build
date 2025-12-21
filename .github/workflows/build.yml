@@ -57,11 +57,11 @@ jobs:
         arch: [host, x64, x86]
         conf: [Debug, Release]
         include:
-          - test: "test"
+          - cov: ""
           - gen: M
             arch: host
             conf: Debug
-            test: cov
+            cov: cov
 
     steps:
       - uses: actions/checkout@v4
@@ -79,10 +79,10 @@ jobs:
           sudo apt-get install gcc-multilib lcov -y
 
       - name: Build
-        run: ./scripts/build.sh -g ${{ matrix.gen }} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all ${{ matrix.test }}" -O 0
+        run: ./scripts/build.sh -g ${{ matrix.gen }} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all test ${{ matrix.cov }}" -O 0
 
       - name: Coverage
-        if: matrix.test == 'cov'
+        if: matrix.cov == 'cov'
         uses: coverallsapp/github-action@v2
 
       - name: Upload

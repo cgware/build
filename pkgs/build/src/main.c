@@ -85,7 +85,7 @@ static int cmake_build(proc_t *proc, strv_t build_path, strv_t target, strv_t co
 			}
 		}
 	}
-	if (config.len > 0) {
+	if (config.len > 0 && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
 		str_cat(buf, STRV(" --config "));
 		str_cat(buf, config);
 	}
