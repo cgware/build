@@ -63,7 +63,7 @@ TEST(proj_cfg_src)
 	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
 	const target_t *target = proj_get_target(&proj, 0);
 
-	strv_t val = proj_get_str(&proj, pkg->strs + PKG_SRC);
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_STR_SRC);
 	EXPECT_STRN(val.data, "src", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_EXE);
 
@@ -93,7 +93,7 @@ TEST(proj_cfg_include)
 	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
 	const target_t *target = proj_get_target(&proj, 0);
 
-	strv_t val = proj_get_str(&proj, pkg->strs + PKG_INC);
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_STR_INC);
 	EXPECT_STRN(val.data, "include", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_LIB);
 
@@ -180,7 +180,7 @@ TEST(proj_cfg_test)
 	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
 	const target_t *target = proj_get_target(&proj, 0);
 
-	strv_t val = proj_get_str(&proj, pkg->strs + PKG_TST);
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_STR_TST);
 	EXPECT_STRN(val.data, "test", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_TST);
 
@@ -211,7 +211,7 @@ TEST(proj_cfg_pkg)
 
 	const pkg_t *pkg = proj_get_pkg(&proj, 0);
 
-	strv_t val = proj_get_str(&proj, pkg->strs + PKG_NAME);
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_STR_NAME);
 	EXPECT_STRN(val.data, "name", val.len);
 
 	config_free(&config);
@@ -242,7 +242,7 @@ TEST(proj_cfg_uri)
 
 	const pkg_t *pkg = proj_get_pkg(&proj, 0);
 
-	strv_t val = proj_get_str(&proj, pkg->strs + PKG_URI_STR);
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
 	EXPECT_STRN(val.data, "https://host.com/file.zip", val.len);
 
 	config_free(&config);
@@ -274,7 +274,7 @@ TEST(proj_cfg_target)
 
 	const target_t *target = proj_get_target(&proj, 0);
 
-	strv_t val = proj_get_str(&proj, target->strs + PKG_NAME);
+	strv_t val = proj_get_str(&proj, target->strs + PKG_STR_NAME);
 	EXPECT_STRN(val.data, "name", val.len);
 	EXPECT_EQ(target->type, TARGET_TYPE_UNKNOWN);
 

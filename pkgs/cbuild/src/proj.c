@@ -90,7 +90,7 @@ pkg_t *proj_find_pkg(const proj_t *proj, strv_t name, uint *id)
 	pkg_t *pkg;
 	arr_foreach(&proj->pkgs, i, pkg)
 	{
-		if (strv_eq(proj_get_str(proj, pkg->strs + PKG_NAME), name)) {
+		if (strv_eq(proj_get_str(proj, pkg->strs + PKG_STR_NAME), name)) {
 			id ? *id = i : (uint)0;
 			return pkg;
 		}
@@ -435,14 +435,16 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 	{
 		dst.off += dputf(dst, "\n[pkg]\n");
 
-		strv_t pkg_name = proj_get_str(proj, pkg->strs + PKG_NAME);
-		strv_t path	= proj_get_str(proj, pkg->strs + PKG_PATH);
-		strv_t src	= proj_get_str(proj, pkg->strs + PKG_SRC);
-		strv_t inc	= proj_get_str(proj, pkg->strs + PKG_INC);
-		strv_t test	= proj_get_str(proj, pkg->strs + PKG_TST);
-		strv_t uri_str	= proj_get_str(proj, pkg->strs + PKG_URI_STR);
-		strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_URI_NAME);
-		strv_t uri_dir	= proj_get_str(proj, pkg->strs + PKG_URI_DIR);
+		strv_t pkg_name = proj_get_str(proj, pkg->strs + PKG_STR_NAME);
+		strv_t path	= proj_get_str(proj, pkg->strs + PKG_STR_PATH);
+		strv_t src	= proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+		strv_t inc	= proj_get_str(proj, pkg->strs + PKG_STR_INC);
+		strv_t test	= proj_get_str(proj, pkg->strs + PKG_STR_TST);
+		strv_t uri	= proj_get_str(proj, pkg->strs + PKG_STR_URI);
+		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_STR_URI_FILE);
+		strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_STR_URI_NAME);
+		strv_t uri_ver	= proj_get_str(proj, pkg->strs + PKG_STR_URI_VER);
+		strv_t uri_dir	= proj_get_str(proj, pkg->strs + PKG_STR_URI_DIR);
 
 		dst.off += dputf(dst,
 				 "NAME: %.*s\n"
@@ -450,8 +452,10 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 				 "SRC: %.*s\n"
 				 "INC: %.*s\n"
 				 "TEST: %.*s\n"
-				 "URI_STR: %.*s\n"
+				 "URI: %.*s\n"
+				 "URI_FILE: %.*s\n"
 				 "URI_NAME: %.*s\n"
+				 "URI_VER: %.*s\n"
 				 "URI_DIR: %.*s\n",
 				 pkg_name.len,
 				 pkg_name.data,
@@ -463,10 +467,14 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 				 inc.data,
 				 test.len,
 				 test.data,
-				 uri_str.len,
-				 uri_str.data,
+				 uri.len,
+				 uri.data,
+				 uri_file.len,
+				 uri_file.data,
 				 uri_name.len,
 				 uri_name.data,
+				 uri_ver.len,
+				 uri_ver.data,
 				 uri_dir.len,
 				 uri_dir.data);
 
@@ -505,7 +513,7 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 						const target_t *dep_tgt = list_get(&proj->targets, *dep_target_id);
 						const pkg_t *dep_pkg	= arr_get(&proj->pkgs, dep_tgt->pkg);
 
-						strv_t dep_tgt_name = proj_get_str(proj, dep_tgt->strs + PKG_NAME);
+						strv_t dep_tgt_name = proj_get_str(proj, dep_tgt->strs + PKG_STR_NAME);
 						strv_t dep_pkg_name = proj_get_str(proj, dep_pkg->strs + TARGET_NAME);
 						dst.off += dputf(dst,
 								 " %.*s:%.*s",

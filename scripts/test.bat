@@ -73,8 +73,9 @@ exit /b %ret%
 	call :gen 04_rdepends "lib/base.lib lib/lib1.lib lib/lib2.lib bin/exe.exe"
 	call :gen 05_extern "lib/cbase.lib"
 	call :gen 06_lib_test "lib/06_lib_test.lib test/06_lib_test.exe"
-	call :gen 07_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.lib ext/cutils/cutils.lib bin/exe.exe"
-	call :gen 08_exe_driver "bin/08_exe_driver.exe"
-	call :gen 09_lib_driver "bin/exe.exe test/lib.exe"
+	call :gen 07_exe_driver "bin/07_exe_driver.exe"
+	call :gen 08_lib_driver "bin/exe.exe test/lib.exe"
+	call :gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.lib ext/cutils/cutils.lib bin/exe.exe"
+	call :gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-main.tar.gz ../../tmp/dl/pkgs/cutils/cutils-main.tar.gz ext/cbase/cbase.lib ext/cutils/cutils.lib bin/exe.exe"
 
 	exit /b 0
