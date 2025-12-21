@@ -476,13 +476,9 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				fs_write(fs, f, STRV(")\n"));
 				fs_write(fs,
 					 f,
-					 STRV("add_test(${PN}_${TN}_build ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config "
-					      "${CMAKE_BUILD_TYPE} --target ${PN}_${TN})\n"
-					      "string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_TST_FILE_DEBUG \"${DIR_OUT_TST_FILE}\")\n"
-					      "add_test(${PN} ${DIR_OUT_TST_FILE_DEBUG})\n"
-					      "set_tests_properties(${PN} PROPERTIES\n"
-					      "\tDEPENDS ${PN}_${TN}_build\n"
-					      "\tWORKING_DIRECTORY ${CMAKE_SOURCE_DIR}\n"
+					 STRV("add_test(\n"
+					      "\tNAME ${PN}_${TN}\n"
+					      "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
 					      ")\n"));
 				break;
 			}
@@ -609,20 +605,13 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"
 		      "list(LENGTH CONFIGS _config_count)\n"
 		      "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
-		      "\n"
-		      "if(_arch_count EQUAL 1)\n"
-		      "\tset(ARCH ${ARCHS})\n"
-		      "endif()\n"
-		      "if(_config_count EQUAL 1)\n"
-		      "\tset(CMAKE_BUILD_TYPE ${CONFIGS})\n"
-		      "endif()\n"
 		      "\n"));
 
 	path_t tmp = {0};
 	str_t buf  = strz(16);
 
 	for (int i = 0; i < __VARS_CNT; i++) {
-		if (vars.vars[i].deps & ((1 << PN) | (1 << TN))) {
+		if (vars.vars[i].deps & ((1 << ARCH) | (1 << CONFIG) | (1 << PN) | (1 << TN))) {
 			continue;
 		}
 
@@ -638,7 +627,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			fs_write(drv->fs, f, vars.vars[i].name);
 			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
 			fs_write(drv->fs, f, STRV("endif()\n"));
-			continue;
+			break;
 		}
 		case DIR_PROJ: {
 			path_calc_rel_s(build_dir, proj_dir, '/', &tmp);
@@ -646,24 +635,6 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			str_cat(&buf, STRV("${CMAKE_SOURCE_DIR}/"));
 			str_cat(&buf, STRVS(tmp));
 			val = STRVS(buf);
-			break;
-		}
-		case DIR_OUT: {
-			strv_t poutdir = proj_get_str(proj, proj->outdir);
-			if (poutdir.len == 0) {
-				break;
-			}
-
-			buf.len = 0;
-			if (pathv_is_rel(STRVS(poutdir))) {
-				str_cat(&buf, STRV("${DIR_PROJ}"));
-			}
-			str_cat(&buf, STRVS(poutdir));
-			val = STRVS(buf);
-			break;
-		}
-		case DIR_OUT_INT: {
-			val = STRV("${CMAKE_BINARY_DIR}");
 			break;
 		}
 		default:
@@ -690,69 +661,133 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		      "\tif(ARCH STREQUAL \"x64\")\n"
-		      "\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
-		      "\telseif(ARCH STREQUAL \"x86\")\n"
-		      "\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
-		      "\tendif()\n"
-		      "endif()\n"
+		 STRV("\n"
 		      "if(WIN32)\n"
 		      "\tset(EXT_LIB \".lib\")\n"
 		      "\tset(EXT_EXE \".exe\")\n"
 		      "else()\n"
 		      "\tset(EXT_LIB \".a\")\n"
 		      "\tset(EXT_EXE \"\")\n"
-		      "endif()\n"));
+		      "endif()\n"
+		      "\n"
+		      "enable_testing()\n"
+		      "\n"
+		      "if(_arch_count GREATER 0 AND _config_count GREATER 0)\n"
+		      "\tinclude(ExternalProject)\n"
+		      "\tforeach(arch IN LISTS ARCHS)\n"
+		      "\t\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
+		      "\t\t\tif(arch STREQUAL \"x86\")\n"
+		      "\t\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
+		      "\t\t\telseif(arch STREQUAL \"host\")\n"
+		      "\t\t\t\tset(ARGS_ARCH \"\")\n"
+		      "\t\t\telse()\n"
+		      "\t\t\t\tset(ARGS_ARCH \"-A ${arch}\")\n"
+		      "\t\t\tendif()\n"
+		      "\t\telse()\n"
+		      "\t\t\tset(ARGS_ARCH \"-DARCH=${arch}\")\n"
+		      "\t\tendif()\n"
+		      "\n"
+		      "\t\tif(is_multi_config)\n"
+		      "\t\t\tExternalProject_Add(${arch}\n"
+		      "\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		      "\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}\n"
+		      "\t\t\t\tINSTALL_COMMAND \"\"\n"
+		      "\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH}\n"
+		      "\t\t\t)\n"
+		      "\t\t\tadd_test(\n"
+		      "\t\t\t\tNAME ${arch}\n"
+		      "\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch} -C $<CONFIG>\n"
+		      "\t\t\t)\n"
+		      "\t\telse()\n"
+		      "\t\t\tforeach(conf IN LISTS CONFIGS)\n"
+		      "\t\t\t\tExternalProject_Add(${arch}-${conf}\n"
+		      "\t\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		      "\t\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
+		      "\t\t\t\t\tINSTALL_COMMAND \"\"\n"
+		      "\t\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH} -DCMAKE_BUILD_TYPE=${conf}\n"
+		      "\t\t\t\t)\n"
+		      "\t\t\t\tadd_test(\n"
+		      "\t\t\t\t\tNAME ${arch}-${conf}\n"
+		      "\t\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
+		      "\t\t\t\t)\n"
+		      "\t\t\tendforeach()\n"
+		      "\t\tendif()\n"
+		      "\tendforeach()\n"
+		      "else()\n"
+		      "\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
+		      "\t\tif(CMAKE_GENERATOR_PLATFORM STREQUAL \"Win32\")\n"
+		      "\t\t\tset(ARCH \"x86\")\n"
+		      "\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
+		      "\t\telseif(CMAKE_GENERATOR_PLATFORM STREQUAL \"\")\n"
+		      "\t\t\tset(ARCH \"host\")\n"
+		      "\t\telse()\n"
+		      "\t\t\tset(ARCH \"${CMAKE_GENERATOR_PLATFORM}\")\n"
+		      "\t\t\tset(ARGS_ARCH \"-A ${CMAKE_GENERATOR_PLATFORM}\")\n"
+		      "\t\tendif()\n"
+		      "\tendif()\n"
+		      "\n"));
+
+	for (int i = 0; i < __VARS_CNT; i++) {
+		if (vars.vars[i].deps & ((1 << PN) | (1 << TN))) {
+			continue;
+		}
+
+		if (!(vars.vars[i].deps & ((1 << ARCH) | (1 << CONFIG)))) {
+			continue;
+		}
+
+		strv_t val = vars.vars[i].val;
+		switch (i) {
+		case DIR_OUT: {
+			strv_t poutdir = proj_get_str(proj, proj->outdir);
+			if (poutdir.len == 0) {
+				break;
+			}
+
+			buf.len = 0;
+			if (pathv_is_rel(STRVS(poutdir))) {
+				str_cat(&buf, STRV("${DIR_PROJ}"));
+			}
+			str_cat(&buf, STRVS(poutdir));
+			val = STRVS(buf);
+			break;
+		}
+		case DIR_OUT_INT: {
+			val = STRV("${CMAKE_BINARY_DIR}");
+			break;
+		}
+		default:
+			break;
+		}
+
+		if (val.data == NULL) {
+			continue; // LCOV_EXCL_LINE
+		}
+
+		buf.len = 0;
+		str_cat(&buf, val);
+
+		var_convert(&buf, '{', '}', '{', '}');
+
+		fs_write(drv->fs, f, STRV("\tset("));
+		fs_write(drv->fs, f, vars.vars[i].name);
+		fs_write(drv->fs, f, STRV(" \""));
+		if (buf.len > 0) {
+			fs_write(drv->fs, f, STRVS(buf));
+		}
+		fs_write(drv->fs, f, STRV("\")\n"));
+	}
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("if(_arch_count GREATER 1 OR (_config_count GREATER 1 AND NOT is_multi_config))\n"
-		      "include(ExternalProject)\n"
-		      "set(tests \"\")\n"
-		      "set(covs \"\")\n"
-		      "foreach(arch IN LISTS ARCHS)\n"
-		      "\tforeach(cfg IN LISTS CONFIGS)\n"
-		      "\t\tExternalProject_Add(${arch}-${cfg}\n"
-		      "\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
-		      "\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}-${cfg}\n"
-		      "\t\t\tINSTALL_COMMAND \"\"\n"
-		      "\t\t\tCMAKE_ARGS -DARCHS=${arch} -DCONFIGS=${cfg}\n"
-		      "\t\t\tTEST_COMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${cfg}\n"
-		      "\t\t)\n"
-		      "\t\tlist(APPEND tests \"${arch}-${cfg}\")\n"
-		      "\t\tif(${cfg} STREQUAL \"Debug\")\n"
-		      "\t\t\tlist(APPEND covs \"${arch}-${cfg}\")\n"
+		 STRV("\n"
+		      "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		      "\t\tif(ARCH STREQUAL \"x64\")\n"
+		      "\t\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		      "\t\telseif(ARCH STREQUAL \"x86\")\n"
+		      "\t\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
 		      "\t\tendif()\n"
-		      "\tendforeach()\n"
-		      "endforeach()\n"
-		      "if(WIN32)\n"
-		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		      "\t\tCOMMAND if exist \"${CMAKE_BINARY_DIR}\\\\*.gcda\" (\n"
-		      "\t\t\tlcov -q -c -o \"${DIR_TMP_COV}lcov.info\" -d \"${CMAKE_BINARY_DIR}\" --exclude \"*/test/*\" --exclude "
-		      "\"*/tmp/*\"\n"
-		      "\t\t\tgenhtml -q -o \"${DIR_TMP_COV}\" \"${DIR_TMP_COV}lcov.info\"\n"
-		      "\t\t\t\"if \\\"${OPEN}\\\"==\\\"ON\\\" start \\\"\\\" \\\"${DIR_TMP_COV}index.html\\\"\"\n"
-		      "\t\t)\n"
-		      "\t\tDEPENDS ${covs}\n"
-		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		      "\t)\n"
-		      "else()\n"
-		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
-		      "\\\"*/tmp/*\\\"\\;\n"
-		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		      "\t\tfi\n"
-		      "\t\tDEPENDS ${covs}\n"
-		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		      "\t)\n"
-		      "endif()\n"
-		      "else()\n"
-		      "enable_testing()\n"));
+		      "\tendif()\n"));
 
 	int types[__TARGET_TYPE_MAX] = {0};
 
@@ -782,7 +817,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			path_t dir = {0};
 			get_path(proj, pkg->strs + PKG_PATH, &dir);
 			path_push_s(&dir, STRV("pkg.cmake"), '/');
-			fs_write(drv->fs, f, STRV("include("));
+			fs_write(drv->fs, f, STRV("\n\tinclude("));
 			fs_write(drv->fs, f, STRVS(dir));
 			fs_write(drv->fs, f, STRV(")\n"));
 
@@ -795,34 +830,20 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	fs_write(drv->fs,
 		 f,
-		 STRV("\n"
-		      "if(WIN32)\n"
+		 STRV("endif()\n"
+		      "\n"
+		      "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
-		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		      "\t\tCOMMAND if exist \"${CMAKE_BINARY_DIR}\\\\*.gcda\" (\n"
-		      "\t\t\tlcov -q -c -o \"${DIR_TMP_COV}lcov.info\" -d \"${CMAKE_BINARY_DIR}\" --exclude \"*/test/*\" --exclude "
-		      "\"*/tmp/*\"\n"
-		      "\t\t\tgenhtml -q -o \"${DIR_TMP_COV}\" \"${DIR_TMP_COV}lcov.info\"\n"
-		      "\t\t\t\"if \\\"${OPEN}\\\"==\\\"ON\\\" start \\\"\\\" \\\"${DIR_TMP_COV}index.html\\\"\"\n"
-		      "\t\t)\n"
-		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		      "\t)\n"
-		      "else()\n"
-		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}\n"
 		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
 		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
 		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --exclude \\\"*/test/*\\\" --exclude "
 		      "\\\"*/tmp/*\\\"\\;\n"
 		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"ON\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
 		      "\t\tfi\n"
 		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
 		      "\t)\n"
 		      "endif()\n"));
-
-	fs_write(drv->fs, f, STRV("endif()\n\n"));
 
 	fs_close(drv->fs, f);
 
