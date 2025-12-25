@@ -126,17 +126,30 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 			target = config_add_target(config, pkg_id, NULL);
 
 			cfg_var_t var;
-			if (cfg_has_var(cfg, tbl, STRV("cmd"), &var)) {
+			if (cfg_has_var(cfg, tbl, STRV("prep"), &var)) {
 				strv_t cmd = {0};
 				cfg_get_str(cfg, var, &cmd);
-				config_set_str(config, target->strs + CONFIG_TARGET_CMD, cmd);
+				config_set_str(config, target->strs + CONFIG_TARGET_PREP, cmd);
 			}
 
-			if (cfg_has_var(cfg, tbl, STRV("out"), &var)) {
-				strv_t out = {0};
-				cfg_get_str(cfg, var, &out);
-				config_set_str(config, target->strs + CONFIG_TARGET_OUT, out);
+			if (cfg_has_var(cfg, tbl, STRV("conf"), &var)) {
+				strv_t cmd = {0};
+				cfg_get_str(cfg, var, &cmd);
+				config_set_str(config, target->strs + CONFIG_TARGET_CONF, cmd);
 			}
+
+			if (cfg_has_var(cfg, tbl, STRV("comp"), &var)) {
+				strv_t cmd = {0};
+				cfg_get_str(cfg, var, &cmd);
+				config_set_str(config, target->strs + CONFIG_TARGET_COMP, cmd);
+			}
+
+			if (cfg_has_var(cfg, tbl, STRV("inst"), &var)) {
+				strv_t install = {0};
+				cfg_get_str(cfg, var, &install);
+				config_set_str(config, target->strs + CONFIG_TARGET_INST, install);
+			}
+
 			if (cfg_has_var(cfg, tbl, STRV("dst"), &var)) {
 				strv_t dst = {0};
 				cfg_get_str(cfg, var, &dst);

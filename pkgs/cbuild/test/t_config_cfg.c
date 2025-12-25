@@ -314,10 +314,14 @@ TEST(config_cfg_target)
 
 	strv_t val;
 
-	val = config_get_str(&config, target->strs + CONFIG_TARGET_CMD);
-	EXPECT_STRN(val.data, "cmd", val.len);
-	val = config_get_str(&config, target->strs + CONFIG_TARGET_OUT);
-	EXPECT_STRN(val.data, "out", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_PREP);
+	EXPECT_STRN(val.data, "prep", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_CONF);
+	EXPECT_STRN(val.data, "conf", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_COMP);
+	EXPECT_STRN(val.data, "comp", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_INST);
+	EXPECT_STRN(val.data, "inst", val.len);
 	val = config_get_str(&config, target->strs + CONFIG_TARGET_DST);
 	EXPECT_STRN(val.data, "dst", val.len);
 

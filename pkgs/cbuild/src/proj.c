@@ -485,22 +485,30 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 			{
 				dst.off += dputf(dst, "\n[target]\n");
 				strv_t tgt_name = proj_get_str(proj, target->strs + TARGET_NAME);
-				strv_t cmd	= proj_get_str(proj, target->strs + TARGET_CMD);
-				strv_t out	= proj_get_str(proj, target->strs + TARGET_OUT);
+				strv_t prep	= proj_get_str(proj, target->strs + TARGET_PREP);
+				strv_t conf	= proj_get_str(proj, target->strs + TARGET_CONF);
+				strv_t comp	= proj_get_str(proj, target->strs + TARGET_COMP);
+				strv_t inst	= proj_get_str(proj, target->strs + TARGET_INST);
 				strv_t tgt_dst	= proj_get_str(proj, target->strs + TARGET_DST);
 				dst.off += dputf(dst,
 						 "NAME: %.*s\n"
 						 "TYPE: %s\n"
-						 "CMD: %.*s\n"
-						 "OUT: %.*s\n"
+						 "PREP: %.*s\n"
+						 "CONF: %.*s\n"
+						 "COMP: %.*s\n"
+						 "INST: %.*s\n"
 						 "DST: %.*s\n",
 						 tgt_name.len,
 						 tgt_name.data,
 						 target_type_str[target->type],
-						 cmd.len,
-						 cmd.data,
-						 out.len,
-						 out.data,
+						 prep.len,
+						 prep.data,
+						 conf.len,
+						 conf.data,
+						 comp.len,
+						 comp.data,
+						 inst.len,
+						 inst.data,
 						 tgt_dst.len,
 						 tgt_dst.data);
 				dst.off += dputf(dst, "DEPS:");

@@ -207,16 +207,34 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 			switch (target->type) {
 			case TARGET_TYPE_EXT: {
-				strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
-				resolve_var(vars, cmd, svalues, &buf);
-				fs_write(fs, f, STRV("set(${PN}_${TN}_CMD "));
-				fs_write(fs, f, STRVS(buf));
-				fs_write(fs, f, STRV(")\n"));
+				strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
+				resolve_var(vars, prep, svalues, &buf);
+				if (prep.len > 0) {
+					fs_write(fs, f, STRV("set(${PN}_${TN}_PREP "));
+					fs_write(fs, f, STRVS(buf));
+					fs_write(fs, f, STRV(")\n"));
+				}
 
-				strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-				resolve_var(vars, out, svalues, &buf);
-				if (out.len > 0) {
-					fs_write(fs, f, STRV("set(${PN}_${TN}_OUT "));
+				strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
+				resolve_var(vars, prep, svalues, &buf);
+				if (conf.len > 0) {
+					fs_write(fs, f, STRV("set(${PN}_${TN}_CONF "));
+					fs_write(fs, f, STRVS(buf));
+					fs_write(fs, f, STRV(")\n"));
+				}
+
+				strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
+				resolve_var(vars, prep, svalues, &buf);
+				if (comp.len > 0) {
+					fs_write(fs, f, STRV("set(${PN}_${TN}_COMP "));
+					fs_write(fs, f, STRVS(buf));
+					fs_write(fs, f, STRV(")\n"));
+				}
+
+				strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
+				resolve_var(vars, inst, svalues, &buf);
+				if (inst.len > 0) {
+					fs_write(fs, f, STRV("set(${PN}_${TN}_INSTALL "));
 					fs_write(fs, f, STRVS(buf));
 					fs_write(fs, f, STRV(")\n"));
 				}
@@ -242,10 +260,11 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 				strv_t val = vars->vars[i].val;
 				switch (i) {
-				case TGT_CMD:
-				case TGT_OUT:
+				case TGT_PREP:
+				case TGT_CONF:
+				case TGT_COMP:
+				case TGT_INST:
 				case TGT_DST:
-				case DIR_TMP_EXT_PKG_SRC_ROOT_OUT:
 				case DIR_OUT_EXT_FILE:
 					if (uri.len == 0) {
 						continue;
@@ -414,14 +433,14 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					 f,
 					 STRV("add_custom_target(${PN}_${TN}_build\n"
 					      "\tCOMMAND ${TGT_CMD}\n"
-					      "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_SRC_ROOT}\n"
+					      "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_BUILD}\n"
 					      ")\n"));
 
 				fs_write(fs,
 					 f,
 					 STRV("add_custom_command(TARGET ${PN}_${TN}_build POST_BUILD\n"
 					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E copy ${DIR_TMP_EXT_PKG_SRC_ROOT_OUT} ${DIR_OUT_EXT_FILE}\n"
+					      "\tCOMMAND ${TGT_INSTALL}\n"
 					      ")\n"
 					      "\n"
 					      "add_library(${PN}_${TN} STATIC IMPORTED)\n"
@@ -630,6 +649,10 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			fs_write(drv->fs, f, vars.vars[i].name);
 			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
 			fs_write(drv->fs, f, STRV("endif()\n"));
+			break;
+		}
+		case CP: {
+			val = STRV("${CMAKE_COMMAND} -E copy");
 			break;
 		}
 		case DIR_PROJ: {

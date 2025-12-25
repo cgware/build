@@ -15,8 +15,10 @@ typedef enum target_type_s {
 
 typedef enum target_str_e {
 	TARGET_NAME,
-	TARGET_CMD,
-	TARGET_OUT,
+	TARGET_PREP,
+	TARGET_CONF,
+	TARGET_COMP,
+	TARGET_INST,
 	TARGET_DST,
 	__TARGET_STR_CNT,
 } target_str_t;

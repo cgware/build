@@ -283,17 +283,36 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 			break;
 		}
 		case TARGET_TYPE_EXT: {
-			make_var(make, STRV("$(PN)_$(TN)_CMD"), MAKE_VAR_REF, &act);
-			strv_t cmd = proj_get_str(proj, target->strs + TARGET_CMD);
-			resolve_var(vars, cmd, svalues, buf);
+			make_var(make, STRV("$(PN)_$(TN)_PREP"), MAKE_VAR_REF, &act);
+			strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
+			resolve_var(vars, prep, svalues, buf);
+			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
 			}
 			make_inc_add_act(make, inc, act);
 
-			make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
-			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-			resolve_var(vars, out, svalues, buf);
+			make_var(make, STRV("$(PN)_$(TN)_CONF"), MAKE_VAR_REF, &act);
+			strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
+			resolve_var(vars, conf, svalues, buf);
+			var_convert(buf, '{', '}', '(', ')');
+			if (buf->len > 0) {
+				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			}
+			make_inc_add_act(make, inc, act);
+
+			make_var(make, STRV("$(PN)_$(TN)_COMP"), MAKE_VAR_REF, &act);
+			strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
+			resolve_var(vars, comp, svalues, buf);
+			var_convert(buf, '{', '}', '(', ')');
+			if (buf->len > 0) {
+				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			}
+			make_inc_add_act(make, inc, act);
+
+			make_var(make, STRV("$(PN)_$(TN)_INST"), MAKE_VAR_REF, &act);
+			strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
+			resolve_var(vars, inst, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
@@ -307,6 +326,14 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 			if (buf->len > 0) {
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
 			}
+			make_inc_add_act(make, inc, act);
+
+			make_var(make, STRV("$(PN)_$(TN)_SRC"), MAKE_VAR_REF, &act);
+			make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/")));
+			make_inc_add_act(make, inc, act);
+
+			make_var(make, STRV("$(PN)_$(TN)_BUILD"), MAKE_VAR_REF, &act);
+			make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_TMP_EXT_PKG_BUILD))/")));
 			make_inc_add_act(make, inc, act);
 			break;
 		}
@@ -377,10 +404,17 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	for (int i = 0; i < __VARS_CNT; i++) {
 		strv_t val = vars.vars[i].val;
 		switch (i) {
+		case CP: {
+			val = STRV("cp");
+			break;
+		}
 		case DIR_PROJ: {
 			path_calc_rel(build_dir, proj_dir, &tmp);
 			val = STRVS(tmp);
 			break;
+		}
+		case DIR_PKG_DRV_C: {
+			continue;
 		}
 		case DIR_OUT: {
 			strv_t poutdir = proj_get_str(proj, proj->outdir);
@@ -396,8 +430,9 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			val = STRVS(buf);
 			break;
 		}
-		case DIR_PKG_DRV_C: {
-			continue;
+		case ABS_DIR_OUT_EXT_PKG: {
+			val = STRV("$(abspath $(DIR_OUT_EXT_PKG))/");
+			break;
 		}
 		default:
 			break;
@@ -902,13 +937,19 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$(DIR_TMP_EXT_PKG_SRC)"))));
 		make_def_add_act(&make, def, def_rule_target);
 
-		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
+		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D) $(DIR_TMP_EXT_PKG_BUILD)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
-		make_cmd(&make, MCMD(STRV("cd $(DIR_TMP_EXT_PKG_SRC_ROOT) && $(TGT_CMD)")), &act);
+		make_cmd(&make, MCMD(STRV("cd $(TGT_BUILD) && $(if $(strip $(TGT_PREP)),$(TGT_PREP),:)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
-		make_cmd(&make, MCMD(STRV("cp $(DIR_TMP_EXT_PKG_SRC_ROOT_OUT) $(DIR_OUT_EXT_FILE)")), &act);
+		make_cmd(&make, MCMD(STRV("cd $(TGT_BUILD) && $(if $(strip $(TGT_CONF)),$(TGT_CONF),:)")), &act);
+		make_rule_add_act(&make, def_rule_target, act);
+
+		make_cmd(&make, MCMD(STRV("cd $(TGT_BUILD) && $(if $(strip $(TGT_COMP)),$(TGT_COMP),:)")), &act);
+		make_rule_add_act(&make, def_rule_target, act);
+
+		make_cmd(&make, MCMD(STRV("cd $(TGT_BUILD) && $(if $(strip $(TGT_INST)),$(TGT_INST),:)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
 		make_empty(&make, &act);

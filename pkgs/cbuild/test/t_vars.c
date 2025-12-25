@@ -15,7 +15,7 @@ TEST(vars_init)
 	EXPECT_EQ(vars_init(&vars), &vars);
 
 	EXPECT_EQ(vars.vars[PKG_DIR].deps, (1ULL << PN));
-	EXPECT_EQ(vars.vars[TGT_CMD].deps, (1 << PN) | (1 << TN));
+	EXPECT_EQ(vars.vars[TGT_PREP].deps, (1 << PN) | (1 << TN));
 
 	END;
 }

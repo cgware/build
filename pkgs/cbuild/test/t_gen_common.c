@@ -624,8 +624,10 @@ int t_gen_pkg_ext_unknown(t_gen_common_t *com, strv_t p)
 
 	target = proj_add_target(&com->proj, ext, NULL);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, target->strs + TARGET_CMD, STRV("cmd"));
-	proj_set_str(&com->proj, target->strs + TARGET_OUT, STRV("out"));
+	proj_set_str(&com->proj, target->strs + TARGET_PREP, STRV("prep"));
+	proj_set_str(&com->proj, target->strs + TARGET_CONF, STRV("conf"));
+	proj_set_str(&com->proj, target->strs + TARGET_COMP, STRV("comp"));
+	proj_set_str(&com->proj, target->strs + TARGET_INST, STRV("inst"));
 	proj_set_str(&com->proj, target->strs + TARGET_DST, STRV("dst"));
 	target->type = TARGET_TYPE_EXT;
 
@@ -657,8 +659,10 @@ int t_gen_pkg_ext_zip(t_gen_common_t *com, strv_t p)
 
 	target = proj_add_target(&com->proj, ext, NULL);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, target->strs + TARGET_CMD, STRV("cmd"));
-	proj_set_str(&com->proj, target->strs + TARGET_OUT, STRV("out"));
+	proj_set_str(&com->proj, target->strs + TARGET_PREP, STRV("prep"));
+	proj_set_str(&com->proj, target->strs + TARGET_CONF, STRV("conf"));
+	proj_set_str(&com->proj, target->strs + TARGET_COMP, STRV("comp"));
+	proj_set_str(&com->proj, target->strs + TARGET_INST, STRV("inst"));
 	proj_set_str(&com->proj, target->strs + TARGET_DST, STRV("dst"));
 	target->type = TARGET_TYPE_EXT;
 
@@ -690,8 +694,10 @@ int t_gen_pkg_ext_tar_gz(t_gen_common_t *com, strv_t p)
 
 	target = proj_add_target(&com->proj, ext, NULL);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("pkg"));
-	proj_set_str(&com->proj, target->strs + TARGET_CMD, STRV("cmd"));
-	proj_set_str(&com->proj, target->strs + TARGET_OUT, STRV("out"));
+	proj_set_str(&com->proj, target->strs + TARGET_PREP, STRV("prep"));
+	proj_set_str(&com->proj, target->strs + TARGET_CONF, STRV("conf"));
+	proj_set_str(&com->proj, target->strs + TARGET_COMP, STRV("comp"));
+	proj_set_str(&com->proj, target->strs + TARGET_INST, STRV("inst"));
 	proj_set_str(&com->proj, target->strs + TARGET_DST, STRV("dst"));
 	target->type = TARGET_TYPE_EXT;
 

@@ -103,8 +103,10 @@ int proj_cfg(proj_t *proj, const config_t *config)
 
 					list_foreach(&config->targets, targets, cfg_target)
 					{
-						strv_t cmd = config_get_str(config, cfg_target->strs + CONFIG_TARGET_CMD);
-						strv_t out = config_get_str(config, cfg_target->strs + CONFIG_TARGET_OUT);
+						strv_t prep = config_get_str(config, cfg_target->strs + CONFIG_TARGET_PREP);
+						strv_t conf = config_get_str(config, cfg_target->strs + CONFIG_TARGET_CONF);
+						strv_t comp = config_get_str(config, cfg_target->strs + CONFIG_TARGET_COMP);
+						strv_t inst = config_get_str(config, cfg_target->strs + CONFIG_TARGET_INST);
 						strv_t dst = config_get_str(config, cfg_target->strs + CONFIG_TARGET_DST);
 
 						if (target == NULL || uri.len > 0) {
@@ -113,8 +115,10 @@ int proj_cfg(proj_t *proj, const config_t *config)
 							created = 1;
 						}
 
-						proj_set_str(proj, target->strs + TARGET_CMD, cmd);
-						proj_set_str(proj, target->strs + TARGET_OUT, out);
+						proj_set_str(proj, target->strs + TARGET_PREP, prep);
+						proj_set_str(proj, target->strs + TARGET_CONF, conf);
+						proj_set_str(proj, target->strs + TARGET_COMP, comp);
+						proj_set_str(proj, target->strs + TARGET_INST, inst);
 						proj_set_str(proj, target->strs + TARGET_DST, dst);
 
 						if (uri.len > 0) {
