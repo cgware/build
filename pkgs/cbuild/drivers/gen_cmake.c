@@ -205,54 +205,6 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 			}
 			fs_write(fs, f, STRV("\")\n"));
 
-			switch (target->type) {
-			case TARGET_TYPE_EXT: {
-				strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
-				resolve_var(vars, prep, svalues, &buf);
-				if (prep.len > 0) {
-					fs_write(fs, f, STRV("set(${PN}_${TN}_PREP "));
-					fs_write(fs, f, STRVS(buf));
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
-				resolve_var(vars, prep, svalues, &buf);
-				if (conf.len > 0) {
-					fs_write(fs, f, STRV("set(${PN}_${TN}_CONF "));
-					fs_write(fs, f, STRVS(buf));
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
-				resolve_var(vars, prep, svalues, &buf);
-				if (comp.len > 0) {
-					fs_write(fs, f, STRV("set(${PN}_${TN}_COMP "));
-					fs_write(fs, f, STRVS(buf));
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
-				resolve_var(vars, inst, svalues, &buf);
-				if (inst.len > 0) {
-					fs_write(fs, f, STRV("set(${PN}_${TN}_INSTALL "));
-					fs_write(fs, f, STRVS(buf));
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				strv_t dst = proj_get_str(proj, target->strs + TARGET_DST);
-				resolve_var(vars, dst, svalues, &buf);
-				if (dst.len > 0) {
-					fs_write(fs, f, STRV("set(${PN}_${TN}_DST "));
-					fs_write(fs, f, STRVS(buf));
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				break;
-			}
-			default:
-				break;
-			}
-
 			for (int i = 0; i < __VARS_CNT; i++) {
 				if (!(vars->vars[i].deps & (1 << TN))) {
 					continue;
@@ -260,11 +212,59 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 				strv_t val = vars->vars[i].val;
 				switch (i) {
-				case TGT_PREP:
-				case TGT_CONF:
-				case TGT_COMP:
-				case TGT_INST:
-				case TGT_DST:
+				case TGT_SRC: {
+					val = uri.len == 0 ? STRV_NULL : STRV("${DIR_TMP_EXT_PKG_SRC_ROOT}");
+					break;
+				}
+				case TGT_BUILD: {
+					val = uri.len == 0 ? STRV_NULL : STRV("${DIR_TMP_EXT_PKG_BUILD}");
+					break;
+				}
+				case TGT_PREP: {
+					if (uri.len == 0) {
+						continue;
+					}
+					strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
+					resolve_var(vars, prep, svalues, &buf);
+					val = STRVS(buf);
+					break;
+				}
+				case TGT_CONF: {
+					if (uri.len == 0) {
+						continue;
+					}
+					strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
+					resolve_var(vars, conf, svalues, &buf);
+					val = STRVS(buf);
+					break;
+				}
+				case TGT_COMP: {
+					if (uri.len == 0) {
+						continue;
+					}
+					strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
+					resolve_var(vars, comp, svalues, &buf);
+					val = STRVS(buf);
+					break;
+				}
+				case TGT_INST: {
+					if (uri.len == 0) {
+						continue;
+					}
+					strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
+					resolve_var(vars, inst, svalues, &buf);
+					val = STRVS(buf);
+					break;
+				}
+				case TGT_DST: {
+					if (uri.len == 0) {
+						continue;
+					}
+					strv_t dst = proj_get_str(proj, target->strs + TARGET_DST);
+					resolve_var(vars, dst, svalues, &buf);
+					val = STRVS(buf);
+					break;
+				}
 				case DIR_OUT_EXT_FILE:
 					if (uri.len == 0) {
 						continue;
@@ -285,11 +285,11 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 				fs_write(fs, f, STRV("set("));
 				fs_write(fs, f, vars->vars[i].name);
-				fs_write(fs, f, STRV(" \""));
+				fs_write(fs, f, STRV(" "));
 				if (buf.len > 0) {
 					fs_write(fs, f, STRVS(buf));
 				}
-				fs_write(fs, f, STRV("\")\n"));
+				fs_write(fs, f, STRV(")\n"));
 			}
 			fs_write(fs, f, STRV("\n"));
 
@@ -418,6 +418,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 			}
 			case TARGET_TYPE_EXT: {
 				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\")\n"));
+				fs_write(fs, f, STRV("file(MAKE_DIRECTORY \"${TGT_BUILD}\")\n"));
 				fs_write(fs,
 					 f,
 					 STRV("file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_URI_FILE}\n"
@@ -432,18 +433,17 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				fs_write(fs,
 					 f,
 					 STRV("add_custom_target(${PN}_${TN}_build\n"
-					      "\tCOMMAND ${TGT_CMD}\n"
-					      "\tWORKING_DIRECTORY ${DIR_TMP_EXT_PKG_BUILD}\n"
+					      "\tCOMMAND ${TGT_PREP}\n"
+					      "\tCOMMAND ${TGT_CONF}\n"
+					      "\tCOMMAND ${TGT_COMP}\n"
+					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+					      "\tCOMMAND ${TGT_INST}\n"
+					      "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
 					      ")\n"));
 
 				fs_write(fs,
 					 f,
-					 STRV("add_custom_command(TARGET ${PN}_${TN}_build POST_BUILD\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-					      "\tCOMMAND ${TGT_INSTALL}\n"
-					      ")\n"
-					      "\n"
-					      "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+					 STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"
 					      "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
 
 				if (target->has_deps) {
@@ -643,11 +643,11 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			fs_write(drv->fs, f, STRV("if(is_multi_config)\n"));
 			fs_write(drv->fs, f, STRV("\tset("));
 			fs_write(drv->fs, f, vars.vars[i].name);
-			fs_write(drv->fs, f, STRV(" \"$<CONFIG>\")\n"));
+			fs_write(drv->fs, f, STRV(" $<CONFIG>)\n"));
 			fs_write(drv->fs, f, STRV("else()\n"));
 			fs_write(drv->fs, f, STRV("\tset("));
 			fs_write(drv->fs, f, vars.vars[i].name);
-			fs_write(drv->fs, f, STRV(" \"${CMAKE_BUILD_TYPE}\")\n"));
+			fs_write(drv->fs, f, STRV(" ${CMAKE_BUILD_TYPE})\n"));
 			fs_write(drv->fs, f, STRV("endif()\n"));
 			break;
 		}
@@ -678,11 +678,11 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 		fs_write(drv->fs, f, STRV("set("));
 		fs_write(drv->fs, f, vars.vars[i].name);
-		fs_write(drv->fs, f, STRV(" \""));
+		fs_write(drv->fs, f, STRV(" "));
 		if (buf.len > 0) {
 			fs_write(drv->fs, f, STRVS(buf));
 		}
-		fs_write(drv->fs, f, STRV("\")\n"));
+		fs_write(drv->fs, f, STRV(")\n"));
 	}
 
 	fs_write(drv->fs,

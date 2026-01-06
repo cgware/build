@@ -59,8 +59,8 @@ run() {
 }
 
 gen() {
-	run "$@" Make M
-	#run "$@" CMake C
+	#run "$@" Make M
+	run "$@" CMake C
 }
 
 test() {
