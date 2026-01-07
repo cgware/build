@@ -167,6 +167,7 @@ config_target_t *config_add_target(config_t *config, list_node_t pkg, list_node_
 	}
 
 	target->strs = strs_cnt;
+	target->out_type = CONFIG_TARGET_OUT_TYPE_UNKNOWN;
 
 	if (p->has_targets) {
 		list_app(&config->targets, p->targets, tmp);
@@ -331,22 +332,32 @@ size_t config_print(const config_t *config, dst_t dst)
 					{
 						dst.off += dputf(dst, "[target]\n");
 						strv_t tgt_name = config_get_str(config, target->strs + CONFIG_TARGET_NAME);
-						strv_t cmd	= config_get_str(config, target->strs + CONFIG_TARGET_CMD);
-						strv_t out	= config_get_str(config, target->strs + CONFIG_TARGET_OUT);
-						strv_t tgt_dst	= config_get_str(config, target->strs + CONFIG_TARGET_DST);
+						strv_t prep	= config_get_str(config, target->strs + CONFIG_TARGET_PREP);
+						strv_t conf	= config_get_str(config, target->strs + CONFIG_TARGET_CONF);
+						strv_t comp	= config_get_str(config, target->strs + CONFIG_TARGET_COMP);
+						strv_t inst	= config_get_str(config, target->strs + CONFIG_TARGET_INST);
+						strv_t tgt_out	= config_get_str(config, target->strs + CONFIG_TARGET_OUT);
 						dst.off += dputf(dst,
 								 "NAME: %.*s\n"
-								 "CMD: %.*s\n"
+								 "PREP: %.*s\n"
+								 "CONF: %.*s\n"
+								 "COMP: %.*s\n"
+								 "INST: %.*s\n"
 								 "OUT: %.*s\n"
-								 "DST: %.*s\n",
+								 "TYPE: %d\n",
 								 tgt_name.len,
 								 tgt_name.data,
-								 cmd.len,
-								 cmd.data,
-								 out.len,
-								 out.data,
-								 tgt_dst.len,
-								 tgt_dst.data);
+								 prep.len,
+								 prep.data,
+								 conf.len,
+								 conf.data,
+								 comp.len,
+								 comp.data,
+								 inst.len,
+								 inst.data,
+								 tgt_out.len,
+								 tgt_out.data,
+								 target->out_type);
 						dst.off += dputf(dst, "\n");
 					}
 				}

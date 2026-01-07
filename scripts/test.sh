@@ -75,6 +75,7 @@ test() {
 	gen 08_lib_driver "bin/exe test/lib"
 	gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
 	gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-main.tar.gz ../../tmp/dl/pkgs/cutils/cutils-main.tar.gz ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
+	gen 11_hello "ext/11_hello/bin/hello"
 }
 
 test

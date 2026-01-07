@@ -281,7 +281,7 @@ TEST(config_cfg_pkg)
 	END;
 }
 
-TEST(config_cfg_target)
+TEST(config_cfg_target_lib)
 {
 	START;
 
@@ -298,11 +298,15 @@ TEST(config_cfg_target)
 	cfg_root(&cfg, &root);
 	cfg_tbl(&cfg, STRV("target"), &tbl);
 	cfg_add_var(&cfg, root, tbl);
-	cfg_str(&cfg, STRV("cmd"), STRV("cmd"), &var);
+	cfg_str(&cfg, STRV("prep"), STRV("prep"), &var);
 	cfg_add_var(&cfg, tbl, var);
-	cfg_str(&cfg, STRV("out"), STRV("out"), &var);
+	cfg_str(&cfg, STRV("conf"), STRV("conf"), &var);
 	cfg_add_var(&cfg, tbl, var);
-	cfg_str(&cfg, STRV("dst"), STRV("dst"), &var);
+	cfg_str(&cfg, STRV("comp"), STRV("comp"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_str(&cfg, STRV("inst"), STRV("inst"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_str(&cfg, STRV("lib"), STRV("lib"), &var);
 	cfg_add_var(&cfg, tbl, var);
 
 	char tmp[128] = {0};
@@ -314,12 +318,72 @@ TEST(config_cfg_target)
 
 	strv_t val;
 
-	val = config_get_str(&config, target->strs + CONFIG_TARGET_CMD);
-	EXPECT_STRN(val.data, "cmd", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_PREP);
+	EXPECT_STRN(val.data, "prep", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_CONF);
+	EXPECT_STRN(val.data, "conf", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_COMP);
+	EXPECT_STRN(val.data, "comp", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_INST);
+	EXPECT_STRN(val.data, "inst", val.len);
 	val = config_get_str(&config, target->strs + CONFIG_TARGET_OUT);
-	EXPECT_STRN(val.data, "out", val.len);
-	val = config_get_str(&config, target->strs + CONFIG_TARGET_DST);
-	EXPECT_STRN(val.data, "dst", val.len);
+	EXPECT_STRN(val.data, "lib", val.len);
+	EXPECT_EQ(target->out_type, CONFIG_TARGET_OUT_TYPE_LIB);
+
+	cfg_free(&cfg);
+	config_free(&config);
+
+	END;
+}
+
+TEST(config_cfg_target_exe)
+{
+	START;
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, tbl, var;
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &tbl);
+	cfg_add_var(&cfg, root, tbl);
+	cfg_str(&cfg, STRV("prep"), STRV("prep"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_str(&cfg, STRV("conf"), STRV("conf"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_str(&cfg, STRV("comp"), STRV("comp"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_str(&cfg, STRV("inst"), STRV("inst"), &var);
+	cfg_add_var(&cfg, tbl, var);
+	cfg_str(&cfg, STRV("exe"), STRV("exe"), &var);
+	cfg_add_var(&cfg, tbl, var);
+
+	char tmp[128] = {0};
+	str_t buf     = STRB(tmp, 0);
+
+	EXPECT_EQ(config_cfg(&config, &cfg, root, NULL, NULL, STRV_NULL, dir, &buf, ALLOC_STD, DST_NONE()), 0);
+
+	const config_target_t *target = config_get_target(&config, 0);
+
+	strv_t val;
+
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_PREP);
+	EXPECT_STRN(val.data, "prep", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_CONF);
+	EXPECT_STRN(val.data, "conf", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_COMP);
+	EXPECT_STRN(val.data, "comp", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_INST);
+	EXPECT_STRN(val.data, "inst", val.len);
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_OUT);
+	EXPECT_STRN(val.data, "exe", val.len);
+	EXPECT_EQ(target->out_type, CONFIG_TARGET_OUT_TYPE_EXE);
 
 	cfg_free(&cfg);
 	config_free(&config);
@@ -415,7 +479,8 @@ STEST(config_cfg)
 	RUN(config_cfg_inc);
 	RUN(config_cfg_inc_invalid);
 	RUN(config_cfg_pkg);
-	RUN(config_cfg_target);
+	RUN(config_cfg_target_lib);
+	RUN(config_cfg_target_exe);
 	RUN(config_cfg_ext);
 	RUN(config_cfg_ext_invalid);
 

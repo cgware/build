@@ -15,11 +15,20 @@ typedef enum target_type_s {
 
 typedef enum target_str_e {
 	TARGET_NAME,
-	TARGET_CMD,
+	TARGET_PREP,
+	TARGET_CONF,
+	TARGET_COMP,
+	TARGET_INST,
 	TARGET_OUT,
-	TARGET_DST,
 	__TARGET_STR_CNT,
 } target_str_t;
+
+typedef enum target_out_type_e {
+	TARGET_OUT_TYPE_UNKNOWN,
+	TARGET_OUT_TYPE_LIB,
+	TARGET_OUT_TYPE_EXE,
+	__TARGET_TYPE_CNT,
+} target_out_type_t;
 
 typedef struct target_s {
 	uint strs;
@@ -27,6 +36,7 @@ typedef struct target_s {
 	uint pkg;
 	list_node_t deps;
 	uint has_deps;
+	target_out_type_t out_type;
 } target_t;
 
 typedef enum pkg_uri_proto_e {

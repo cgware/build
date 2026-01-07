@@ -6,14 +6,24 @@
 
 typedef enum config_target_str_e {
 	CONFIG_TARGET_NAME,
-	CONFIG_TARGET_CMD,
+	CONFIG_TARGET_PREP,
+	CONFIG_TARGET_CONF,
+	CONFIG_TARGET_COMP,
+	CONFIG_TARGET_INST,
 	CONFIG_TARGET_OUT,
-	CONFIG_TARGET_DST,
 	__CONFIG_TARGET_STR_CNT,
 } config_target_str_t;
 
-typedef struct config_target_s {
+typedef enum config_target_out_type_e {
+	CONFIG_TARGET_OUT_TYPE_UNKNOWN,
+	CONFIG_TARGET_OUT_TYPE_LIB,
+	CONFIG_TARGET_OUT_TYPE_EXE,
+	__CONFIG_TARGET_TYPE_CNT,
+} config_target_out_type_t;
+
+typedef struct config_target_out_type_s {
 	uint strs;
+	config_target_out_type_t out_type;
 } config_target_t;
 
 typedef enum config_pkg_str_e {

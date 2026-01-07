@@ -32,46 +32,52 @@ TEST(gen_make_proj_build_dir)
 		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
+		    "CP := cp\n"
 		    "DIR_PROJ := .." SEP ".." SEP "\n"
 		    "DIR_BUILD :=\n"
+		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
+		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
+		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
 		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		    "PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		    "PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
-		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
-		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
-		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		    "DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		    "DIR_PKG_INC = $(DIR_PKG)include/\n"
 		    "DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		    "DIR_PKG_TST = $(DIR_PKG)test/\n"
-		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
+		    "ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		    "TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		    "TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		    "TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		    "TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		    "TGT_INST = $($(PN)_$(TN)_INST)\n"
+		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		    "\n"
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
@@ -152,46 +158,52 @@ TEST(gen_make_proj_empty)
 		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
+		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
+		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
+		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
+		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
 		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		    "PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		    "PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
-		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
-		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
-		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		    "DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		    "DIR_PKG_INC = $(DIR_PKG)include/\n"
 		    "DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		    "DIR_PKG_TST = $(DIR_PKG)test/\n"
-		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
+		    "ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		    "TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		    "TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		    "TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		    "TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		    "TGT_INST = $($(PN)_$(TN)_INST)\n"
+		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		    "\n"
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
@@ -272,46 +284,52 @@ TEST(gen_make_proj_name)
 		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
+		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
+		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
+		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
+		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
 		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		    "PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		    "PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
-		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
-		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
-		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		    "DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		    "DIR_PKG_INC = $(DIR_PKG)include/\n"
 		    "DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		    "DIR_PKG_TST = $(DIR_PKG)test/\n"
-		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
+		    "ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		    "TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		    "TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		    "TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		    "TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		    "TGT_INST = $($(PN)_$(TN)_INST)\n"
+		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		    "\n"
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
@@ -392,46 +410,52 @@ TEST(gen_make_proj_unknown)
 		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
+		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
+		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
+		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
+		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
 		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		    "PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		    "PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
-		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
-		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
-		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		    "DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		    "DIR_PKG_INC = $(DIR_PKG)include/\n"
 		    "DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		    "DIR_PKG_TST = $(DIR_PKG)test/\n"
-		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
+		    "ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		    "TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		    "TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		    "TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		    "TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		    "TGT_INST = $($(PN)_$(TN)_INST)\n"
+		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		    "\n"
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
@@ -471,9 +495,6 @@ TEST(gen_make_proj_unknown)
 		    "\n"
 		    "all:\n"
 		    "\n"
-		    "define unknown\n"
-		    "endef\n"
-		    "\n"
 		    "define _cov\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
@@ -500,8 +521,7 @@ TEST(gen_make_proj_unknown)
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
-		    "$(eval $(call unknown))\n",
+		    "TN := pkg\n",
 		    tmp.len);
 
 	t_gen_free(&com);
@@ -526,46 +546,52 @@ TEST(gen_make_proj_exe)
 		"CONFIGS := Debug\n"
 		"OPEN := 1\n"
 		"\n"
+		"CP := cp\n"
 		"DIR_PROJ :=\n"
 		"DIR_BUILD :=\n"
+		"DIR_TMP := $(DIR_PROJ)tmp/\n"
+		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		"DIR_TMP_REP := $(DIR_TMP)report/\n"
+		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		"DIR_OUT_INT = $(DIR_OUT)int/\n"
+		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		"DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		"DIR_OUT_TST = $(DIR_OUT)test/\n"
 		"PKG_DIR = $($(PN)_DIR)\n"
 		"PKG_URI = $($(PN)_URI)\n"
 		"PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		"PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		"PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		"TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		"TGT_DST = $($(PN)_$(TN)_DST)\n"
-		"DIR_TMP := $(DIR_PROJ)tmp/\n"
-		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		"DIR_TMP_REP := $(DIR_TMP)report/\n"
-		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		"DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		"DIR_PKG_INC = $(DIR_PKG)include/\n"
 		"DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		"DIR_PKG_TST = $(DIR_PKG)test/\n"
-		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		"DIR_OUT_INT = $(DIR_OUT)int/\n"
+		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		"DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		"DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		"DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		"DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		"DIR_OUT_TST = $(DIR_OUT)test/\n"
+		"ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		"DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		"TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		"TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		"TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		"TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		"TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		"TGT_INST = $($(PN)_$(TN)_INST)\n"
+		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		"\n"
 		"EXT_LIB := .a\n"
 		"EXT_EXE :=\n"
@@ -640,9 +666,9 @@ TEST(gen_make_proj_exe)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _exe,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3747);
+		3951);
 
-	EXPECT_STRN(tmp.data + 3747,
+	EXPECT_STRN(tmp.data + 3951,
 		    "define _cov\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
@@ -663,7 +689,7 @@ TEST(gen_make_proj_exe)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3747);
+		    tmp.len - 3951);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -686,7 +712,7 @@ TEST(gen_make_proj_lib)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_lib(&com, STRV("M")), 0);
 
-	char buf[4096] = {0};
+	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -696,46 +722,52 @@ TEST(gen_make_proj_lib)
 		"CONFIGS := Debug\n"
 		"OPEN := 1\n"
 		"\n"
+		"CP := cp\n"
 		"DIR_PROJ :=\n"
 		"DIR_BUILD :=\n"
+		"DIR_TMP := $(DIR_PROJ)tmp/\n"
+		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		"DIR_TMP_REP := $(DIR_TMP)report/\n"
+		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		"DIR_OUT_INT = $(DIR_OUT)int/\n"
+		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		"DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		"DIR_OUT_TST = $(DIR_OUT)test/\n"
 		"PKG_DIR = $($(PN)_DIR)\n"
 		"PKG_URI = $($(PN)_URI)\n"
 		"PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		"PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		"PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		"TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		"TGT_DST = $($(PN)_$(TN)_DST)\n"
-		"DIR_TMP := $(DIR_PROJ)tmp/\n"
-		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		"DIR_TMP_REP := $(DIR_TMP)report/\n"
-		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		"DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		"DIR_PKG_INC = $(DIR_PKG)include/\n"
 		"DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		"DIR_PKG_TST = $(DIR_PKG)test/\n"
-		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		"DIR_OUT_INT = $(DIR_OUT)int/\n"
+		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		"DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		"DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		"DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		"DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		"DIR_OUT_TST = $(DIR_OUT)test/\n"
+		"ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		"DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		"TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		"TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		"TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		"TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		"TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		"TGT_INST = $($(PN)_$(TN)_INST)\n"
+		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		"\n"
 		"EXT_LIB := .a\n"
 		"EXT_EXE :=\n"
@@ -806,28 +838,31 @@ TEST(gen_make_proj_lib)
 		"define lib\n"
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _lib,$(a),$(c)))))\n"
 		"endef\n"
-		"\n"
-		"define _cov\n"
-		"precov_$(ARCH)_$(CONFIG):\n"
-		"\t@rm -fv $$(GCDA_$(CONFIG))\n"
-		"\n"
-		"cov_$(ARCH)_$(CONFIG):\n"
-		"\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
-		"\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
-		"\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
-		"\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
-		"\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
-		"\tfi\n"
-		"\n"
-		"cov: cov_$(ARCH)_$(CONFIG)\n"
-		"\n"
-		"endef\n"
-		"\n"
-		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
-		"\n"
-		"include $(DIR_BUILD)pkg.mk\n"
 		"\n",
-		tmp.len);
+		3697);
+
+	EXPECT_STRN(tmp.data + 3697,
+		    "define _cov\n"
+		    "precov_$(ARCH)_$(CONFIG):\n"
+		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\n"
+		    "cov_$(ARCH)_$(CONFIG):\n"
+		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
+		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
+		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
+		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
+		    "\tfi\n"
+		    "\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
+		    "\n"
+		    "include $(DIR_BUILD)pkg.mk\n"
+		    "\n",
+		    tmp.len - 3697);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -850,7 +885,7 @@ TEST(gen_make_proj_ext)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_proj_ext(&com, STRV("M")), 0);
 
-	char buf[4096] = {0};
+	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
@@ -859,46 +894,52 @@ TEST(gen_make_proj_ext)
 		    "CONFIGS := Debug\n"
 		    "OPEN := 1\n"
 		    "\n"
+		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
 		    "DIR_BUILD :=\n"
+		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
+		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
+		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
 		    "PKG_URI = $($(PN)_URI)\n"
 		    "PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		    "PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		    "PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		    "TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		    "TGT_DST = $($(PN)_$(TN)_DST)\n"
-		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
-		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		    "DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
-		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		    "DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		    "DIR_PKG_INC = $(DIR_PKG)include/\n"
 		    "DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		    "DIR_PKG_TST = $(DIR_PKG)test/\n"
-		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		    "DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		    "DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		    "DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
+		    "ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		    "DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		    "TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		    "TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		    "TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		    "TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		    "TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		    "TGT_INST = $($(PN)_$(TN)_INST)\n"
+		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		    "\n"
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
@@ -962,16 +1003,21 @@ TEST(gen_make_proj_ext)
 		    "$(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile: $(DIR_OUT_EXT_FILE)\n"
 		    "\n"
 		    "$(DIR_OUT_EXT_FILE): $(DIR_TMP_EXT_PKG_SRC)\n"
-		    "\t@mkdir -pv $$(@D)\n"
-		    "\tcd $(DIR_TMP_EXT_PKG_SRC_ROOT) && $(TGT_CMD)\n"
-		    "\tcp $(DIR_TMP_EXT_PKG_SRC_ROOT_OUT) $(DIR_OUT_EXT_FILE)\n"
+		    "\t@mkdir -pv $$(@D) $(DIR_TMP_EXT_PKG_BUILD)\n"
+		    "\tcd $(TGT_BUILD) && $(if $(strip $(TGT_PREP)),$(TGT_PREP),:)\n"
+		    "\tcd $(TGT_BUILD) && $(if $(strip $(TGT_CONF)),$(TGT_CONF),:)\n"
+		    "\tcd $(TGT_BUILD) && $(if $(strip $(TGT_COMP)),$(TGT_COMP),:)\n"
+		    "\tcd $(TGT_BUILD) && $(if $(strip $(TGT_INST)),$(TGT_INST),:)\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
 		    "define ext\n"
 		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _ext,$(a),$(c)))))\n"
 		    "endef\n"
-		    "\n"
+		    "\n",
+		    3599);
+
+	EXPECT_STRN(tmp.data + 3599,
 		    "define _cov\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
@@ -992,7 +1038,7 @@ TEST(gen_make_proj_ext)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len);
+		    tmp.len - 3599);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1004,9 +1050,8 @@ TEST(gen_make_proj_ext)
 		    "$(eval $(call fetch_wget))\n"
 		    "$(eval $(call ext_zip))\n"
 		    "TN := pkg\n"
-		    "$(PN)_$(TN)_CMD =\n"
-		    "$(PN)_$(TN)_OUT =\n"
-		    "$(PN)_$(TN)_DST =\n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1032,46 +1077,52 @@ TEST(gen_make_proj_test)
 		"CONFIGS := Debug\n"
 		"OPEN := 1\n"
 		"\n"
+		"CP := cp\n"
 		"DIR_PROJ :=\n"
 		"DIR_BUILD :=\n"
+		"DIR_TMP := $(DIR_PROJ)tmp/\n"
+		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		"DIR_TMP_REP := $(DIR_TMP)report/\n"
+		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		"DIR_OUT_INT = $(DIR_OUT)int/\n"
+		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		"DIR_OUT_EXT = $(DIR_OUT)ext/\n"
+		"DIR_OUT_TST = $(DIR_OUT)test/\n"
 		"PKG_DIR = $($(PN)_DIR)\n"
 		"PKG_URI = $($(PN)_URI)\n"
 		"PKG_URI_FILE = $($(PN)_URI_FILE)\n"
 		"PKG_URI_NAME = $($(PN)_URI_NAME)\n"
 		"PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		"TGT_CMD = $($(PN)_$(TN)_CMD)\n"
-		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		"TGT_DST = $($(PN)_$(TN)_DST)\n"
-		"DIR_TMP := $(DIR_PROJ)tmp/\n"
-		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT_OUT = $(DIR_TMP_EXT_PKG_SRC_ROOT)$(TGT_OUT)\n"
-		"DIR_TMP_REP := $(DIR_TMP)report/\n"
-		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
 		"DIR_PKG_SRC = $(DIR_PKG)src/\n"
 		"DIR_PKG_INC = $(DIR_PKG)include/\n"
 		"DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
 		"DIR_PKG_TST = $(DIR_PKG)test/\n"
-		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		"DIR_OUT_INT = $(DIR_OUT)int/\n"
+		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		"DIR_OUT_LIB_FILE = $(DIR_OUT_LIB)$(PN).a\n"
-		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
 		"DIR_OUT_BIN_FILE = $(DIR_OUT_BIN)$(PN)\n"
-		"DIR_OUT_EXT = $(DIR_OUT)ext/\n"
 		"DIR_OUT_EXT_PKG = $(DIR_OUT_EXT)$(PN)/\n"
-		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_DST)\n"
-		"DIR_OUT_TST = $(DIR_OUT)test/\n"
+		"ABS_DIR_OUT_EXT_PKG = $(abspath $(DIR_OUT_EXT_PKG))/\n"
 		"DIR_OUT_TST_FILE = $(DIR_OUT_TST)$(PN)\n"
+		"TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		"TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		"TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		"TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		"TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		"TGT_INST = $($(PN)_$(TN)_INST)\n"
+		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_OUT)\n"
 		"\n"
 		"EXT_LIB := .a\n"
 		"EXT_EXE :=\n"
@@ -1151,9 +1202,9 @@ TEST(gen_make_proj_test)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _test,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3832);
+		4036);
 
-	EXPECT_STRN(tmp.data + 3832,
+	EXPECT_STRN(tmp.data + 4036,
 		    "define _cov\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
@@ -1174,7 +1225,7 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3832);
+		    tmp.len - 4036);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1624,18 +1675,120 @@ TEST(gen_make_pkg_ext_unknown)
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_ext_uri)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_uri(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
 		    "PN := pkg\n"
 		    "$(PN)_DIR :=\n"
 		    "$(PN)_URI := url\n"
 		    "$(PN)_URI_FILE := file\n"
 		    "$(PN)_URI_NAME := name\n"
 		    "$(PN)_URI_ROOT := main\n"
-		    "$(eval $(call fetch_wget))\n"
-		    "$(eval $(call ext_unknown))\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_ext_cmd)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_cmd(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := pkg\n"
-		    "$(PN)_$(TN)_CMD = cmd\n"
+		    "$(PN)_$(TN)_PREP = prep\n"
+		    "$(PN)_$(TN)_CONF = conf\n"
+		    "$(PN)_$(TN)_COMP = comp\n"
+		    "$(PN)_$(TN)_INST = inst\n"
 		    "$(PN)_$(TN)_OUT = out\n"
-		    "$(PN)_$(TN)_DST = dst\n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_ext_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_lib(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_ext_exe)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_exe(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1660,14 +1813,13 @@ TEST(gen_make_pkg_ext_zip)
 		    "$(PN)_DIR :=\n"
 		    "$(PN)_URI := url\n"
 		    "$(PN)_URI_FILE := file\n"
-		    "$(PN)_URI_NAME := name\n"
+		    "$(PN)_URI_NAME := name-1.0\n"
 		    "$(PN)_URI_ROOT := main\n"
 		    "$(eval $(call fetch_wget))\n"
 		    "$(eval $(call ext_zip))\n"
-		    "TN := pkg\n"
-		    "$(PN)_$(TN)_CMD = cmd\n"
-		    "$(PN)_$(TN)_OUT = out\n"
-		    "$(PN)_$(TN)_DST = dst\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1692,14 +1844,13 @@ TEST(gen_make_pkg_ext_tar_gz)
 		    "$(PN)_DIR :=\n"
 		    "$(PN)_URI := url\n"
 		    "$(PN)_URI_FILE := file\n"
-		    "$(PN)_URI_NAME := name\n"
+		    "$(PN)_URI_NAME := name-1.0\n"
 		    "$(PN)_URI_ROOT := main\n"
 		    "$(eval $(call fetch_wget))\n"
 		    "$(eval $(call ext_tar_gz))\n"
-		    "TN := pkg\n"
-		    "$(PN)_$(TN)_CMD = cmd\n"
-		    "$(PN)_$(TN)_OUT = out\n"
-		    "$(PN)_$(TN)_DST = dst\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1715,7 +1866,7 @@ TEST(gen_make_pkg_ext_deps)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_pkg_ext_deps(&com, STRV("M")), 0);
 
-	char buf[256] = {0};
+	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
@@ -1726,9 +1877,8 @@ TEST(gen_make_pkg_ext_deps)
 		    "$(PN)_$(TN)_LIBS :=\n"
 		    "$(eval $(call lib))\n"
 		    "TN := ext\n"
-		    "$(PN)_$(TN)_CMD =\n"
-		    "$(PN)_$(TN)_OUT =\n"
-		    "$(PN)_$(TN)_DST =\n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
 		    "$(eval $(call ext))\n",
 		    tmp.len);
 
@@ -1765,6 +1915,10 @@ STEST(gen_make)
 	RUN(gen_make_pkg_depends);
 	RUN(gen_make_pkg_rdepends);
 	RUN(gen_make_pkg_ext_unknown);
+	RUN(gen_make_pkg_ext_uri);
+	RUN(gen_make_pkg_ext_cmd);
+	RUN(gen_make_pkg_ext_lib);
+	RUN(gen_make_pkg_ext_exe);
 	RUN(gen_make_pkg_ext_zip);
 	RUN(gen_make_pkg_ext_tar_gz);
 	RUN(gen_make_pkg_ext_deps);

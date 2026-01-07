@@ -275,7 +275,7 @@ TEST(config_print)
 	EXPECT_EQ(config_print(NULL, DST_NONE()), 0);
 
 	char buf[256] = {0};
-	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 125);
+	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 149);
 	EXPECT_STR(buf,
 		   "[dir]\n"
 		   "NAME: \n"
@@ -294,9 +294,12 @@ TEST(config_print)
 		   "\n"
 		   "[target]\n"
 		   "NAME: \n"
-		   "CMD: \n"
+		   "PREP: \n"
+		   "CONF: \n"
+		   "COMP: \n"
+		   "INST: \n"
 		   "OUT: \n"
-		   "DST: \n"
+		   "TYPE: 0\n"
 		   "\n")
 
 	config_free(&config);

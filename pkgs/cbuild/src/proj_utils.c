@@ -58,6 +58,7 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 				name = name2;
 				ext  = STRV("tar.gz");
 			}
+			proj_set_str(proj, pkg->strs + PKG_STR_URI_DIR, name2);
 			pkg->uri.ext = PKG_URI_EXT_TAR_GZ;
 		} else {
 			pkg->uri.ext = PKG_URI_EXT_UNKNOWN;

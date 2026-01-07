@@ -77,5 +77,6 @@ exit /b %ret%
 	call :gen 08_lib_driver "bin/exe.exe test/lib.exe"
 	call :gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.lib ext/cutils/cutils.lib bin/exe.exe"
 	call :gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-main.tar.gz ../../tmp/dl/pkgs/cutils/cutils-main.tar.gz ext/cbase/cbase.lib ext/cutils/cutils.lib bin/exe.exe"
+	rem call :gen 11_hello "ext/11_hello/bin/hello.exe"
 
 	exit /b 0

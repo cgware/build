@@ -58,6 +58,8 @@ pkg_t *proj_add_pkg(proj_t *proj, uint *id)
 	}
 
 	pkg->strs	 = strs_cnt;
+	pkg->uri.proto	 = PKG_URI_PROTO_UNKNOWN;
+	pkg->uri.ext	 = PKG_URI_EXT_UNKNOWN;
 	pkg->has_targets = 0;
 
 	id ? *id = tmp : (uint)0;
@@ -140,6 +142,7 @@ target_t *proj_add_target(proj_t *proj, uint pkg, uint *id)
 	target->strs	 = strs_cnt;
 	target->has_deps = 0;
 	target->pkg	 = pkg;
+	target->out_type = TARGET_OUT_TYPE_UNKNOWN;
 
 	id ? *id = tmp : (uint)0;
 
@@ -485,24 +488,34 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 			{
 				dst.off += dputf(dst, "\n[target]\n");
 				strv_t tgt_name = proj_get_str(proj, target->strs + TARGET_NAME);
-				strv_t cmd	= proj_get_str(proj, target->strs + TARGET_CMD);
-				strv_t out	= proj_get_str(proj, target->strs + TARGET_OUT);
-				strv_t tgt_dst	= proj_get_str(proj, target->strs + TARGET_DST);
+				strv_t prep	= proj_get_str(proj, target->strs + TARGET_PREP);
+				strv_t conf	= proj_get_str(proj, target->strs + TARGET_CONF);
+				strv_t comp	= proj_get_str(proj, target->strs + TARGET_COMP);
+				strv_t inst	= proj_get_str(proj, target->strs + TARGET_INST);
+				strv_t tgt_out	= proj_get_str(proj, target->strs + TARGET_OUT);
 				dst.off += dputf(dst,
 						 "NAME: %.*s\n"
 						 "TYPE: %s\n"
-						 "CMD: %.*s\n"
+						 "PREP: %.*s\n"
+						 "CONF: %.*s\n"
+						 "COMP: %.*s\n"
+						 "INST: %.*s\n"
 						 "OUT: %.*s\n"
-						 "DST: %.*s\n",
+						 "TYPE: %d\n",
 						 tgt_name.len,
 						 tgt_name.data,
 						 target_type_str[target->type],
-						 cmd.len,
-						 cmd.data,
-						 out.len,
-						 out.data,
-						 tgt_dst.len,
-						 tgt_dst.data);
+						 prep.len,
+						 prep.data,
+						 conf.len,
+						 conf.data,
+						 comp.len,
+						 comp.data,
+						 inst.len,
+						 inst.data,
+						 tgt_out.len,
+						 tgt_out.data,
+						 target->out_type);
 				dst.off += dputf(dst, "DEPS:");
 
 				if (target->has_deps) {
