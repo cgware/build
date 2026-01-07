@@ -107,7 +107,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 						strv_t conf = config_get_str(config, cfg_target->strs + CONFIG_TARGET_CONF);
 						strv_t comp = config_get_str(config, cfg_target->strs + CONFIG_TARGET_COMP);
 						strv_t inst = config_get_str(config, cfg_target->strs + CONFIG_TARGET_INST);
-						strv_t dst = config_get_str(config, cfg_target->strs + CONFIG_TARGET_DST);
+						strv_t out  = config_get_str(config, cfg_target->strs + CONFIG_TARGET_OUT);
 
 						if (target == NULL || uri.len > 0) {
 							target = proj_add_target(proj, pkg_id, &target_id);
@@ -119,7 +119,15 @@ int proj_cfg(proj_t *proj, const config_t *config)
 						proj_set_str(proj, target->strs + TARGET_CONF, conf);
 						proj_set_str(proj, target->strs + TARGET_COMP, comp);
 						proj_set_str(proj, target->strs + TARGET_INST, inst);
-						proj_set_str(proj, target->strs + TARGET_DST, dst);
+						proj_set_str(proj, target->strs + TARGET_OUT, out);
+
+						static const target_out_type_t out_type[] = {
+							[CONFIG_TARGET_OUT_TYPE_UNKNOWN] = TARGET_OUT_TYPE_UNKNOWN,
+							[CONFIG_TARGET_OUT_TYPE_LIB]	 = TARGET_OUT_TYPE_LIB,
+							[CONFIG_TARGET_OUT_TYPE_EXE]	 = TARGET_OUT_TYPE_EXE,
+						};
+
+						target->out_type = out_type[cfg_target->out_type];
 
 						if (uri.len > 0) {
 							target->type = TARGET_TYPE_EXT;

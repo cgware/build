@@ -481,7 +481,7 @@ TEST(proj_print)
 
 	char buf[512] = {0};
 	EXPECT_EQ(proj_print(NULL, DST_BUF(buf)), 0);
-	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 314);
+	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 362);
 	EXPECT_STR(buf,
 		   "[project]\n"
 		   "NAME: \n"
@@ -502,9 +502,12 @@ TEST(proj_print)
 		   "[target]\n"
 		   "NAME: \n"
 		   "TYPE: UNKNOWN\n"
-		   "CMD: \n"
-		   "OUT: \n"
+		   "PREP: \n"
+		   "CONF: \n"
+		   "COMP: \n"
+		   "INST: \n"
 		   "DST: \n"
+		   "TYPE: 0\n"
 		   "DEPS: :\n"
 		   "\n"
 		   "[pkg]\n"
@@ -522,9 +525,12 @@ TEST(proj_print)
 		   "[target]\n"
 		   "NAME: \n"
 		   "TYPE: UNKNOWN\n"
-		   "CMD: \n"
-		   "OUT: \n"
+		   "PREP: \n"
+		   "CONF: \n"
+		   "COMP: \n"
+		   "INST: \n"
 		   "DST: \n"
+		   "TYPE: 0\n"
 		   "DEPS:\n")
 
 	proj_free(&proj);

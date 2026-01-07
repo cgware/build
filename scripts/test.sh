@@ -55,26 +55,27 @@ run() {
 	done
 
 	printf "\033[0;32mPASS\033[0m\n"
-	#rm -rf "$bin" "$build" "$tmp"
+	rm -rf "$bin" "$build" "$tmp"
 }
 
 gen() {
-	#run "$@" Make M
+	run "$@" Make M
 	run "$@" CMake C
 }
 
 test() {
-	#gen 00_exe "bin/00_exe"
-	#gen 01_lib "lib/01_lib.a"
-	#gen 02_multi "bin/a bin/b"
-	#gen 03_depends "bin/exe lib/lib.a"
-	#gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
-	#gen 05_extern "lib/cbase.a"
-	#gen 06_lib_test "lib/06_lib_test.a test/06_lib_test ../../tmp/report/cov/index.html"
-	#gen 07_exe_driver "bin/07_exe_driver"
-	#gen 08_lib_driver "bin/exe test/lib"
+	gen 00_exe "bin/00_exe"
+	gen 01_lib "lib/01_lib.a"
+	gen 02_multi "bin/a bin/b"
+	gen 03_depends "bin/exe lib/lib.a"
+	gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	gen 05_extern "lib/cbase.a"
+	gen 06_lib_test "lib/06_lib_test.a test/06_lib_test ../../tmp/report/cov/index.html"
+	gen 07_exe_driver "bin/07_exe_driver"
+	gen 08_lib_driver "bin/exe test/lib"
 	gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
-	#gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-main.tar.gz ../../tmp/dl/pkgs/cutils/cutils-main.tar.gz ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
+	gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-main.tar.gz ../../tmp/dl/pkgs/cutils/cutils-main.tar.gz ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
+	gen 11_hello "ext/11_hello/bin/hello"
 }
 
 test

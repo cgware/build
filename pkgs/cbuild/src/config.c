@@ -335,14 +335,15 @@ size_t config_print(const config_t *config, dst_t dst)
 						strv_t conf	= config_get_str(config, target->strs + CONFIG_TARGET_CONF);
 						strv_t comp	= config_get_str(config, target->strs + CONFIG_TARGET_COMP);
 						strv_t inst	= config_get_str(config, target->strs + CONFIG_TARGET_INST);
-						strv_t tgt_dst	= config_get_str(config, target->strs + CONFIG_TARGET_DST);
+						strv_t tgt_out	= config_get_str(config, target->strs + CONFIG_TARGET_OUT);
 						dst.off += dputf(dst,
 								 "NAME: %.*s\n"
 								 "PREP: %.*s\n"
 								 "CONF: %.*s\n"
 								 "COMP: %.*s\n"
 								 "INST: %.*s\n"
-								 "DST: %.*s\n",
+								 "DST: %.*s\n"
+								 "TYPE: %d\n",
 								 tgt_name.len,
 								 tgt_name.data,
 								 prep.len,
@@ -353,8 +354,9 @@ size_t config_print(const config_t *config, dst_t dst)
 								 comp.data,
 								 inst.len,
 								 inst.data,
-								 tgt_dst.len,
-								 tgt_dst.data);
+								 tgt_out.len,
+								 tgt_out.data,
+								 target->out_type);
 						dst.off += dputf(dst, "\n");
 					}
 				}

@@ -130,8 +130,10 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 		case DIR_TMP_EXT_PKG:
 		case DIR_TMP_EXT_PKG_SRC:
 		case DIR_TMP_EXT_PKG_SRC_ROOT:
+		case DIR_TMP_EXT_PKG_BUILD:
 		case DIR_TMP_DL_PKG:
 		case DIR_OUT_EXT_PKG:
+		case ABS_DIR_OUT_EXT_PKG:
 			if (uri.len == 0) {
 				continue;
 			}
@@ -179,11 +181,11 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 		fs_write(fs, f, STRV("set("));
 		fs_write(fs, f, vars->vars[i].name);
-		fs_write(fs, f, STRV(" \""));
+		fs_write(fs, f, STRV(" "));
 		if (buf.len > 0) {
 			fs_write(fs, f, STRVS(buf));
 		}
-		fs_write(fs, f, STRV("\")\n"));
+		fs_write(fs, f, STRV(")\n"));
 	}
 
 	fs_write(fs, f, STRV("\n"));
@@ -213,15 +215,21 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				strv_t val = vars->vars[i].val;
 				switch (i) {
 				case TGT_SRC: {
-					val = uri.len == 0 ? STRV_NULL : STRV("${DIR_TMP_EXT_PKG_SRC_ROOT}");
+					if (target->type != TARGET_TYPE_EXT) {
+						continue;
+					}
+					val = STRV("${DIR_TMP_EXT_PKG_SRC_ROOT}");
 					break;
 				}
 				case TGT_BUILD: {
-					val = uri.len == 0 ? STRV_NULL : STRV("${DIR_TMP_EXT_PKG_BUILD}");
+					if (target->type != TARGET_TYPE_EXT) {
+						continue;
+					}
+					val = STRV("${DIR_TMP_EXT_PKG_BUILD}");
 					break;
 				}
 				case TGT_PREP: {
-					if (uri.len == 0) {
+					if (target->type != TARGET_TYPE_EXT) {
 						continue;
 					}
 					strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
@@ -230,7 +238,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					break;
 				}
 				case TGT_CONF: {
-					if (uri.len == 0) {
+					if (target->type != TARGET_TYPE_EXT) {
 						continue;
 					}
 					strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
@@ -239,7 +247,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					break;
 				}
 				case TGT_COMP: {
-					if (uri.len == 0) {
+					if (target->type != TARGET_TYPE_EXT) {
 						continue;
 					}
 					strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
@@ -248,7 +256,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					break;
 				}
 				case TGT_INST: {
-					if (uri.len == 0) {
+					if (target->type != TARGET_TYPE_EXT) {
 						continue;
 					}
 					strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
@@ -256,17 +264,17 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					val = STRVS(buf);
 					break;
 				}
-				case TGT_DST: {
-					if (uri.len == 0) {
+				case TGT_OUT: {
+					if (target->type != TARGET_TYPE_EXT) {
 						continue;
 					}
-					strv_t dst = proj_get_str(proj, target->strs + TARGET_DST);
-					resolve_var(vars, dst, svalues, &buf);
+					strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+					resolve_var(vars, out, svalues, &buf);
 					val = STRVS(buf);
 					break;
 				}
 				case DIR_OUT_EXT_FILE:
-					if (uri.len == 0) {
+					if (target->type != TARGET_TYPE_EXT) {
 						continue;
 					}
 					break;
@@ -433,6 +441,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				fs_write(fs,
 					 f,
 					 STRV("add_custom_target(${PN}_${TN}_build\n"
+					      "\tALL\n"
 					      "\tCOMMAND ${TGT_PREP}\n"
 					      "\tCOMMAND ${TGT_CONF}\n"
 					      "\tCOMMAND ${TGT_COMP}\n"
@@ -441,10 +450,18 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					      "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
 					      ")\n"));
 
-				fs_write(fs,
-					 f,
-					 STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"
-					      "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
+				switch (target->out_type) {
+				case TARGET_OUT_TYPE_LIB:
+					fs_write(fs, f, STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"));
+					break;
+				case TARGET_OUT_TYPE_EXE:
+					fs_write(fs, f, STRV("add_executable(${PN}_${TN} IMPORTED)\n"));
+					break;
+				default:
+					break;
+				}
+
+				fs_write(fs, f, STRV("add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
 
 				if (target->has_deps) {
 					fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
@@ -525,8 +542,11 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 					 f,
 					 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
 					      "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
-					      "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"
-					      "\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_SRC_ROOT}include\n"));
+					      "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"));
+
+				if (target->out_type == TARGET_OUT_TYPE_LIB) {
+					fs_write(fs, f, STRV("\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_SRC_ROOT}include\n"));
+				}
 			}
 
 			fs_write(fs, f, STRV("\tOUTPUT_NAME \"${PN}\"\n"));
@@ -689,11 +709,11 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		 f,
 		 STRV("\n"
 		      "if(WIN32)\n"
-		      "\tset(EXT_LIB \".lib\")\n"
-		      "\tset(EXT_EXE \".exe\")\n"
+		      "\tset(EXT_LIB .lib)\n"
+		      "\tset(EXT_EXE .exe)\n"
 		      "else()\n"
-		      "\tset(EXT_LIB \".a\")\n"
-		      "\tset(EXT_EXE \"\")\n"
+		      "\tset(EXT_LIB .a)\n"
+		      "\tset(EXT_EXE )\n"
 		      "endif()\n"
 		      "\n"
 		      "enable_testing()\n"
@@ -797,11 +817,11 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 		fs_write(drv->fs, f, STRV("\tset("));
 		fs_write(drv->fs, f, vars.vars[i].name);
-		fs_write(drv->fs, f, STRV(" \""));
+		fs_write(drv->fs, f, STRV(" "));
 		if (buf.len > 0) {
 			fs_write(drv->fs, f, STRVS(buf));
 		}
-		fs_write(drv->fs, f, STRV("\")\n"));
+		fs_write(drv->fs, f, STRV(")\n"));
 	}
 
 	fs_write(drv->fs,

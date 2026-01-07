@@ -64,7 +64,7 @@ typedef enum var_name_e {
 	TGT_CONF,
 	TGT_COMP,
 	TGT_INST,
-	TGT_DST,
+	TGT_OUT,
 	// TGT OUT
 	DIR_OUT_EXT_FILE,
 

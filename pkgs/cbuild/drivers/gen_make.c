@@ -80,11 +80,15 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 			make_inc_add_act(make, inc, act);
 		}
 
-		make_eval_def(make, protos_defs[pkg->uri.proto].def, &act);
-		make_inc_add_act(make, inc, act);
+		if (pkg->uri.proto != PKG_URI_PROTO_UNKNOWN) {
+			make_eval_def(make, protos_defs[pkg->uri.proto].def, &act);
+			make_inc_add_act(make, inc, act);
+		}
 
-		make_eval_def(make, exts_defs[pkg->uri.ext].def, &act);
-		make_inc_add_act(make, inc, act);
+		if (pkg->uri.ext != PKG_URI_EXT_UNKNOWN) {
+			make_eval_def(make, exts_defs[pkg->uri.ext].def, &act);
+			make_inc_add_act(make, inc, act);
+		}
 	}
 
 	strv_t svalues[__VARS_CNT] = {
@@ -283,50 +287,50 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 			break;
 		}
 		case TARGET_TYPE_EXT: {
-			make_var(make, STRV("$(PN)_$(TN)_PREP"), MAKE_VAR_REF, &act);
 			strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
 			resolve_var(vars, prep, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
+				make_var(make, STRV("$(PN)_$(TN)_PREP"), MAKE_VAR_REF, &act);
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+				make_inc_add_act(make, inc, act);
 			}
-			make_inc_add_act(make, inc, act);
 
-			make_var(make, STRV("$(PN)_$(TN)_CONF"), MAKE_VAR_REF, &act);
 			strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
 			resolve_var(vars, conf, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
+				make_var(make, STRV("$(PN)_$(TN)_CONF"), MAKE_VAR_REF, &act);
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+				make_inc_add_act(make, inc, act);
 			}
-			make_inc_add_act(make, inc, act);
 
-			make_var(make, STRV("$(PN)_$(TN)_COMP"), MAKE_VAR_REF, &act);
 			strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
 			resolve_var(vars, comp, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
+				make_var(make, STRV("$(PN)_$(TN)_COMP"), MAKE_VAR_REF, &act);
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+				make_inc_add_act(make, inc, act);
 			}
-			make_inc_add_act(make, inc, act);
 
-			make_var(make, STRV("$(PN)_$(TN)_INST"), MAKE_VAR_REF, &act);
 			strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
 			resolve_var(vars, inst, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
+				make_var(make, STRV("$(PN)_$(TN)_INST"), MAKE_VAR_REF, &act);
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+				make_inc_add_act(make, inc, act);
 			}
-			make_inc_add_act(make, inc, act);
 
-			make_var(make, STRV("$(PN)_$(TN)_DST"), MAKE_VAR_REF, &act);
-			strv_t dst = proj_get_str(proj, target->strs + TARGET_DST);
-			resolve_var(vars, dst, svalues, buf);
+			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+			resolve_var(vars, out, svalues, buf);
 			var_convert(buf, '{', '}', '(', ')');
 			if (buf->len > 0) {
+				make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
 				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+				make_inc_add_act(make, inc, act);
 			}
-			make_inc_add_act(make, inc, act);
 
 			make_var(make, STRV("$(PN)_$(TN)_SRC"), MAKE_VAR_REF, &act);
 			make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/")));
@@ -341,8 +345,10 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 			break;
 		}
 
-		make_eval_def(make, defines[target->type].def, &act);
-		make_inc_add_act(make, inc, act);
+		if (target->type != TARGET_TYPE_UNKNOWN) {
+			make_eval_def(make, defines[target->type].def, &act);
+			make_inc_add_act(make, inc, act);
+		}
 	}
 
 	void *file;
@@ -588,23 +594,20 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_add_act(&make, root, act);
 
 	defines_t protos_defs[] = {
-		[PKG_URI_PROTO_UNKNOWN] = {STRVT("fetch_unknown")},
-		[PKG_URI_PROTO_GIT]	= {STRVT("fetch_git")},
-		[PKG_URI_PROTO_HTTPS]	= {STRVT("fetch_wget")},
+		[PKG_URI_PROTO_GIT]   = {STRVT("fetch_git")},
+		[PKG_URI_PROTO_HTTPS] = {STRVT("fetch_wget")},
 	};
 
 	defines_t exts_defs[] = {
-		[PKG_URI_EXT_UNKNOWN] = {STRVT("ext_unknown")},
-		[PKG_URI_EXT_ZIP]     = {STRVT("ext_zip")},
-		[PKG_URI_EXT_TAR_GZ]  = {STRVT("ext_tar_gz")},
+		[PKG_URI_EXT_ZIP]    = {STRVT("ext_zip")},
+		[PKG_URI_EXT_TAR_GZ] = {STRVT("ext_tar_gz")},
 	};
 
 	defines_t defines[] = {
-		[TARGET_TYPE_UNKNOWN] = {STRVT("unknown")},
-		[TARGET_TYPE_EXE]     = {STRVT("exe")},
-		[TARGET_TYPE_LIB]     = {STRVT("lib")},
-		[TARGET_TYPE_EXT]     = {STRVT("ext")},
-		[TARGET_TYPE_TST]     = {STRVT("test")},
+		[TARGET_TYPE_EXE] = {STRVT("exe")},
+		[TARGET_TYPE_LIB] = {STRVT("lib")},
+		[TARGET_TYPE_EXT] = {STRVT("ext")},
+		[TARGET_TYPE_TST] = {STRVT("test")},
 	};
 
 	int protos[__PKG_URI_PROTO_MAX] = {0};
@@ -647,16 +650,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, act);
 	}
 
-	if (exts[PKG_URI_EXT_UNKNOWN]) {
-		make_act_t def;
-		make_def(&make, exts_defs[PKG_URI_EXT_UNKNOWN].name, &def);
-		make_add_act(&make, root, def);
-		exts_defs[PKG_URI_EXT_UNKNOWN].def = def;
-
-		make_empty(&make, &act);
-		make_add_act(&make, root, act);
-	}
-
 	if (exts[PKG_URI_EXT_ZIP]) {
 		make_act_t def;
 		make_def(&make, exts_defs[PKG_URI_EXT_ZIP].name, &def);
@@ -692,16 +685,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, ext, act);
 		make_cmd(&make, MCMD(STRV("tar -xzf $$< -C $$@")), &act);
 		make_rule_add_act(&make, ext, act);
-
-		make_empty(&make, &act);
-		make_add_act(&make, root, act);
-	}
-
-	if (types[TARGET_TYPE_UNKNOWN]) {
-		make_act_t def;
-		make_def(&make, defines[TARGET_TYPE_UNKNOWN].name, &def);
-		make_add_act(&make, root, def);
-		defines[TARGET_TYPE_UNKNOWN].def = def;
 
 		make_empty(&make, &act);
 		make_add_act(&make, root, act);

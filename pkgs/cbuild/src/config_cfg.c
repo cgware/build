@@ -150,10 +150,18 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 				config_set_str(config, target->strs + CONFIG_TARGET_INST, install);
 			}
 
-			if (cfg_has_var(cfg, tbl, STRV("dst"), &var)) {
-				strv_t dst = {0};
-				cfg_get_str(cfg, var, &dst);
-				config_set_str(config, target->strs + CONFIG_TARGET_DST, dst);
+			if (cfg_has_var(cfg, tbl, STRV("lib"), &var)) {
+				strv_t lib = {0};
+				cfg_get_str(cfg, var, &lib);
+				config_set_str(config, target->strs + CONFIG_TARGET_OUT, lib);
+				target->out_type = CONFIG_TARGET_OUT_TYPE_LIB;
+			}
+
+			if (cfg_has_var(cfg, tbl, STRV("exe"), &var)) {
+				strv_t exe = {0};
+				cfg_get_str(cfg, var, &exe);
+				config_set_str(config, target->strs + CONFIG_TARGET_OUT, exe);
+				target->out_type = CONFIG_TARGET_OUT_TYPE_EXE;
 			}
 		} else if (strv_eq(key, STRV("ext"))) {
 			void *data;

@@ -72,9 +72,9 @@ static const svar_t s_vars[__VARS_CNT] = {
 	PSVAR(TGT_CONF, "${${PN}_${TN}_CONF}"),
 	PSVAR(TGT_COMP, "${${PN}_${TN}_COMP}"),
 	PSVAR(TGT_INST, "${${PN}_${TN}_INST}"),
-	PSVAR(TGT_DST, "${${PN}_${TN}_DST}"),
+	PSVAR(TGT_OUT, "${${PN}_${TN}_OUT}"),
 	// TGT OUT
-	PSVAR(DIR_OUT_EXT_FILE, "${DIR_OUT_EXT_PKG}${TGT_DST}"),
+	PSVAR(DIR_OUT_EXT_FILE, "${DIR_OUT_EXT_PKG}${TGT_OUT}"),
 };
 
 static var_name_t get_var(const vars_t *vars, strv_t str, size_t s)
