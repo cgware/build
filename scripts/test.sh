@@ -73,8 +73,8 @@ test() {
 	gen 06_lib_test "lib/06_lib_test.a test/06_lib_test ../../tmp/report/cov/index.html"
 	gen 07_exe_driver "bin/07_exe_driver"
 	gen 08_lib_driver "bin/exe test/lib"
-	gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-main.zip ../../tmp/dl/pkgs/cutils/cutils-main.zip ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
-	gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-main.tar.gz ../../tmp/dl/pkgs/cutils/cutils-main.tar.gz ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
+	gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ../../tmp/dl/pkgs/cutils/cutils-6037c5d8611b1352174eb21c86d6ecf84c003431.zip ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
+	gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz ../../tmp/dl/pkgs/cutils/cutils-6037c5d8611b1352174eb21c86d6ecf84c003431.tar.gz ext/cbase/cbase.a ext/cutils/cutils.a bin/exe"
 	gen 11_hello "ext/11_hello/bin/hello"
 }
 

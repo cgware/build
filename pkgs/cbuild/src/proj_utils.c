@@ -3,149 +3,192 @@
 #include "log.h"
 #include "path.h"
 
+static strv_t until_char(strv_t str, size_t *i, char c)
+{
+	size_t start = *i;
+
+	while (*i < str.len && str.data[*i] != c) {
+		(*i)++;
+	}
+
+	if (*i >= str.len || str.data[*i] != c) {
+		*i = start;
+		return STRV_NULL;
+	}
+
+	(*i)++;
+
+	return STRVN(&str.data[start], (*i - 1) - start);
+}
+
+static strv_t after_char(strv_t str, size_t *i, char c)
+{
+	size_t start = *i;
+	size_t end   = *i;
+
+	while (start > 0 && str.data[start - 1] != c) {
+		start--;
+	}
+	*i = start;
+
+	if (*i - 1 == 0 || str.data[*i - 1] != c) {
+		*i = end;
+		return STRV_NULL;
+	}
+
+	(*i)--;
+
+	return STRVN(&str.data[start], end - start);
+}
+
+static int next_char(strv_t str, size_t *i, char c)
+{
+	if (*i >= str.len || str.data[*i] != c) {
+		return 0;
+	}
+
+	(*i)++;
+	return 1;
+}
+
 int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 {
 	if (proj == NULL || pkg == NULL) {
 		return 1;
 	}
 
-	strv_t proto = {0};
-	strv_t tmp   = {0};
-	strv_t host  = {0};
-	strv_t file  = {0};
-	strv_t name  = {0};
-	strv_t ext   = {0};
-
 	proj_set_str(proj, pkg->strs + PKG_STR_URI, uri);
 
-	if (strv_lsplit(uri, ':', &proto, &tmp)) {
-		log_error("cbuild", "proj", NULL, "invalid uri: '%.*s'", uri.len, uri.data);
+	size_t i = 0;
+
+	strv_t proto = until_char(uri, &i, ':');
+	if (proto.data == NULL) {
+		log_error("cbuild", "proj", NULL, "expected protocol: '%.*s'", uri.len, uri.data);
+		log_error("cbuild", "proj", NULL, "                    %*s^", i, "");
 		return 1;
 	}
 
 	if (strv_eq(proto, STRV("https"))) {
 		pkg->uri.proto = PKG_URI_PROTO_HTTPS;
 	} else {
-		log_error("cbuild", "proj", NULL, "not supported protocol: '%.*s'", proto.len, proto.data);
+		pkg->uri.proto = PKG_URI_PROTO_UNKNOWN;
+	}
+
+	if (!next_char(uri, &i, '/')) {
+		log_error("cbuild", "proj", NULL, "expected /: '%.*s'", uri.len, uri.data);
+		log_error("cbuild", "proj", NULL, "             %*s^", i, "");
 		return 1;
 	}
 
-	if (strv_cmpn(tmp, STRV("//"), 2) != 0) {
-		log_error("cbuild", "proj", NULL, "invalid uri (//): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
+	if (!next_char(uri, &i, '/')) {
+		log_error("cbuild", "proj", NULL, "expected /: '%.*s'", uri.len, uri.data);
+		log_error("cbuild", "proj", NULL, "             %*s^", i, "");
 		return 1;
 	}
 
-	tmp = STRVN(tmp.data + 2, tmp.len - 2);
-	strv_lsplit(tmp, '/', &host, &tmp);
-
-	if (strv_rsplit(tmp, '/', &tmp, &file) || strv_rsplit(file, '.', &name, &ext)) {
-		log_error("cbuild", "proj", NULL, "invalid uri (file): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
+	strv_t host = until_char(uri, &i, '/');
+	if (host.data == NULL) {
+		log_error("cbuild", "proj", NULL, "expected host: '%.*s'", uri.len, uri.data);
+		log_error("cbuild", "proj", NULL, "                %*s^", i, "");
 		return 1;
 	}
 
-	proj_set_str(proj, pkg->strs + PKG_STR_URI_FILE, file);
+	size_t tmp  = uri.len;
+	strv_t file = after_char(uri, &tmp, '/');
 
-	if (strv_eq(ext, STRV("git"))) {
+	tmp	    = file.len;
+	strv_t ext1 = after_char(file, &tmp, '.'); // ext
+	if (ext1.data == NULL) {
+		log_error("cbuild", "proj", NULL, "expected .: '%.*s'", uri.len, uri.data);
+		log_error("cbuild", "proj", NULL, "             %*s^", i, "");
+		return 1;
+	}
+
+	if (strv_eq(ext1, STRV("zip"))) {
+		pkg->uri.ext = PKG_URI_EXT_ZIP;
+	} else if (strv_eq(ext1, STRV("gz"))) {
+		strv_t ext2 = after_char(file, &tmp, '.'); // ext
+		if (strv_eq(ext2, STRV("tar"))) {
+			pkg->uri.ext = PKG_URI_EXT_TAR_GZ;
+		}
+	} else if (strv_eq(ext1, STRV("git"))) {
 		pkg->uri.proto = PKG_URI_PROTO_GIT;
 		pkg->uri.ext   = PKG_URI_EXT_UNKNOWN;
 	} else {
-		if (strv_eq(ext, STRV("zip"))) {
-			pkg->uri.ext = PKG_URI_EXT_ZIP;
-		} else if (strv_eq(ext, STRV("gz"))) {
-			strv_t name2 = {0};
-			strv_t ext2  = {0};
-			if (strv_rsplit(name, '.', &name2, &ext2) == 0 && strv_eq(ext2, STRV("tar"))) {
-				name = name2;
-				ext  = STRV("tar.gz");
-			}
-			proj_set_str(proj, pkg->strs + PKG_STR_URI_DIR, name2);
-			pkg->uri.ext = PKG_URI_EXT_TAR_GZ;
-		} else {
-			pkg->uri.ext = PKG_URI_EXT_UNKNOWN;
-		}
+		pkg->uri.ext = PKG_URI_EXT_UNKNOWN;
 	}
+
+	strv_t name = STRVN(file.data, tmp);
+	strv_t ver  = STRV_NULL;
+	strv_t ext  = STRVN(&file.data[tmp], file.len - tmp);
 
 	if (strv_cmpn(host, STRV("github.com"), 10) == 0) {
-		strv_t user    = {0};
-		strv_t repo    = {0};
-		strv_t archive = {0};
-		strv_t refs    = {0};
-		strv_t cat     = {0};
-
-		if (strv_lsplit(tmp, '/', &user, &tmp)) {
-			log_error("cbuild", "proj", NULL, "invalid uri (user): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
+		strv_t user = until_char(uri, &i, '/');
+		if (user.data == NULL) {
+			log_error("cbuild", "proj", NULL, "expected user: '%.*s'", uri.len, uri.data);
+			log_error("cbuild", "proj", NULL, "                %*s^", i, "");
 			return 1;
 		}
 
-		if (strv_lsplit(tmp, '/', &repo, &tmp)) {
-			log_error("cbuild", "proj", NULL, "invalid uri (repo): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
+		strv_t repo = until_char(uri, &i, '/');
+		if (repo.data == NULL) {
+			log_error("cbuild", "proj", NULL, "expected repo: '%.*s'", uri.len, uri.data);
+			log_error("cbuild", "proj", NULL, "                %*s^", i, "");
 			return 1;
 		}
 
-		if (strv_lsplit(tmp, '/', &archive, &tmp) || !strv_eq(archive, STRV("archive"))) {
-			log_error("cbuild", "proj", NULL, "invalid uri (archive): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
+		strv_t archive = until_char(uri, &i, '/');
+		if (!strv_eq(archive, STRV("archive"))) {
+			log_error("cbuild", "proj", NULL, "expected archive: '%.*s'", uri.len, uri.data);
+			log_error("cbuild", "proj", NULL, "                   %*s^", i, "");
 			return 1;
 		}
 
-		if (strv_lsplit(tmp, '/', &refs, &tmp) || !strv_eq(refs, STRV("refs"))) {
-			log_error("cbuild", "proj", NULL, "invalid uri (refs): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
-			return 1;
-		}
+		strv_t refs = until_char(uri, &i, '/');
+		if (strv_eq(refs, STRV("refs"))) {
+			strv_t ht = until_char(uri, &i, '/');
+			if (strv_eq(ht, STRV("tags"))) {
+				if (name.data[0] == 'v') {
+					name = STRVN(&name.data[1], name.len - 1);
+				}
+			} else if (strv_eq(ht, STRV("heads"))) {
 
-		if (strv_lsplit(tmp, '/', &cat, &tmp)) {
-			log_error("cbuild", "proj", NULL, "invalid uri (cat): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
-			return 1;
-		}
-
-		proj_set_str(proj, pkg->strs + PKG_STR_URI_NAME, repo);
-
-		if (strv_eq(cat, STRV("heads"))) {
-			str_t buf = strz(16);
-			str_cat(&buf, repo);
-			str_cat(&buf, STRV("-"));
-			str_cat(&buf, name);
-			proj_set_str(proj, pkg->strs + PKG_STR_URI_VER, name);
-			str_cat(&buf, STRV(SEP));
-			proj_set_str(proj, pkg->strs + PKG_STR_URI_DIR, STRVS(buf));
-			buf.len -= 1;
-			str_cat(&buf, STRV("."));
-			str_cat(&buf, ext);
-			proj_set_str(proj, pkg->strs + PKG_STR_URI_FILE, STRVS(buf));
-			str_free(&buf);
-		} else if (strv_eq(cat, STRV("tags"))) {
-			str_t buf = strz(16);
-			str_cat(&buf, repo);
-			str_cat(&buf, STRV("-"));
-			if (strv_cmpn(name, STRV("v"), 1) == 0) {
-				proj_set_str(proj, pkg->strs + PKG_STR_URI_VER, STRVN(name.data + 1, name.len - 1));
-				str_cat(&buf, STRVN(name.data + 1, name.len - 1));
 			} else {
-				proj_set_str(proj, pkg->strs + PKG_STR_URI_VER, name);
-				str_cat(&buf, name);
+				log_error("cbuild", "proj", NULL, "expexted tags or heads: '%.*s'", uri.len, uri.data);
+				log_error("cbuild", "proj", NULL, "                         %*s^", i, "");
+				return 1;
 			}
-
-			str_cat(&buf, STRV(SEP));
-			proj_set_str(proj, pkg->strs + PKG_STR_URI_DIR, STRVS(buf));
-			buf.len -= 1;
-			str_cat(&buf, STRV("."));
-			str_cat(&buf, ext);
-			proj_set_str(proj, pkg->strs + PKG_STR_URI_FILE, STRVS(buf));
-			str_free(&buf);
-		} else {
-			log_error("cbuild", "proj", NULL, "invalid uri (cat): '%.*s': '%.*s'", uri.len, uri.data, cat.len, cat.data);
-			return 1;
 		}
+
+		ver  = name;
+		name = repo;
 	} else {
-		strv_t ver = {0};
-
-		if (strv_lsplit(name, '-', &name, &ver)) {
-			log_error("cbuild", "proj", NULL, "invalid uri (user): '%.*s': '%.*s'", uri.len, uri.data, tmp.len, tmp.data);
-			return 1;
+		size_t tmp  = name.len;
+		strv_t part = after_char(name, &tmp, '-');
+		if (part.data != NULL) {
+			name = STRVN(name.data, tmp);
+			ver  = part;
 		}
-
-		proj_set_str(proj, pkg->strs + PKG_STR_URI_NAME, name);
-		proj_set_str(proj, pkg->strs + PKG_STR_URI_VER, ver);
 	}
+
+	proj_set_str(proj, pkg->strs + PKG_STR_URI_NAME, name);
+	proj_set_str(proj, pkg->strs + PKG_STR_URI_VER, ver);
+
+	str_t buf = strz(16);
+	str_cat(&buf, name);
+	if (ver.data) {
+		str_cat(&buf, STRV("-"));
+		str_cat(&buf, ver);
+	}
+	size_t len = buf.len;
+	str_cat(&buf, ext);
+	proj_set_str(proj, pkg->strs + PKG_STR_URI_FILE, STRVS(buf));
+
+	buf.len = len;
+	str_cat(&buf, STRV(SEP));
+	proj_set_str(proj, pkg->strs + PKG_STR_URI_DIR, STRVS(buf));
+
+	str_free(&buf);
 
 	return 0;
 }
