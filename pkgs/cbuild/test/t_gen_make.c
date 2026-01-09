@@ -118,6 +118,8 @@ TEST(gen_make_proj_build_dir)
 		    "all:\n"
 		    "\n"
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -244,6 +246,8 @@ TEST(gen_make_proj_empty)
 		    "all:\n"
 		    "\n"
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -370,6 +374,8 @@ TEST(gen_make_proj_name)
 		    "all:\n"
 		    "\n"
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -496,6 +502,8 @@ TEST(gen_make_proj_unknown)
 		    "all:\n"
 		    "\n"
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -670,6 +678,8 @@ TEST(gen_make_proj_exe)
 
 	EXPECT_STRN(tmp.data + 3951,
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -843,6 +853,8 @@ TEST(gen_make_proj_lib)
 
 	EXPECT_STRN(tmp.data + 3697,
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -1019,6 +1031,8 @@ TEST(gen_make_proj_ext)
 
 	EXPECT_STRN(tmp.data + 3599,
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -1178,17 +1192,16 @@ TEST(gen_make_proj_test)
 		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile: $(DIR_OUT_TST_FILE)\n"
 		"\n"
 		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/test: $(DIR_OUT_TST_FILE)\n"
-		"\t$(DIR_OUT_TST_FILE)\n"
 		"\n"
-		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov: precov_$(ARCH)_$(CONFIG) $(DIR_OUT_TST_FILE)\n"
-		"\t$(DIR_OUT_TST_FILE)\n"
+		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov: $(DIR_OUT_TST_FILE)\n"
 		"\n"
 		"$(DIR_OUT_TST_FILE): $($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) $(PKGTST_OBJ) "
-		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG))) precov_$(ARCH)_$(CONFIG)\n"
 		"\t@mkdir -pv $$(@D)\n"
 		"\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGTST_OBJ) "
 		"$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
 		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		"\t$(DIR_OUT_TST_FILE)\n"
 		"\n"
 		"$(DIR_OUT_INT_TST)%.o: $(DIR_PKG_TST)%.c $(PKGSRC_H) $($(PN)_$(TN)_HEADERS) "
 		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
@@ -1202,10 +1215,12 @@ TEST(gen_make_proj_test)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _test,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		4036);
+		4015);
 
-	EXPECT_STRN(tmp.data + 4036,
+	EXPECT_STRN(tmp.data + 4015,
 		    "define _cov\n"
+		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
 		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
 		    "\n"
@@ -1225,7 +1240,7 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 4036);
+		    tmp.len - 4015);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
