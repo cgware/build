@@ -25,6 +25,7 @@ int t_gen_pkg_lib_drv(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_lib_drv_inc(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_lib_test(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_lib_test_inc(t_gen_common_t *com, strv_t p);
+int t_gen_pkg_lib_test_inc_src(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_lib_test_drv(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_lib_test_drv_inc(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_multi(t_gen_common_t *com, strv_t p);

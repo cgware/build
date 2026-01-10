@@ -355,14 +355,26 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				fs_write(fs, f, STRV(")\n"));
 			}
 
+			strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+
 			switch (target->type) {
 			case TARGET_TYPE_EXE: {
 				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-				if (inc.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}"));
-					fs_write(fs, f, inc);
+				if (inc.len > 0 || src.len > 0) {
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
+					if (inc.len > 0) {
+						fs_write(fs, f, STRV(" ${DIR_PKG}"));
+						fs_write(fs, f, inc);
+					}
+
+					if (src.len > 0) {
+						fs_write(fs, f, STRV(" ${DIR_PKG}"));
+						fs_write(fs, f, src);
+					}
+
 					fs_write(fs, f, STRV(")\n"));
 				}
+
 				fs_write(fs,
 					 f,
 					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -392,11 +404,20 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 			}
 			case TARGET_TYPE_LIB: {
 				fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-				if (inc.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}"));
-					fs_write(fs, f, inc);
+				if (inc.len > 0 || src.len > 0) {
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
+					if (inc.len > 0) {
+						fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
+						fs_write(fs, f, inc);
+					}
+
+					if (src.len > 0) {
+						fs_write(fs, f, STRV(" PRIVATE ${DIR_PKG}"));
+						fs_write(fs, f, src);
+					}
 					fs_write(fs, f, STRV(")\n"));
 				}
+
 				fs_write(fs,
 					 f,
 					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -479,11 +500,21 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 			}
 			case TARGET_TYPE_TST: {
 				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-				if (inc.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}"));
-					fs_write(fs, f, inc);
+
+				strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
+				if (src.len > 0 || tst.len > 0) {
+					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
+					if (src.len > 0) {
+						fs_write(fs, f, STRV(" ${DIR_PKG}"));
+						fs_write(fs, f, src);
+					}
+					if (tst.len > 0) {
+						fs_write(fs, f, STRV(" ${DIR_PKG}"));
+						fs_write(fs, f, tst);
+					}
 					fs_write(fs, f, STRV(")\n"));
 				}
+
 				fs_write(fs,
 					 f,
 					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"

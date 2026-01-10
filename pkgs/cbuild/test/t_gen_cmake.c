@@ -837,6 +837,7 @@ TEST(gen_cmake_pkg_exe)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -888,6 +889,7 @@ TEST(gen_cmake_pkg_exe_drv)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c ${DIR_PKG}drivers/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -940,7 +942,7 @@ TEST(gen_cmake_pkg_exe_drv_inc)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c ${DIR_PKG}drivers/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}include)\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}include ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -988,6 +990,7 @@ TEST(gen_cmake_pkg_lib)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1037,7 +1040,7 @@ TEST(gen_cmake_pkg_lib_inc)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1090,6 +1093,7 @@ TEST(gen_cmake_pkg_lib_drv)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1143,7 +1147,7 @@ TEST(gen_cmake_pkg_lib_drv_inc)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1215,6 +1219,7 @@ TEST(gen_cmake_pkg_lib_test)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1291,7 +1296,84 @@ TEST(gen_cmake_pkg_lib_test_inc)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}include)\n" // FIXME: not needed
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "add_test(\n"
+		    "\tNAME ${PN}_${TN}\n"
+		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/test/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_lib_test_inc_src)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_test_inc_src(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"lib\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
+		    "set(DIR_PKG_INC ${DIR_PKG}include/)\n"
+		    "set(DIR_PKG_TST ${DIR_PKG}test/)\n"
+		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
+		    "set(DIR_OUT_INT_TST ${DIR_OUT_INT}${PN}/test/)\n"
+		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
+		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
+		    "set(DIR_OUT_TST_FILE ${DIR_OUT_TST}${PN})\n"
+		    "\n"
+		    "set(TN \"lib\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include PRIVATE ${DIR_PKG}src)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n"
+		    "set(TN \"test\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1370,6 +1452,7 @@ TEST(gen_cmake_pkg_lib_test_drv)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c ${DIR_PKG}drivers/*.c ${lib_DRIVERS})\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1450,7 +1533,7 @@ TEST(gen_cmake_pkg_lib_test_drv_inc)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c ${DIR_PKG}drivers/*.c ${lib_DRIVERS})\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}include)\n" // FIXME: not needed
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -2377,6 +2460,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_lib_drv_inc);
 	RUN(gen_cmake_pkg_lib_test);
 	RUN(gen_cmake_pkg_lib_test_inc);
+	RUN(gen_cmake_pkg_lib_test_inc_src);
 	RUN(gen_cmake_pkg_lib_test_drv);
 	RUN(gen_cmake_pkg_lib_test_drv_inc);
 	RUN(gen_cmake_pkg_multi);

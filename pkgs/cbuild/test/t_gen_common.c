@@ -411,6 +411,41 @@ int t_gen_pkg_lib_test_inc(t_gen_common_t *com, strv_t p)
 	return drv.gen(&drv, &com->proj, STRV_NULL, STRV_NULL);
 }
 
+int t_gen_pkg_lib_test_inc_src(t_gen_common_t *com, strv_t p)
+{
+	fs_init(&com->fs, 2, 1, ALLOC_STD);
+
+	proj_init(&com->proj, 1, 1, ALLOC_STD);
+
+	proj_set_str(&com->proj, com->proj.outdir, STRV("bin/${ARCH}-${CONFIG}/"));
+
+	uint pkg_id, lib, tst;
+	pkg_t *pkg;
+	target_t *target;
+
+	pkg = proj_add_pkg(&com->proj, &pkg_id);
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_INC, STRV("include"));
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_SRC, STRV("src"));
+
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("lib"));
+	target = proj_add_target(&com->proj, pkg_id, &lib);
+	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib"));
+	target->type = TARGET_TYPE_LIB;
+
+	proj_set_str(&com->proj, pkg->strs + PKG_STR_TST, STRV("test"));
+	target = proj_add_target(&com->proj, pkg_id, &tst);
+	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("test"));
+	target->type = TARGET_TYPE_TST;
+
+	proj_add_dep(&com->proj, tst, lib);
+
+	gen_driver_t drv = *gen_find_param(p);
+
+	drv.fs = &com->fs;
+
+	return drv.gen(&drv, &com->proj, STRV_NULL, STRV_NULL);
+}
+
 int t_gen_pkg_lib_test_drv(t_gen_common_t *com, strv_t p)
 {
 	fs_init(&com->fs, 2, 1, ALLOC_STD);

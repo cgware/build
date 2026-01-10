@@ -1,6 +1,7 @@
-int sub();
+#include "lib.h"
+#include "priv/priv.h"
 
 int main()
 {
-	return sub();
+	return lib() || priv();
 }

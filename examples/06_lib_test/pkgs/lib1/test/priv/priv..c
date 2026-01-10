@@ -1,6 +1,6 @@
 #include "priv/priv.h"
 
-int main()
+int priv()
 {
-	return priv();
+	return 0;
 }

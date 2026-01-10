@@ -121,10 +121,10 @@ TEST(gen_make_proj_build_dir)
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -249,10 +249,10 @@ TEST(gen_make_proj_empty)
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -377,10 +377,10 @@ TEST(gen_make_proj_name)
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -505,10 +505,10 @@ TEST(gen_make_proj_unknown)
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -642,7 +642,7 @@ TEST(gen_make_proj_exe)
 		"define _exe\n"
 		"$(PN)_$(TN)_$(ARCH)_$(CONFIG) := $(DIR_OUT_BIN_FILE)\n"
 		"\n"
-		"GCDA_$(CONFIG) += $(PKGSRC_GCDA)\n"
+		"GCDA_$(ARCH)_$(CONFIG) += $(PKGSRC_GCDA)\n"
 		"\n"
 		"all: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
 		"\n"
@@ -674,17 +674,17 @@ TEST(gen_make_proj_exe)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _exe,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3951);
+		3959);
 
-	EXPECT_STRN(tmp.data + 3951,
+	EXPECT_STRN(tmp.data + 3959,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -699,7 +699,7 @@ TEST(gen_make_proj_exe)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3951);
+		    tmp.len - 3959);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -820,7 +820,7 @@ TEST(gen_make_proj_lib)
 		"define _lib\n"
 		"$(PN)_$(TN)_$(ARCH)_$(CONFIG) := $(DIR_OUT_LIB_FILE)\n"
 		"\n"
-		"GCDA_$(CONFIG) += $(PKGSRC_GCDA)\n"
+		"GCDA_$(ARCH)_$(CONFIG) += $(PKGSRC_GCDA)\n"
 		"\n"
 		"all: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
 		"\n"
@@ -849,17 +849,17 @@ TEST(gen_make_proj_lib)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _lib,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3697);
+		3705);
 
-	EXPECT_STRN(tmp.data + 3697,
+	EXPECT_STRN(tmp.data + 3705,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -874,7 +874,7 @@ TEST(gen_make_proj_lib)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3697);
+		    tmp.len - 3705);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1034,10 +1034,10 @@ TEST(gen_make_proj_ext)
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -1179,7 +1179,7 @@ TEST(gen_make_proj_test)
 		"define _test\n"
 		"$(PN)_$(TN)_$(ARCH)_$(CONFIG) := $(DIR_OUT_TST_FILE)\n"
 		"\n"
-		"GCDA_$(CONFIG) += $(PKGTST_GCDA)\n"
+		"GCDA_$(ARCH)_$(CONFIG) += $(PKGTST_GCDA)\n"
 		"\n"
 		"all: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
 		"\n"
@@ -1215,17 +1215,17 @@ TEST(gen_make_proj_test)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _test,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		4015);
+		4023);
 
-	EXPECT_STRN(tmp.data + 4015,
+	EXPECT_STRN(tmp.data + 4023,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
 		    "precov_$(ARCH)_$(CONFIG):\n"
-		    "\t@rm -fv $$(GCDA_$(CONFIG))\n"
+		    "\t@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))\n"
 		    "\n"
 		    "cov_$(ARCH)_$(CONFIG):\n"
-		    "\t@if [ -n \"$$(GCDA_$(CONFIG))\" ]; then \\\n"
+		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
 		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
 		    "\t\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\\n"
 		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\\n"
@@ -1240,7 +1240,7 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 4015);
+		    tmp.len - 4023);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1487,7 +1487,40 @@ TEST(gen_make_pkg_lib_test_inc)
 		    "TN := test\n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
 		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include $(lib_lib_INCLUDE)\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(lib_lib_INCLUDE)\n"
+		    "$(PN)_$(TN)_LIBS_PRIV := lib_lib\n"
+		    "$(eval $(call test))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_lib_test_inc_src)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_test_inc_src(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := lib\n"
+		    "$(PN)_DIR :=\n"
+		    "TN := lib\n"
+		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
+		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
+		    "$(PN)_$(TN)_LIBS :=\n"
+		    "$(eval $(call lib))\n"
+		    "TN := test\n"
+		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
+		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)src $(lib_lib_INCLUDE)\n"
 		    "$(PN)_$(TN)_LIBS_PRIV := lib_lib\n"
 		    "$(eval $(call test))\n",
 		    tmp.len);
@@ -1549,8 +1582,8 @@ TEST(gen_make_pkg_lib_test_drv_inc)
 		    "$(eval $(call lib))\n"
 		    "TN := test\n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"			 // FIXME: not needed
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include $(lib_lib_INCLUDE)\n" // FIXME: $(DIR_PKG)include is not needed
+		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n" // FIXME: not needed
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(lib_lib_INCLUDE)\n"
 		    "$(PN)_$(TN)_LIBS_PRIV := lib_lib\n"
 		    "$(PN)_$(TN)_DRIVERS := $(lib_lib_DRIVERS)\n"
 		    "$(eval $(call test))\n",
@@ -1924,6 +1957,7 @@ STEST(gen_make)
 	RUN(gen_make_pkg_lib_drv_inc);
 	RUN(gen_make_pkg_lib_test);
 	RUN(gen_make_pkg_lib_test_inc);
+	RUN(gen_make_pkg_lib_test_inc_src);
 	RUN(gen_make_pkg_lib_test_drv);
 	RUN(gen_make_pkg_lib_test_drv_inc);
 	RUN(gen_make_pkg_multi);

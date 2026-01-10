@@ -1,6 +1,6 @@
-#include "strv.h"
+#include "ctime.h"
 
 int main() {
-	strv_cstr("Test");
+	c_time();
 	return 0;
 }

@@ -1,9 +1,6 @@
-#include "lib.h"
-
-#include <stdio.h>
+#include "priv/priv.h"
 
 int lib()
 {
-	printf("Hello\n");
-	return 0;
+	return priv();
 }
