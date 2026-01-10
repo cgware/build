@@ -54,14 +54,8 @@ jobs:
     strategy:
       matrix:
         gen: [M, C]
-        arch: [host, x64, x86]
+        arch: [x64, x86]
         conf: [Debug, Release]
-        include:
-          - cov: ""
-          - gen: M
-            arch: host
-            conf: Debug
-            cov: cov
 
     steps:
       - uses: actions/checkout@v4
@@ -79,14 +73,10 @@ jobs:
           sudo apt-get install gcc-multilib lcov -y
 
       - name: Build
-        run: ./scripts/build.sh -g ${{ matrix.gen }} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all test ${{ matrix.cov }}" -O 0
-
-      - name: Coverage
-        if: matrix.cov == 'cov'
-        uses: coverallsapp/github-action@v2
+        run: ./scripts/build.sh -g ${{ matrix.gen }} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all test"
 
       - name: Upload
-        if: matrix.gen == 'M' && matrix.arch != 'host' && matrix.conf == 'Release'
+        if: matrix.gen == 'M' && matrix.conf == 'Release'
         uses: actions/upload-artifact@v4
         with:
           name: build-linux-${{ matrix.arch }}
@@ -97,7 +87,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        arch: [host, x64, x86]
+        arch: [x64, x86]
         conf: [Debug, Release]
 
     steps:
@@ -110,7 +100,7 @@ jobs:
           path: bin
 
       - name: Build
-        run: ./scripts/build.bat -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all test" -O 0
+        run: ./scripts/build.bat -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all test"
 
       - name: Log
         if: always()
@@ -121,7 +111,7 @@ jobs:
         run: cat build/${{ matrix.arch }}/Testing/Temporary/LastTest.log
 
       - name: Upload
-        if: matrix.arch != 'host' && matrix.conf == 'Release'
+        if: matrix.conf == 'Release'
         uses: actions/upload-artifact@v4
         with:
           name: build-windows-${{ matrix.arch }}
