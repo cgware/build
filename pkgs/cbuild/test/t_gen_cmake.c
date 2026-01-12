@@ -40,6 +40,14 @@ TEST(gen_cmake_proj_build_dir)
 		    "list(LENGTH CONFIGS _config_count)\n"
 		    "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
 		    "\n"
+		    "if(WIN32)\n"
+		    "\tset(EXT_LIB .lib)\n"
+		    "\tset(EXT_EXE .exe)\n"
+		    "else()\n"
+		    "\tset(EXT_LIB .a)\n"
+		    "\tset(EXT_EXE )\n"
+		    "endif()\n"
+		    "\n"
 		    "if(is_multi_config)\n"
 		    "\tset(CONFIG $<CONFIG>)\n"
 		    "else()\n"
@@ -53,14 +61,6 @@ TEST(gen_cmake_proj_build_dir)
 		    "set(DIR_TMP_REP ${DIR_TMP}report/)\n"
 		    "set(DIR_TMP_COV ${DIR_TMP_REP}cov/)\n"
 		    "set(DIR_TMP_DL ${DIR_TMP}dl/)\n"
-		    "\n"
-		    "if(WIN32)\n"
-		    "\tset(EXT_LIB .lib)\n"
-		    "\tset(EXT_EXE .exe)\n"
-		    "else()\n"
-		    "\tset(EXT_LIB .a)\n"
-		    "\tset(EXT_EXE )\n"
-		    "endif()\n"
 		    "\n"
 		    "enable_testing()\n"
 		    "\n"
@@ -123,7 +123,6 @@ TEST(gen_cmake_proj_build_dir)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
-		    "\tset(DIR_OUT_EXT ${DIR_OUT}ext/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -178,6 +177,14 @@ TEST(gen_cmake_proj_empty)
 		    "list(LENGTH CONFIGS _config_count)\n"
 		    "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
 		    "\n"
+		    "if(WIN32)\n"
+		    "\tset(EXT_LIB .lib)\n"
+		    "\tset(EXT_EXE .exe)\n"
+		    "else()\n"
+		    "\tset(EXT_LIB .a)\n"
+		    "\tset(EXT_EXE )\n"
+		    "endif()\n"
+		    "\n"
 		    "if(is_multi_config)\n"
 		    "\tset(CONFIG $<CONFIG>)\n"
 		    "else()\n"
@@ -191,14 +198,6 @@ TEST(gen_cmake_proj_empty)
 		    "set(DIR_TMP_REP ${DIR_TMP}report/)\n"
 		    "set(DIR_TMP_COV ${DIR_TMP_REP}cov/)\n"
 		    "set(DIR_TMP_DL ${DIR_TMP}dl/)\n"
-		    "\n"
-		    "if(WIN32)\n"
-		    "\tset(EXT_LIB .lib)\n"
-		    "\tset(EXT_EXE .exe)\n"
-		    "else()\n"
-		    "\tset(EXT_LIB .a)\n"
-		    "\tset(EXT_EXE )\n"
-		    "endif()\n"
 		    "\n"
 		    "enable_testing()\n"
 		    "\n"
@@ -261,7 +260,6 @@ TEST(gen_cmake_proj_empty)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
-		    "\tset(DIR_OUT_EXT ${DIR_OUT}ext/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -316,6 +314,14 @@ TEST(gen_cmake_proj_name)
 		    "list(LENGTH CONFIGS _config_count)\n"
 		    "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
 		    "\n"
+		    "if(WIN32)\n"
+		    "\tset(EXT_LIB .lib)\n"
+		    "\tset(EXT_EXE .exe)\n"
+		    "else()\n"
+		    "\tset(EXT_LIB .a)\n"
+		    "\tset(EXT_EXE )\n"
+		    "endif()\n"
+		    "\n"
 		    "if(is_multi_config)\n"
 		    "\tset(CONFIG $<CONFIG>)\n"
 		    "else()\n"
@@ -329,14 +335,6 @@ TEST(gen_cmake_proj_name)
 		    "set(DIR_TMP_REP ${DIR_TMP}report/)\n"
 		    "set(DIR_TMP_COV ${DIR_TMP_REP}cov/)\n"
 		    "set(DIR_TMP_DL ${DIR_TMP}dl/)\n"
-		    "\n"
-		    "if(WIN32)\n"
-		    "\tset(EXT_LIB .lib)\n"
-		    "\tset(EXT_EXE .exe)\n"
-		    "else()\n"
-		    "\tset(EXT_LIB .a)\n"
-		    "\tset(EXT_EXE )\n"
-		    "endif()\n"
 		    "\n"
 		    "enable_testing()\n"
 		    "\n"
@@ -399,7 +397,6 @@ TEST(gen_cmake_proj_name)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
-		    "\tset(DIR_OUT_EXT ${DIR_OUT}ext/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -454,6 +451,14 @@ TEST(gen_cmake_proj_unknown)
 		    "list(LENGTH CONFIGS _config_count)\n"
 		    "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
 		    "\n"
+		    "if(WIN32)\n"
+		    "\tset(EXT_LIB .lib)\n"
+		    "\tset(EXT_EXE .exe)\n"
+		    "else()\n"
+		    "\tset(EXT_LIB .a)\n"
+		    "\tset(EXT_EXE )\n"
+		    "endif()\n"
+		    "\n"
 		    "if(is_multi_config)\n"
 		    "\tset(CONFIG $<CONFIG>)\n"
 		    "else()\n"
@@ -467,14 +472,6 @@ TEST(gen_cmake_proj_unknown)
 		    "set(DIR_TMP_REP ${DIR_TMP}report/)\n"
 		    "set(DIR_TMP_COV ${DIR_TMP_REP}cov/)\n"
 		    "set(DIR_TMP_DL ${DIR_TMP}dl/)\n"
-		    "\n"
-		    "if(WIN32)\n"
-		    "\tset(EXT_LIB .lib)\n"
-		    "\tset(EXT_EXE .exe)\n"
-		    "else()\n"
-		    "\tset(EXT_LIB .a)\n"
-		    "\tset(EXT_EXE )\n"
-		    "endif()\n"
 		    "\n"
 		    "enable_testing()\n"
 		    "\n"
@@ -537,7 +534,6 @@ TEST(gen_cmake_proj_unknown)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
-		    "\tset(DIR_OUT_EXT ${DIR_OUT}ext/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -569,12 +565,9 @@ TEST(gen_cmake_proj_unknown)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
 		    "\n"
@@ -603,14 +596,13 @@ TEST(gen_cmake_proj_exe)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -622,7 +614,6 @@ TEST(gen_cmake_proj_exe)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
@@ -650,14 +641,13 @@ TEST(gen_cmake_proj_lib)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -669,7 +659,6 @@ TEST(gen_cmake_proj_lib)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
@@ -701,33 +690,30 @@ TEST(gen_cmake_proj_ext)
 		    "set(${PN}_URI url)\n"
 		    "set(${PN}_URI_FILE )\n"
 		    "set(${PN}_URI_NAME )\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(PKG_URI ${${PN}_URI})\n"
 		    "set(PKG_URI_FILE ${${PN}_URI_FILE})\n"
 		    "set(PKG_URI_NAME ${${PN}_URI_NAME})\n"
 		    "set(PKG_URI_ROOT ${${PN}_URI_ROOT})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
 		    "set(DIR_TMP_EXT_PKG ${DIR_TMP_EXT}${PKG_DIR})\n"
 		    "set(DIR_TMP_EXT_PKG_SRC ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-src/)\n"
 		    "set(DIR_TMP_EXT_PKG_SRC_ROOT ${DIR_TMP_EXT_PKG_SRC}${PKG_URI_ROOT})\n"
 		    "set(DIR_TMP_EXT_PKG_BUILD ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-build-${ARCH}-${CONFIG}/)\n"
 		    "set(DIR_TMP_DL_PKG ${DIR_TMP_DL}${PKG_DIR})\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_EXT_PKG ${DIR_OUT_EXT}${PN}/)\n"
-		    "set(ABS_DIR_OUT_EXT_PKG ${DIR_OUT_EXT_PKG})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -775,14 +761,13 @@ TEST(gen_cmake_proj_test)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -794,7 +779,6 @@ TEST(gen_cmake_proj_test)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
@@ -805,6 +789,31 @@ TEST(gen_cmake_proj_test)
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
 		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"pkg\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n",
 		    tmp.len);
 
 	t_gen_free(&com);
@@ -824,16 +833,15 @@ TEST(gen_cmake_pkg_exe)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -846,12 +854,56 @@ TEST(gen_cmake_pkg_exe)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_exe_out)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_exe_out(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT exes)\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -872,24 +924,22 @@ TEST(gen_cmake_pkg_exe_drv)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
 		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
 		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
 		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
 		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c ${DIR_PKG}drivers/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}drivers/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -898,12 +948,11 @@ TEST(gen_cmake_pkg_exe_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -924,25 +973,23 @@ TEST(gen_cmake_pkg_exe_drv_inc)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_PKG_INC ${DIR_PKG}include/)\n"
 		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
 		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
 		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
 		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c ${DIR_PKG}drivers/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}drivers/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}include ${DIR_PKG}src)\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}include)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -951,12 +998,11 @@ TEST(gen_cmake_pkg_exe_drv_inc)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -977,16 +1023,15 @@ TEST(gen_cmake_pkg_lib)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -999,12 +1044,57 @@ TEST(gen_cmake_pkg_lib)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_lib_out)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_out(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT libs)\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n",
 		    tmp.len);
@@ -1026,21 +1116,19 @@ TEST(gen_cmake_pkg_lib_inc)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_PKG_INC ${DIR_PKG}include/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include PRIVATE ${DIR_PKG}src)\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1049,12 +1137,11 @@ TEST(gen_cmake_pkg_lib_inc)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n",
 		    tmp.len);
@@ -1076,24 +1163,22 @@ TEST(gen_cmake_pkg_lib_drv)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
 		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
 		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
 		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
 		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1102,12 +1187,11 @@ TEST(gen_cmake_pkg_lib_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n",
 		    tmp.len);
@@ -1129,25 +1213,23 @@ TEST(gen_cmake_pkg_lib_drv_inc)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_PKG_INC ${DIR_PKG}include/)\n"
 		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
 		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
 		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
 		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include PRIVATE ${DIR_PKG}src)\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1156,13 +1238,164 @@ TEST(gen_cmake_pkg_lib_drv_inc)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_test)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_test(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "add_test(\n"
+		    "\tNAME ${PN}_${TN}\n"
+		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_test_out)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_test_out(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"test\")\n"
+		    "set(TGT_OUT tests)\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "add_test(\n"
+		    "\tNAME ${PN}_${TN}\n"
+		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_test_drv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_test_drv(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
+		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
+		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
+		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
+		    "\n"
+		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}drivers/*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "add_test(\n"
+		    "\tNAME ${PN}_${TN}\n"
+		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -1183,19 +1416,15 @@ TEST(gen_cmake_pkg_lib_test)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"lib\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_PKG_TST ${DIR_PKG}test/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_INT_TST ${DIR_OUT_INT}${PN}/test/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_TST_FILE ${DIR_OUT_TST}${PN})\n"
 		    "\n"
 		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1207,19 +1436,19 @@ TEST(gen_cmake_pkg_lib_test)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n"
 		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1228,16 +1457,16 @@ TEST(gen_cmake_pkg_lib_test)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
 		    ")\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -1258,20 +1487,15 @@ TEST(gen_cmake_pkg_lib_test_inc)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"lib\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_PKG_INC ${DIR_PKG}include/)\n"
-		    "set(DIR_PKG_TST ${DIR_PKG}test/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_INT_TST ${DIR_OUT_INT}${PN}/test/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_TST_FILE ${DIR_OUT_TST}${PN})\n"
 		    "\n"
 		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1284,19 +1508,19 @@ TEST(gen_cmake_pkg_lib_test_inc)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n"
 		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1305,16 +1529,16 @@ TEST(gen_cmake_pkg_lib_test_inc)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
 		    ")\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -1335,20 +1559,15 @@ TEST(gen_cmake_pkg_lib_test_inc_src)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"lib\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_PKG_INC ${DIR_PKG}include/)\n"
-		    "set(DIR_PKG_TST ${DIR_PKG}test/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_INT_TST ${DIR_OUT_INT}${PN}/test/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_TST_FILE ${DIR_OUT_TST}${PN})\n"
 		    "\n"
 		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1361,19 +1580,20 @@ TEST(gen_cmake_pkg_lib_test_inc_src)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n"
 		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src ${DIR_PKG}test)\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1382,16 +1602,89 @@ TEST(gen_cmake_pkg_lib_test_inc_src)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
 		    ")\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_lib_exe_drv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_exe_drv(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
+		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
+		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
+		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
+		    "\n"
+		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n"
+		    "set(TN \"exe\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c ${_DRIVERS})\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -1412,23 +1705,19 @@ TEST(gen_cmake_pkg_lib_test_drv)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"lib\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
 		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
 		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
-		    "set(DIR_PKG_TST ${DIR_PKG}test/)\n"
 		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_INT_TST ${DIR_OUT_INT}${PN}/test/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
 		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_TST_FILE ${DIR_OUT_TST}${PN})\n"
 		    "\n"
 		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1440,19 +1729,19 @@ TEST(gen_cmake_pkg_lib_test_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n"
 		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c ${DIR_PKG}drivers/*.c ${lib_DRIVERS})\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${_DRIVERS})\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1461,16 +1750,16 @@ TEST(gen_cmake_pkg_lib_test_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
 		    ")\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -1491,24 +1780,19 @@ TEST(gen_cmake_pkg_lib_test_drv_inc)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"lib\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_PKG_INC ${DIR_PKG}include/)\n"
 		    "set(DIR_PKG_DRV ${DIR_PKG}drivers/)\n"
 		    "set(DIR_PKG_DRV_C ${DIR_PKG_DRV}*.c)\n"
-		    "set(DIR_PKG_TST ${DIR_PKG}test/)\n"
 		    "set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_INT_TST ${DIR_OUT_INT}${PN}/test/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
 		    "set(DIR_OUT_DRV_PKG ${DIR_OUT_DRV}${PN}/)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_TST_FILE ${DIR_OUT_TST}${PN})\n"
 		    "\n"
 		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1521,19 +1805,19 @@ TEST(gen_cmake_pkg_lib_test_drv_inc)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n"
 		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c ${DIR_PKG}drivers/*.c ${lib_DRIVERS})\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${_DRIVERS})\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1542,16 +1826,16 @@ TEST(gen_cmake_pkg_lib_test_drv_inc)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE lib_lib)\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
 		    ")\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -1574,14 +1858,13 @@ TEST(gen_cmake_pkg_multi)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"a\")\n"
 		    "set(${PN}_DIR \"a/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"a\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1593,7 +1876,6 @@ TEST(gen_cmake_pkg_multi)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
@@ -1606,14 +1888,13 @@ TEST(gen_cmake_pkg_multi)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"b\")\n"
 		    "set(${PN}_DIR \"b/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"b\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1625,7 +1906,6 @@ TEST(gen_cmake_pkg_multi)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
@@ -1653,14 +1933,13 @@ TEST(gen_cmake_pkg_depends)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib\")\n"
 		    "set(${PN}_DIR \"lib/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1672,7 +1951,6 @@ TEST(gen_cmake_pkg_depends)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
@@ -1686,14 +1964,13 @@ TEST(gen_cmake_pkg_depends)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"exe\")\n"
 		    "set(${PN}_DIR \"exe/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"exe\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1733,14 +2010,13 @@ TEST(gen_cmake_pkg_rdepends)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"base\")\n"
 		    "set(${PN}_DIR \"base/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"base\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1752,7 +2028,6 @@ TEST(gen_cmake_pkg_rdepends)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
@@ -1766,14 +2041,13 @@ TEST(gen_cmake_pkg_rdepends)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib1\")\n"
 		    "set(${PN}_DIR \"lib1/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"lib1\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1799,14 +2073,13 @@ TEST(gen_cmake_pkg_rdepends)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib2\")\n"
 		    "set(${PN}_DIR \"lib2/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"lib2\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1832,14 +2105,13 @@ TEST(gen_cmake_pkg_rdepends)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"exe\")\n"
 		    "set(${PN}_DIR \"exe/\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"exe\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -1879,22 +2151,21 @@ TEST(gen_cmake_pkg_ext_unknown)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -1940,39 +2211,36 @@ TEST(gen_cmake_pkg_ext_uri)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
 		    "set(${PN}_URI url)\n"
 		    "set(${PN}_URI_FILE file)\n"
 		    "set(${PN}_URI_NAME name)\n"
 		    "set(${PN}_URI_ROOT main/)\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(PKG_URI ${${PN}_URI})\n"
 		    "set(PKG_URI_FILE ${${PN}_URI_FILE})\n"
 		    "set(PKG_URI_NAME ${${PN}_URI_NAME})\n"
 		    "set(PKG_URI_ROOT ${${PN}_URI_ROOT})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
 		    "set(DIR_TMP_EXT_PKG ${DIR_TMP_EXT}${PKG_DIR})\n"
 		    "set(DIR_TMP_EXT_PKG_SRC ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-src/)\n"
 		    "set(DIR_TMP_EXT_PKG_SRC_ROOT ${DIR_TMP_EXT_PKG_SRC}${PKG_URI_ROOT})\n"
 		    "set(DIR_TMP_EXT_PKG_BUILD ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-build-${ARCH}-${CONFIG}/)\n"
 		    "set(DIR_TMP_DL_PKG ${DIR_TMP_DL}${PKG_DIR})\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_EXT_PKG ${DIR_OUT_EXT}${PN}/)\n"
-		    "set(ABS_DIR_OUT_EXT_PKG ${DIR_OUT_EXT_PKG})\n"
 		    "\n"
 		    "set(TN \"\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -2020,22 +2288,21 @@ TEST(gen_cmake_pkg_ext_cmd)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"pkg\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP prep)\n"
 		    "set(TGT_CONF conf)\n"
 		    "set(TGT_COMP comp)\n"
 		    "set(TGT_INST inst)\n"
-		    "set(TGT_OUT out)\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT out)\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -2069,12 +2336,12 @@ TEST(gen_cmake_pkg_ext_cmd)
 	END;
 }
 
-TEST(gen_cmake_pkg_ext_lib)
+TEST(gen_cmake_pkg_ext_out)
 {
 	START;
 
 	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_ext_lib(&com, STRV("C")), 0);
+	EXPECT_EQ(t_gen_pkg_ext_out(&com, STRV("C")), 0);
 
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
@@ -2083,22 +2350,84 @@ TEST(gen_cmake_pkg_ext_lib)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT exts)\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
+		    "\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
+		    "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\" \"${TGT_BUILD_DEBUG}\" \"${TGT_BUILD_RELEASE}\")\n"
+		    "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_URI_FILE}\n"
+		    "\tSHOW_PROGRESS\n"
+		    ")\n"
+		    "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_URI_FILE}\" DESTINATION \"${DIR_TMP_EXT_PKG_SRC}\")\n"
+		    "add_custom_target(${PN}_${TN}_build\n"
+		    "\tALL\n"
+		    "\tCOMMAND ${TGT_PREP}\n"
+		    "\tCOMMAND ${TGT_CONF}\n"
+		    "\tCOMMAND ${TGT_COMP}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+		    "\tCOMMAND ${TGT_INST}\n"
+		    "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
+		    ")\n"
+		    "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+		    "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE \"${DIR_OUT_EXT_FILE}\")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
+		    "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
+		    "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_ext_inc)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_inc(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
+		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
+		    "set(TGT_PREP )\n"
+		    "set(TGT_CONF )\n"
+		    "set(TGT_COMP )\n"
+		    "set(TGT_INST )\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -2134,6 +2463,69 @@ TEST(gen_cmake_pkg_ext_lib)
 	END;
 }
 
+TEST(gen_cmake_pkg_ext_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_lib(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
+		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
+		    "set(TGT_PREP )\n"
+		    "set(TGT_CONF )\n"
+		    "set(TGT_COMP )\n"
+		    "set(TGT_INST )\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
+		    "\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
+		    "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\" \"${TGT_BUILD_DEBUG}\" \"${TGT_BUILD_RELEASE}\")\n"
+		    "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_URI_FILE}\n"
+		    "\tSHOW_PROGRESS\n"
+		    ")\n"
+		    "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_URI_FILE}\" DESTINATION \"${DIR_TMP_EXT_PKG_SRC}\")\n"
+		    "add_custom_target(${PN}_${TN}_build\n"
+		    "\tALL\n"
+		    "\tCOMMAND ${TGT_PREP}\n"
+		    "\tCOMMAND ${TGT_CONF}\n"
+		    "\tCOMMAND ${TGT_COMP}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+		    "\tCOMMAND ${TGT_INST}\n"
+		    "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
+		    ")\n"
+		    "add_library(${PN}_${TN} STATIC IMPORTED)\n"
+		    "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE \"${DIR_OUT_EXT_FILE}\")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
+		    "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
+		    "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_cmake_pkg_ext_exe)
 {
 	START;
@@ -2148,22 +2540,21 @@ TEST(gen_cmake_pkg_ext_exe)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -2210,39 +2601,36 @@ TEST(gen_cmake_pkg_ext_zip)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
 		    "set(${PN}_URI url)\n"
 		    "set(${PN}_URI_FILE file)\n"
 		    "set(${PN}_URI_NAME name-1.0)\n"
 		    "set(${PN}_URI_ROOT main/)\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(PKG_URI ${${PN}_URI})\n"
 		    "set(PKG_URI_FILE ${${PN}_URI_FILE})\n"
 		    "set(PKG_URI_NAME ${${PN}_URI_NAME})\n"
 		    "set(PKG_URI_ROOT ${${PN}_URI_ROOT})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
 		    "set(DIR_TMP_EXT_PKG ${DIR_TMP_EXT}${PKG_DIR})\n"
 		    "set(DIR_TMP_EXT_PKG_SRC ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-src/)\n"
 		    "set(DIR_TMP_EXT_PKG_SRC_ROOT ${DIR_TMP_EXT_PKG_SRC}${PKG_URI_ROOT})\n"
 		    "set(DIR_TMP_EXT_PKG_BUILD ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-build-${ARCH}-${CONFIG}/)\n"
 		    "set(DIR_TMP_DL_PKG ${DIR_TMP_DL}${PKG_DIR})\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_EXT_PKG ${DIR_OUT_EXT}${PN}/)\n"
-		    "set(ABS_DIR_OUT_EXT_PKG ${DIR_OUT_EXT_PKG})\n"
 		    "\n"
 		    "set(TN \"\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -2288,39 +2676,36 @@ TEST(gen_cmake_pkg_ext_tar_gz)
 
 	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
-		    "set(PN \"pkg\")\n"
+		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
 		    "set(${PN}_URI url)\n"
 		    "set(${PN}_URI_FILE file)\n"
 		    "set(${PN}_URI_NAME name-1.0)\n"
 		    "set(${PN}_URI_ROOT main/)\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(PKG_URI ${${PN}_URI})\n"
 		    "set(PKG_URI_FILE ${${PN}_URI_FILE})\n"
 		    "set(PKG_URI_NAME ${${PN}_URI_NAME})\n"
 		    "set(PKG_URI_ROOT ${${PN}_URI_ROOT})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
 		    "set(DIR_TMP_EXT_PKG ${DIR_TMP_EXT}${PKG_DIR})\n"
 		    "set(DIR_TMP_EXT_PKG_SRC ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-src/)\n"
 		    "set(DIR_TMP_EXT_PKG_SRC_ROOT ${DIR_TMP_EXT_PKG_SRC}${PKG_URI_ROOT})\n"
 		    "set(DIR_TMP_EXT_PKG_BUILD ${DIR_TMP_EXT_PKG}${PKG_URI_NAME}-build-${ARCH}-${CONFIG}/)\n"
 		    "set(DIR_TMP_DL_PKG ${DIR_TMP_DL}${PKG_DIR})\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
-		    "set(DIR_OUT_EXT_PKG ${DIR_OUT_EXT}${PN}/)\n"
-		    "set(ABS_DIR_OUT_EXT_PKG ${DIR_OUT_EXT_PKG})\n"
 		    "\n"
 		    "set(TN \"\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -2368,14 +2753,13 @@ TEST(gen_cmake_pkg_ext_deps)
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "set(DIR_PKG_SRC ${DIR_PKG}src/)\n"
-		    "set(DIR_OUT_INT_SRC ${DIR_OUT_INT}${PN}/src/)\n"
-		    "set(DIR_OUT_LIB_FILE ${DIR_OUT_LIB}${PN}.a)\n"
-		    "set(DIR_OUT_BIN_FILE ${DIR_OUT_BIN}${PN})\n"
 		    "\n"
 		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
@@ -2387,7 +2771,6 @@ TEST(gen_cmake_pkg_ext_deps)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
@@ -2398,12 +2781,14 @@ TEST(gen_cmake_pkg_ext_deps)
 		    "set(TN \"ext\")\n"
 		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
 		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
 		    "set(TGT_PREP )\n"
 		    "set(TGT_CONF )\n"
 		    "set(TGT_COMP )\n"
 		    "set(TGT_INST )\n"
-		    "set(TGT_OUT )\n"
-		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_OUT})\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
 		    "\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -2451,16 +2836,23 @@ STEST(gen_cmake)
 	RUN(gen_cmake_proj_lib);
 	RUN(gen_cmake_proj_ext);
 	RUN(gen_cmake_proj_test);
+	RUN(gen_cmake_pkg);
 	RUN(gen_cmake_pkg_exe);
+	RUN(gen_cmake_pkg_exe_out);
 	RUN(gen_cmake_pkg_exe_drv);
 	RUN(gen_cmake_pkg_exe_drv_inc);
 	RUN(gen_cmake_pkg_lib);
+	RUN(gen_cmake_pkg_lib_out);
 	RUN(gen_cmake_pkg_lib_inc);
 	RUN(gen_cmake_pkg_lib_drv);
 	RUN(gen_cmake_pkg_lib_drv_inc);
+	RUN(gen_cmake_pkg_test);
+	RUN(gen_cmake_pkg_test_out);
+	RUN(gen_cmake_pkg_test_drv);
 	RUN(gen_cmake_pkg_lib_test);
 	RUN(gen_cmake_pkg_lib_test_inc);
 	RUN(gen_cmake_pkg_lib_test_inc_src);
+	RUN(gen_cmake_pkg_lib_exe_drv);
 	RUN(gen_cmake_pkg_lib_test_drv);
 	RUN(gen_cmake_pkg_lib_test_drv_inc);
 	RUN(gen_cmake_pkg_multi);
@@ -2469,6 +2861,8 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_ext_unknown);
 	RUN(gen_cmake_pkg_ext_uri);
 	RUN(gen_cmake_pkg_ext_cmd);
+	RUN(gen_cmake_pkg_ext_out);
+	RUN(gen_cmake_pkg_ext_inc);
 	RUN(gen_cmake_pkg_ext_lib);
 	RUN(gen_cmake_pkg_ext_exe);
 	RUN(gen_cmake_pkg_ext_zip);

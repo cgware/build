@@ -166,8 +166,8 @@ config_target_t *config_add_target(config_t *config, list_node_t pkg, list_node_
 		}
 	}
 
-	target->strs = strs_cnt;
-	target->out_type = CONFIG_TARGET_OUT_TYPE_UNKNOWN;
+	target->strs	 = strs_cnt;
+	target->out_type = CONFIG_TARGET_TGT_TYPE_UNKNOWN;
 
 	if (p->has_targets) {
 		list_app(&config->targets, p->targets, tmp);
@@ -337,6 +337,7 @@ size_t config_print(const config_t *config, dst_t dst)
 						strv_t comp	= config_get_str(config, target->strs + CONFIG_TARGET_COMP);
 						strv_t inst	= config_get_str(config, target->strs + CONFIG_TARGET_INST);
 						strv_t tgt_out	= config_get_str(config, target->strs + CONFIG_TARGET_OUT);
+						strv_t tgt_tgt	= config_get_str(config, target->strs + CONFIG_TARGET_TGT);
 						dst.off += dputf(dst,
 								 "NAME: %.*s\n"
 								 "PREP: %.*s\n"
@@ -344,6 +345,7 @@ size_t config_print(const config_t *config, dst_t dst)
 								 "COMP: %.*s\n"
 								 "INST: %.*s\n"
 								 "OUT: %.*s\n"
+								 "TGT: %.*s\n"
 								 "TYPE: %d\n",
 								 tgt_name.len,
 								 tgt_name.data,
@@ -357,6 +359,8 @@ size_t config_print(const config_t *config, dst_t dst)
 								 inst.data,
 								 tgt_out.len,
 								 tgt_out.data,
+								 tgt_tgt.len,
+								 tgt_tgt.data,
 								 target->out_type);
 						dst.off += dputf(dst, "\n");
 					}

@@ -42,7 +42,7 @@ static const svar_t s_vars[__VARS_CNT] = {
 	PSVAR(DIR_OUT_LIB, "${DIR_OUT}lib/"),
 	PSVAR(DIR_OUT_DRV, "${DIR_OUT}drivers/"),
 	PSVAR(DIR_OUT_BIN, "${DIR_OUT}bin/"),
-	PSVAR(DIR_OUT_EXT, "${DIR_OUT}ext/"),
+	PSVAR(DIR_OUT_EXT, "${DIR_OUT}ext/${PN}/"),
 	PSVAR(DIR_OUT_TST, "${DIR_OUT}test/"),
 	// PKG
 	PSVAR(PKG_DIR, "${${PN}_DIR}"),
@@ -59,22 +59,22 @@ static const svar_t s_vars[__VARS_CNT] = {
 	// PKG OUT
 	PSVAR(DIR_OUT_INT_SRC, "${DIR_OUT_INT}${PN}/src/"),
 	PSVAR(DIR_OUT_INT_TST, "${DIR_OUT_INT}${PN}/test/"),
-	PSVAR(DIR_OUT_LIB_FILE, "${DIR_OUT_LIB}${PN}.a"),
 	PSVAR(DIR_OUT_DRV_PKG, "${DIR_OUT_DRV}${PN}/"),
-	PSVAR(DIR_OUT_BIN_FILE, "${DIR_OUT_BIN}${PN}"),
-	PSVAR(DIR_OUT_EXT_PKG, "${DIR_OUT_EXT}${PN}/"),
-	PSVAR(ABS_DIR_OUT_EXT_PKG, "${DIR_OUT_EXT_PKG}"),
-	PSVAR(DIR_OUT_TST_FILE, "${DIR_OUT_TST}${PN}"),
 	// TGT
 	PSVAR(TGT_SRC, "${${PN}_${TN}_SRC}"),
 	PSVAR(TGT_BUILD, "${${PN}_${TN}_BUILD}"),
+	PSVAR(TGT_OUT, "${${PN}_${TN}_OUT}"),
 	PSVAR(TGT_PREP, "${${PN}_${TN}_PREP}"),
 	PSVAR(TGT_CONF, "${${PN}_${TN}_CONF}"),
 	PSVAR(TGT_COMP, "${${PN}_${TN}_COMP}"),
 	PSVAR(TGT_INST, "${${PN}_${TN}_INST}"),
-	PSVAR(TGT_OUT, "${${PN}_${TN}_OUT}"),
+	PSVAR(TGT_TGT, "${${PN}_${TN}_TGT}"),
 	// TGT OUT
-	PSVAR(DIR_OUT_EXT_FILE, "${DIR_OUT_EXT_PKG}${TGT_OUT}"),
+	PSVAR(DIR_OUT_LIB_FILE, "${TGT_OUT}${PN}${EXT_LIB}"),
+	PSVAR(DIR_OUT_BIN_FILE, "${TGT_OUT}${PN}${EXT_EXE}"),
+	PSVAR(DIR_OUT_EXT_PKG, "${TGT_OUT}"),
+	PSVAR(DIR_OUT_TST_FILE, "${TGT_OUT}${PN}${EXT_EXE}"),
+	PSVAR(DIR_OUT_EXT_FILE, "${DIR_OUT_EXT_PKG}${TGT_TGT}"),
 };
 
 static var_name_t get_var(const vars_t *vars, strv_t str, size_t s)

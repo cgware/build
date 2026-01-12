@@ -18,6 +18,398 @@ static void resolve_var(const vars_t *vars, strv_t var, const strv_t *values, st
 	vars_replace(vars, buf, values);
 }
 
+static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint pkg_id, const pkg_t *pkg, uint tgt_id, const target_t *target,
+		   make_act_t inc, const defines_t *defines, arr_t *deps, str_t *buf)
+{
+	make_act_t act;
+
+	strv_t svalues[__VARS_CNT] = {
+		[ARCH]	 = STRVT("$(ARCH)"),
+		[CONFIG] = STRVT("$(CONFIG)"),
+	};
+
+	make_var(make, STRV("TN"), MAKE_VAR_INST, &act);
+	make_var_add_val(make, act, MSTR(proj_get_str(proj, target->strs + TARGET_NAME)));
+	make_inc_add_act(make, inc, act);
+
+	strv_t include = proj_get_str(proj, pkg->strs + PKG_STR_INC);
+	if (include.len > 0) {
+		if (target->type != TARGET_TYPE_EXT) {
+			make_var(make, STRV("$(PN)_$(TN)_HEADERS"), MAKE_VAR_INST, &act);
+			strv_t include = proj_get_str(proj, pkg->strs + PKG_STR_INC);
+			if (include.len > 0) {
+				make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
+			}
+			make_inc_add_act(make, inc, act);
+		}
+
+		if ((target->type == TARGET_TYPE_LIB || target->type == TARGET_TYPE_EXT) && include.len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_INCLUDE"), MAKE_VAR_INST, &act);
+			buf->len = 0;
+			str_cat(buf, target->type == TARGET_TYPE_EXT ? STRV("$(DIR_TMP_EXT_PKG_SRC_ROOT)") : STRV("$(DIR_PKG)"));
+			str_cat(buf, include);
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			make_inc_add_act(make, inc, act);
+		}
+	}
+
+	if (target->type != TARGET_TYPE_EXT) {
+		deps->cnt = 0;
+		proj_get_deps(proj, tgt_id, deps);
+
+		int include_priv = 0;
+
+		if (target->type == TARGET_TYPE_TST) {
+			strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+			if (src.len > 0) {
+				if (!include_priv) {
+					make_var(make, STRV("$(PN)_$(TN)_INCLUDE_PRIV"), MAKE_VAR_INST, &act);
+					include_priv = 1;
+				}
+				buf->len = 0;
+				str_cat(buf, STRV("$(DIR_PKG)"));
+				str_cat(buf, src);
+				make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			}
+		} else if (include.len > 0) {
+			if (!include_priv) {
+				make_var(make, STRV("$(PN)_$(TN)_INCLUDE_PRIV"), MAKE_VAR_INST, &act);
+				include_priv = 1;
+			}
+			buf->len = 0;
+			str_cat(buf, STRV("$(DIR_PKG)"));
+			str_cat(buf, include);
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+		}
+
+		if (deps->cnt > 0) {
+			buf->len = 0;
+
+			size_t buf_len = buf->len;
+
+			uint i = 0;
+			const uint *dep;
+			arr_foreach(deps, i, dep)
+			{
+				const target_t *dtarget = proj_get_target(proj, *dep);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				strv_t dinclude		= proj_get_str(proj, dpkg->strs + PKG_STR_INC);
+				if (dinclude.len > 0) {
+					if (!include_priv) {
+						make_var(make, STRV("$(PN)_$(TN)_INCLUDE_PRIV"), MAKE_VAR_INST, &act);
+						include_priv = 1;
+					}
+					str_cat(buf, STRV("$("));
+					str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+					str_cat(buf, STRV("_"));
+					str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+					str_cat(buf, STRV("_INCLUDE)"));
+					make_var_add_val(make, act, MSTR(STRVS(*buf)));
+					buf->len = buf_len;
+				}
+			}
+		}
+		if (include_priv) {
+			make_inc_add_act(make, inc, act);
+		}
+	}
+
+	strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+
+	switch (target->type) {
+	case TARGET_TYPE_LIB: {
+		make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
+		if (out.len > 0) {
+			buf->len = 0;
+			str_cat(buf, STRV("$(abspath "));
+			str_cat(buf, out);
+			str_cat(buf, STRV(")/"));
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+
+		} else {
+			make_var_add_val(make, act, MSTR(STRV("$(DIR_OUT_LIB)")));
+		}
+		make_inc_add_act(make, inc, act);
+
+		if (target->has_deps) {
+			make_act_t libs;
+			make_var(make, STRV("$(PN)_$(TN)_LIBS"), MAKE_VAR_INST, &libs);
+			make_inc_add_act(make, inc, libs);
+
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				buf->len		= 0;
+				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				str_cat(buf, STRV("_"));
+				str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				make_var_add_val(make, libs, MSTR(STRVS(*buf)));
+			}
+		}
+
+		strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+		if (drv.len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
+			make_var_add_val(make, act, MSTR(STRV("$(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)")));
+			make_inc_add_act(make, inc, act);
+		}
+
+		break;
+	}
+	case TARGET_TYPE_EXE: {
+		make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
+		if (out.len > 0) {
+			buf->len = 0;
+			str_cat(buf, STRV("$(abspath "));
+			str_cat(buf, out);
+			str_cat(buf, STRV(")/"));
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+
+		} else {
+			make_var_add_val(make, act, MSTR(STRV("$(DIR_OUT_BIN)")));
+		}
+		make_inc_add_act(make, inc, act);
+
+		if (deps->cnt > 0) {
+			make_act_t libs;
+			make_var(make, STRV("$(PN)_$(TN)_LIBS_PRIV"), MAKE_VAR_INST, &libs);
+			make_inc_add_act(make, inc, libs);
+
+			buf->len = 0;
+
+			size_t buf_len = buf->len;
+
+			uint i = 0;
+			const uint *dep;
+			arr_foreach(deps, i, dep)
+			{
+				const target_t *dtarget = proj_get_target(proj, *dep);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				str_cat(buf, STRV("_"));
+				str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				make_var_add_val(make, libs, MSTR(STRVS(*buf)));
+				buf->len = buf_len;
+			}
+		}
+
+		strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+
+		int drivers = 0;
+		int lib_drv = 0;
+
+		if (deps->cnt > 0) {
+			buf->len = 0;
+
+			size_t buf_len = buf->len;
+
+			uint i = 0;
+			const uint *dep;
+			arr_foreach(deps, i, dep)
+			{
+				const target_t *dtarget = proj_get_target(proj, *dep);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
+				if (ddriver.len > 0) {
+					if (!drivers) {
+						make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
+						drivers = 1;
+					}
+					str_cat(buf, STRV("$("));
+					str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+					str_cat(buf, STRV("_"));
+					str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+					str_cat(buf, STRV("_DRIVERS)"));
+					make_var_add_val(make, act, MSTR(STRVS(*buf)));
+					buf->len = buf_len;
+					lib_drv |= dtarget->pkg == pkg_id;
+				}
+			}
+		}
+
+		if (!lib_drv && drv.len > 0) {
+			if (!drivers) {
+				make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
+				drivers = 1;
+			}
+			make_var_add_val(make, act, MSTR(STRV("$(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)")));
+		}
+
+		if (drivers) {
+			make_inc_add_act(make, inc, act);
+		}
+
+		break;
+	}
+	case TARGET_TYPE_TST: {
+		make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
+		if (out.len > 0) {
+			buf->len = 0;
+			str_cat(buf, STRV("$(abspath "));
+			str_cat(buf, out);
+			str_cat(buf, STRV(")/"));
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+
+		} else {
+			make_var_add_val(make, act, MSTR(STRV("$(DIR_OUT_TST)")));
+		}
+		make_inc_add_act(make, inc, act);
+
+		if (deps->cnt > 0) {
+			make_act_t libs;
+			make_var(make, STRV("$(PN)_$(TN)_LIBS_PRIV"), MAKE_VAR_INST, &libs);
+			make_inc_add_act(make, inc, libs);
+
+			buf->len = 0;
+
+			size_t buf_len = buf->len;
+
+			uint i = 0;
+			const uint *dep;
+			arr_foreach(deps, i, dep)
+			{
+				const target_t *dtarget = proj_get_target(proj, *dep);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				str_cat(buf, STRV("_"));
+				str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				make_var_add_val(make, libs, MSTR(STRVS(*buf)));
+				buf->len = buf_len;
+			}
+		}
+
+		strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+
+		int drivers = 0;
+		int lib_drv = 0;
+
+		if (deps->cnt > 0) {
+			buf->len = 0;
+
+			size_t buf_len = buf->len;
+
+			uint i = 0;
+			const uint *dep;
+			arr_foreach(deps, i, dep)
+			{
+				const target_t *dtarget = proj_get_target(proj, *dep);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
+				if (ddriver.len > 0) {
+					if (!drivers) {
+						make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
+						drivers = 1;
+					}
+
+					str_cat(buf, STRV("$("));
+					str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+					str_cat(buf, STRV("_"));
+					str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+					str_cat(buf, STRV("_DRIVERS)"));
+					make_var_add_val(make, act, MSTR(STRVS(*buf)));
+					buf->len = buf_len;
+					lib_drv |= dtarget->pkg == pkg_id;
+				}
+			}
+		}
+
+		if (!lib_drv && drv.len > 0) {
+			if (!drivers) {
+				make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
+				drivers = 1;
+			}
+			make_var_add_val(make, act, MSTR(STRV("$(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)")));
+		}
+
+		if (drivers) {
+			make_inc_add_act(make, inc, act);
+		}
+
+		break;
+	}
+	case TARGET_TYPE_EXT: {
+		make_var(make, STRV("$(PN)_$(TN)_SRC"), MAKE_VAR_REF, &act);
+		make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/")));
+		make_inc_add_act(make, inc, act);
+
+		make_var(make, STRV("$(PN)_$(TN)_BUILD"), MAKE_VAR_REF, &act);
+		make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_TMP_EXT_PKG_BUILD))/")));
+		make_inc_add_act(make, inc, act);
+
+		make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
+		if (out.len > 0) {
+			buf->len = 0;
+			str_cat(buf, STRV("$(abspath "));
+			str_cat(buf, out);
+			str_cat(buf, STRV(")/"));
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+
+		} else {
+			make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_OUT_EXT))/")));
+		}
+		make_inc_add_act(make, inc, act);
+
+		strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
+		resolve_var(vars, prep, svalues, buf);
+		var_convert(buf, '{', '}', '(', ')');
+		if (buf->len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_PREP"), MAKE_VAR_REF, &act);
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			make_inc_add_act(make, inc, act);
+		}
+
+		strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
+		resolve_var(vars, conf, svalues, buf);
+		var_convert(buf, '{', '}', '(', ')');
+		if (buf->len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_CONF"), MAKE_VAR_REF, &act);
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			make_inc_add_act(make, inc, act);
+		}
+
+		strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
+		resolve_var(vars, comp, svalues, buf);
+		var_convert(buf, '{', '}', '(', ')');
+		if (buf->len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_COMP"), MAKE_VAR_REF, &act);
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			make_inc_add_act(make, inc, act);
+		}
+
+		strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
+		resolve_var(vars, inst, svalues, buf);
+		var_convert(buf, '{', '}', '(', ')');
+		if (buf->len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_INST"), MAKE_VAR_REF, &act);
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			make_inc_add_act(make, inc, act);
+		}
+
+		strv_t tgt = proj_get_str(proj, target->strs + TARGET_TGT);
+		resolve_var(vars, tgt, svalues, buf);
+		var_convert(buf, '{', '}', '(', ')');
+		if (buf->len > 0) {
+			make_var(make, STRV("$(PN)_$(TN)_TGT"), MAKE_VAR_REF, &act);
+			make_var_add_val(make, act, MSTR(STRVS(*buf)));
+			make_inc_add_act(make, inc, act);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
+	if (target->type != TARGET_TYPE_UNKNOWN) {
+		make_eval_def(make, defines[target->type].def, &act);
+		make_inc_add_act(make, inc, act);
+	}
+
+	return 0;
+}
+
 static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *fs, uint id, make_act_t inc, const defines_t *protos_defs,
 		   const defines_t *exts_defs, const defines_t *defines, arr_t *deps, str_t *buf, strv_t build_dir)
 
@@ -91,272 +483,12 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 		}
 	}
 
-	strv_t svalues[__VARS_CNT] = {
-		[ARCH]	 = STRVT("$(ARCH)"),
-		[CONFIG] = STRVT("$(CONFIG)"),
-	};
-
-	uint i = pkg->targets;
-	const target_t *target;
-	list_foreach(&proj->targets, i, target)
-	{
-		make_var(make, STRV("TN"), MAKE_VAR_INST, &act);
-		make_var_add_val(make, act, MSTR(proj_get_str(proj, target->strs + TARGET_NAME)));
-		make_inc_add_act(make, inc, act);
-
-		strv_t include = proj_get_str(proj, pkg->strs + PKG_STR_INC);
-		if (include.len > 0) {
-			make_var(make, STRV("$(PN)_$(TN)_HEADERS"), MAKE_VAR_INST, &act);
-			strv_t include = proj_get_str(proj, pkg->strs + PKG_STR_INC);
-			if (include.len > 0) {
-				make_var_add_val(make, act, MSTR(STRV("$(PKGINC_H)")));
-			}
-			make_inc_add_act(make, inc, act);
-
-			make_var(make, STRV("$(PN)_$(TN)_INCLUDE"), MAKE_VAR_INST, &act);
-			if (include.len > 0) {
-				buf->len = 0;
-				str_cat(buf, target->type == TARGET_TYPE_EXT ? STRV("$(DIR_TMP_EXT_PKG_SRC_ROOT)") : STRV("$(DIR_PKG)"));
-				str_cat(buf, include);
-				make_var_add_val(make, act, MSTR(STRVS(*buf)));
-			}
-			make_inc_add_act(make, inc, act);
-		}
-
-		if (target->type != TARGET_TYPE_EXT) {
-			deps->cnt = 0;
-			proj_get_deps(proj, i, deps);
-
-			int includes = 0;
-			if (deps->cnt > 0) {
-				buf->len = 0;
-
-				uint i = 0;
-				const uint *dep;
-				arr_foreach(deps, i, dep)
-				{
-					const target_t *dtarget = proj_get_target(proj, *dep);
-					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-					strv_t dinclude		= proj_get_str(proj, dpkg->strs + PKG_STR_INC);
-					if (dinclude.len > 0) {
-						includes++;
-					}
-				}
-			}
-
-			if (include.len > 0 || includes > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_INCLUDE_PRIV"), MAKE_VAR_INST, &act);
-
-				if (target->type == TARGET_TYPE_TST) {
-					strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
-					if (src.len > 0) {
-						buf->len = 0;
-						str_cat(buf, STRV("$(DIR_PKG)"));
-						str_cat(buf, src);
-						make_var_add_val(make, act, MSTR(STRVS(*buf)));
-					}
-				} else if (include.len > 0) {
-					buf->len = 0;
-					str_cat(buf, STRV("$(DIR_PKG)"));
-					str_cat(buf, include);
-					make_var_add_val(make, act, MSTR(STRVS(*buf)));
-				}
-
-				if (deps->cnt > 0) {
-					buf->len = 0;
-
-					size_t buf_len = buf->len;
-
-					uint i = 0;
-					const uint *dep;
-					arr_foreach(deps, i, dep)
-					{
-						const target_t *dtarget = proj_get_target(proj, *dep);
-						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-						strv_t dinclude		= proj_get_str(proj, dpkg->strs + PKG_STR_INC);
-						if (dinclude.len > 0) {
-							str_cat(buf, STRV("$("));
-							str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-							str_cat(buf, STRV("_"));
-							str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-							str_cat(buf, STRV("_INCLUDE)"));
-							make_var_add_val(make, act, MSTR(STRVS(*buf)));
-							buf->len = buf_len;
-						}
-					}
-				}
-				make_inc_add_act(make, inc, act);
-			}
-		}
-
-		switch (target->type) {
-		case TARGET_TYPE_LIB: {
-			make_act_t libs;
-			make_var(make, STRV("$(PN)_$(TN)_LIBS"), MAKE_VAR_INST, &libs);
-			make_inc_add_act(make, inc, libs);
-
-			if (target->has_deps) {
-
-				const list_node_t *dep_target_id;
-				list_node_t j = target->deps;
-				list_foreach(&proj->deps, j, dep_target_id)
-				{
-					buf->len		= 0;
-					const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-					str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-					str_cat(buf, STRV("_"));
-					str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-					make_var_add_val(make, libs, MSTR(STRVS(*buf)));
-				}
-			}
-
-			strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
-			if (drv.len > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
-				make_var_add_val(make, act, MSTR(STRV("$(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)")));
-				make_inc_add_act(make, inc, act);
-			}
-
-			break;
-		}
-		case TARGET_TYPE_EXE:
-		case TARGET_TYPE_TST: {
-			make_act_t libs;
-			make_var(make, STRV("$(PN)_$(TN)_LIBS_PRIV"), MAKE_VAR_INST, &libs);
-			make_inc_add_act(make, inc, libs);
-
-			if (deps->cnt > 0) {
-				buf->len = 0;
-
-				size_t buf_len = buf->len;
-
-				uint i = 0;
-				const uint *dep;
-				arr_foreach(deps, i, dep)
-				{
-					const target_t *dtarget = proj_get_target(proj, *dep);
-					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-					str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-					str_cat(buf, STRV("_"));
-					str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-					make_var_add_val(make, libs, MSTR(STRVS(*buf)));
-					buf->len = buf_len;
-				}
-			}
-
-			int drivers = 0;
-			if (deps->cnt > 0) {
-				buf->len = 0;
-
-				uint i = 0;
-				const uint *dep;
-				arr_foreach(deps, i, dep)
-				{
-					const target_t *dtarget = proj_get_target(proj, *dep);
-					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-					strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
-					if (ddriver.len > 0) {
-						drivers++;
-					}
-				}
-			}
-
-			strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
-			if (drivers > 0 || (target->type == TARGET_TYPE_EXE && drv.len > 0)) {
-				make_var(make, STRV("$(PN)_$(TN)_DRIVERS"), MAKE_VAR_INST, &act);
-				if (target->type == TARGET_TYPE_EXE && drv.len > 0) {
-					make_var_add_val(make, act, MSTR(STRV("$(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)")));
-				}
-				if (deps->cnt > 0) {
-					buf->len = 0;
-
-					size_t buf_len = buf->len;
-
-					uint i = 0;
-					const uint *dep;
-					arr_foreach(deps, i, dep)
-					{
-						const target_t *dtarget = proj_get_target(proj, *dep);
-						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-						strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
-						if (ddriver.len > 0) {
-							str_cat(buf, STRV("$("));
-							str_cat(buf, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-							str_cat(buf, STRV("_"));
-							str_cat(buf, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-							str_cat(buf, STRV("_DRIVERS)"));
-							make_var_add_val(make, act, MSTR(STRVS(*buf)));
-							buf->len = buf_len;
-						}
-					}
-				}
-				make_inc_add_act(make, inc, act);
-			}
-			break;
-		}
-		case TARGET_TYPE_EXT: {
-			strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
-			resolve_var(vars, prep, svalues, buf);
-			var_convert(buf, '{', '}', '(', ')');
-			if (buf->len > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_PREP"), MAKE_VAR_REF, &act);
-				make_var_add_val(make, act, MSTR(STRVS(*buf)));
-				make_inc_add_act(make, inc, act);
-			}
-
-			strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
-			resolve_var(vars, conf, svalues, buf);
-			var_convert(buf, '{', '}', '(', ')');
-			if (buf->len > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_CONF"), MAKE_VAR_REF, &act);
-				make_var_add_val(make, act, MSTR(STRVS(*buf)));
-				make_inc_add_act(make, inc, act);
-			}
-
-			strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
-			resolve_var(vars, comp, svalues, buf);
-			var_convert(buf, '{', '}', '(', ')');
-			if (buf->len > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_COMP"), MAKE_VAR_REF, &act);
-				make_var_add_val(make, act, MSTR(STRVS(*buf)));
-				make_inc_add_act(make, inc, act);
-			}
-
-			strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
-			resolve_var(vars, inst, svalues, buf);
-			var_convert(buf, '{', '}', '(', ')');
-			if (buf->len > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_INST"), MAKE_VAR_REF, &act);
-				make_var_add_val(make, act, MSTR(STRVS(*buf)));
-				make_inc_add_act(make, inc, act);
-			}
-
-			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-			resolve_var(vars, out, svalues, buf);
-			var_convert(buf, '{', '}', '(', ')');
-			if (buf->len > 0) {
-				make_var(make, STRV("$(PN)_$(TN)_OUT"), MAKE_VAR_REF, &act);
-				make_var_add_val(make, act, MSTR(STRVS(*buf)));
-				make_inc_add_act(make, inc, act);
-			}
-
-			make_var(make, STRV("$(PN)_$(TN)_SRC"), MAKE_VAR_REF, &act);
-			make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/")));
-			make_inc_add_act(make, inc, act);
-
-			make_var(make, STRV("$(PN)_$(TN)_BUILD"), MAKE_VAR_REF, &act);
-			make_var_add_val(make, act, MSTR(STRV("$(abspath $(DIR_TMP_EXT_PKG_BUILD))/")));
-			make_inc_add_act(make, inc, act);
-			break;
-		}
-		default:
-			break;
-		}
-
-		if (target->type != TARGET_TYPE_UNKNOWN) {
-			make_eval_def(make, defines[target->type].def, &act);
-			make_inc_add_act(make, inc, act);
+	if (pkg->has_targets) {
+		uint i = pkg->targets;
+		const target_t *target;
+		list_foreach(&proj->targets, i, target)
+		{
+			gen_tgt(proj, vars, make, id, pkg, i, target, inc, defines, deps, buf);
 		}
 	}
 
@@ -411,6 +543,14 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
+	make_var(&make, STRV("EXT_LIB"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV(".a")));
+	make_add_act(&make, root, act);
+	make_var(&make, STRV("EXT_EXE"), MAKE_VAR_INST, &act);
+	make_add_act(&make, root, act);
+	make_empty(&make, &act);
+	make_add_act(&make, root, act);
+
 	path_t tmp = {0};
 	str_t buf  = strz(16);
 
@@ -445,10 +585,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			val = STRVS(buf);
 			break;
 		}
-		case ABS_DIR_OUT_EXT_PKG: {
-			val = STRV("$(abspath $(DIR_OUT_EXT_PKG))/");
-			break;
-		}
 		default:
 			break;
 		}
@@ -470,14 +606,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, mvars[i]);
 	}
 
-	make_empty(&make, &act);
-	make_add_act(&make, root, act);
-
-	make_var(&make, STRV("EXT_LIB"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV(".a")));
-	make_add_act(&make, root, act);
-	make_var(&make, STRV("EXT_EXE"), MAKE_VAR_INST, &act);
-	make_add_act(&make, root, act);
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
@@ -1026,7 +1154,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGTST_OBJ].var)));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))"))));
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("precov_$(ARCH)_$(CONFIG)"))));
+		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("| precov_$(ARCH)_$(CONFIG)"))));
 		make_def_add_act(&make, def, def_rule_target);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
@@ -1129,7 +1257,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		str_t buf2 = strz(16);
 
 		arr_t order = {0};
-		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
+		arr_init(&order, proj->pkgs.cnt, sizeof(uint), ALLOC_STD);
 		proj_get_pkg_build_order(proj, &order, ALLOC_STD);
 
 		arr_t deps = {0};

@@ -52,6 +52,501 @@ static void get_path(const proj_t *proj, uint id, path_t *path)
 	}
 }
 
+static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, uint pkg_id, const pkg_t *pkg, uint tgt_id,
+		   const target_t *target, arr_t *deps, str_t *buf)
+{
+	strv_t svalues[__VARS_CNT] = {
+		[ARCH]	 = STRVT("${ARCH}"),
+		[CONFIG] = STRVT("${CONFIG}"),
+	};
+
+	fs_write(fs, f, STRV("set(TN \""));
+	strv_t name = proj_get_str(proj, target->strs + TARGET_NAME);
+	if (name.len > 0) {
+		fs_write(fs, f, name);
+	}
+	fs_write(fs, f, STRV("\")\n"));
+
+	for (int i = 0; i < __VARS_CNT; i++) {
+		if (!(vars->vars[i].deps & (1 << TN))) {
+			continue;
+		}
+
+		strv_t val = vars->vars[i].val;
+		switch (i) {
+		case TGT_SRC: {
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			val = STRV("${DIR_TMP_EXT_PKG_SRC_ROOT}");
+			break;
+		}
+		case TGT_BUILD: {
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			val = STRV("${DIR_TMP_EXT_PKG_BUILD}");
+			break;
+		}
+		case TGT_OUT: {
+			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+			if (out.len > 0) {
+				resolve_var(vars, out, svalues, buf);
+				val = STRVS(*buf);
+			} else {
+				switch (target->type) {
+				case TARGET_TYPE_EXE:
+					val = STRV("${DIR_OUT_BIN}");
+					break;
+				case TARGET_TYPE_LIB:
+					val = STRV("${DIR_OUT_LIB}");
+					break;
+				case TARGET_TYPE_EXT:
+					val = STRV("${DIR_OUT_EXT}");
+					break;
+				case TARGET_TYPE_TST:
+					val = STRV("${DIR_OUT_TST}");
+					break;
+				default:
+					val = STRV_NULL;
+					break;
+				}
+			}
+			break;
+		}
+		case TGT_PREP: {
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
+			resolve_var(vars, prep, svalues, buf);
+			val = STRVS(*buf);
+			break;
+		}
+		case TGT_CONF: {
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
+			resolve_var(vars, conf, svalues, buf);
+			val = STRVS(*buf);
+			break;
+		}
+		case TGT_COMP: {
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
+			resolve_var(vars, comp, svalues, buf);
+			val = STRVS(*buf);
+			break;
+		}
+		case TGT_INST: {
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
+			resolve_var(vars, inst, svalues, buf);
+			val = STRVS(*buf);
+			break;
+		}
+		case TGT_TGT: {
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			strv_t tgt = proj_get_str(proj, target->strs + TARGET_TGT);
+			resolve_var(vars, tgt, svalues, buf);
+			val = STRVS(*buf);
+			break;
+		}
+		case DIR_OUT_LIB_FILE:
+			if (target->type != TARGET_TYPE_LIB) {
+				continue;
+			}
+			break;
+		case DIR_OUT_BIN_FILE:
+			if (target->type != TARGET_TYPE_EXE) {
+				continue;
+			}
+			break;
+		case DIR_OUT_TST_FILE:
+			if (target->type != TARGET_TYPE_TST) {
+				continue;
+			}
+			break;
+		case DIR_OUT_EXT_PKG:
+		case DIR_OUT_EXT_FILE:
+			if (target->type != TARGET_TYPE_EXT) {
+				continue;
+			}
+			break;
+		default:       // LCOV_EXCL_LINE
+			break; // LCOV_EXCL_LINE
+		}
+
+		if (val.data == NULL) {
+			continue; // LCOV_EXCL_LINE
+		}
+
+		buf->len = 0;
+		str_cat(buf, val);
+
+		var_convert(buf, '{', '}', '{', '}');
+
+		fs_write(fs, f, STRV("set("));
+		fs_write(fs, f, vars->vars[i].name);
+		fs_write(fs, f, STRV(" "));
+		if (buf->len > 0) {
+			fs_write(fs, f, STRVS(*buf));
+		}
+		fs_write(fs, f, STRV(")\n"));
+	}
+	fs_write(fs, f, STRV("\n"));
+
+	strv_t inc = proj_get_str(proj, pkg->strs + PKG_STR_INC);
+	strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+	strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
+
+	if (target->type != TARGET_TYPE_EXT) {
+		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
+
+		path_t tmp = {0};
+
+		switch (target->type) {
+		case TARGET_TYPE_TST:
+			path_init_s(&tmp, tst, '/');
+			break;
+		default:
+			path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_STR_SRC), '/');
+			break;
+		}
+
+		size_t src_len = tmp.len;
+		path_push_s(&tmp, STRV("*.h"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(" ${DIR_PKG}"));
+		tmp.len = src_len;
+		path_push_s(&tmp, STRV("*.c"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		if (target->type != TARGET_TYPE_LIB) {
+			int lib_drv = 0;
+
+			deps->cnt = 0;
+			proj_get_deps(proj, tgt_id, deps);
+			if (deps->cnt > 0) {
+				uint i = 0;
+				const uint *dep;
+				arr_foreach(deps, i, dep)
+				{
+					const target_t *dtarget = list_get(&proj->targets, *dep);
+					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+					strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
+					if (ddriver.len > 0) {
+						fs_write(fs, f, STRV(" ${"));
+						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+						fs_write(fs, f, STRV("_DRIVERS}"));
+						lib_drv |= dtarget->pkg == pkg_id;
+					}
+				}
+			}
+
+			if (!lib_drv && drv.len > 0) {
+				tmp.len = 0;
+				path_init_s(&tmp, drv, '/');
+				path_push_s(&tmp, STRV("*.c"), '/');
+				fs_write(fs, f, STRV(" ${DIR_PKG}"));
+				fs_write(fs, f, STRVS(tmp));
+			}
+		}
+
+		fs_write(fs, f, STRV(")\n"));
+	}
+
+	strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+
+	switch (target->type) {
+	case TARGET_TYPE_EXE: {
+		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+		if (inc.len > 0 || src.len > 0) {
+			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
+			if (inc.len > 0) {
+				fs_write(fs, f, STRV(" ${DIR_PKG}"));
+				fs_write(fs, f, inc);
+			}
+
+			if (src.len > 0) {
+				fs_write(fs, f, STRV(" ${DIR_PKG}"));
+				fs_write(fs, f, src);
+			}
+
+			fs_write(fs, f, STRV(")\n"));
+		}
+
+		fs_write(fs,
+			 f,
+			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "endif()\n"));
+
+		if (target->has_deps) {
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_write(fs, f, STRV("_"));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+		break;
+	}
+	case TARGET_TYPE_LIB: {
+		fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+		if (inc.len > 0 || src.len > 0) {
+			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
+			if (inc.len > 0) {
+				fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
+				fs_write(fs, f, inc);
+			}
+
+			if (src.len > 0) {
+				fs_write(fs, f, STRV(" PRIVATE ${DIR_PKG}"));
+				fs_write(fs, f, src);
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+
+		fs_write(fs,
+			 f,
+			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "endif()\n"));
+
+		if (target->has_deps) {
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_write(fs, f, STRV("_"));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+		break;
+	}
+	case TARGET_TYPE_EXT: {
+		fs_write(fs,
+			 f,
+			 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
+			      "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
+			      "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\" \"${TGT_BUILD_DEBUG}\" "
+			      "\"${TGT_BUILD_RELEASE}\")\n"
+			      "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_URI_FILE}\n"
+			      "\tSHOW_PROGRESS\n"
+			      ")\n"
+			      "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_URI_FILE}\" DESTINATION "
+			      "\"${DIR_TMP_EXT_PKG_SRC}\")\n"
+			      "add_custom_target(${PN}_${TN}_build\n"
+			      "\tALL\n"
+			      "\tCOMMAND ${TGT_PREP}\n"
+			      "\tCOMMAND ${TGT_CONF}\n"
+			      "\tCOMMAND ${TGT_COMP}\n"
+			      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+			      "\tCOMMAND ${TGT_INST}\n"
+			      "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
+			      ")\n"));
+
+		switch (target->out_type) {
+		case TARGET_TGT_TYPE_LIB:
+			fs_write(fs, f, STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"));
+			break;
+		case TARGET_TGT_TYPE_EXE:
+			fs_write(fs, f, STRV("add_executable(${PN}_${TN} IMPORTED)\n"));
+			break;
+		default:
+			break;
+		}
+
+		fs_write(fs, f, STRV("add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
+
+		if (target->has_deps) {
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_write(fs, f, STRV("_"));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+
+		break;
+	}
+	case TARGET_TYPE_TST: {
+		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+
+		if (src.len > 0 || tst.len > 0) {
+			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
+			if (src.len > 0) {
+				fs_write(fs, f, STRV(" ${DIR_PKG}"));
+				fs_write(fs, f, src);
+			}
+			if (tst.len > 0) {
+				fs_write(fs, f, STRV(" ${DIR_PKG}"));
+				fs_write(fs, f, tst);
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+
+		fs_write(fs,
+			 f,
+			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "endif()\n"));
+
+		if (target->has_deps) {
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_write(fs, f, STRV("_"));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+
+		fs_write(fs,
+			 f,
+			 STRV("add_test(\n"
+			      "\tNAME ${PN}_${TN}\n"
+			      "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+			      ")\n"));
+		break;
+	}
+	default:
+		break;
+	}
+
+	strv_t values[__VARS_CNT] = {0};
+
+	if (target->type == TARGET_TYPE_EXT) {
+		fs_write(fs,
+			 f,
+			 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
+			      "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE "
+			      "\"${DIR_OUT_EXT_FILE}\")\n"));
+	}
+
+	fs_write(fs, f, STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"));
+
+	if (target->type == TARGET_TYPE_EXT) {
+		fs_write(fs,
+			 f,
+			 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
+			      "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
+			      "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"));
+
+		if (target->out_type == TARGET_TGT_TYPE_LIB && inc.len > 0) {
+			fs_write(fs, f, STRV("\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_SRC_ROOT}"));
+			fs_write(fs, f, inc);
+			fs_write(fs, f, STRV("\n"));
+		}
+	}
+
+	fs_write(fs, f, STRV("\tOUTPUT_NAME \"${PN}\"\n"));
+
+	path_t outdir = {0};
+
+	struct {
+		strv_t name;
+		strv_t config;
+	} props[__TARGET_TYPE_MAX][3] = {
+		[TARGET_TYPE_EXE] =
+			{
+				{STRVT("RUNTIME_OUTPUT_DIRECTORY"), STRVT("Debug")},
+				{STRVT("RUNTIME_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
+				{STRVT("RUNTIME_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
+			},
+		[TARGET_TYPE_LIB] =
+			{
+				{STRVT("ARCHIVE_OUTPUT_DIRECTORY"), STRVT("Debug")},
+				{STRVT("ARCHIVE_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
+				{STRVT("ARCHIVE_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
+			},
+		[TARGET_TYPE_TST] =
+			{
+				{STRVT("RUNTIME_OUTPUT_DIRECTORY"), STRVT("Debug")},
+				{STRVT("RUNTIME_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
+				{STRVT("RUNTIME_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
+			},
+	};
+
+	size_t props_cnt = sizeof(props[target->type]) / sizeof(props[target->type][0]);
+
+	for (size_t i = 0; i < props_cnt; i++) {
+		if (props[target->type]->name.data == NULL) {
+			continue;
+		}
+
+		fs_write(fs, f, STRV("\t"));
+		fs_write(fs, f, props[target->type][i].name);
+		fs_write(fs, f, STRV(" "));
+		values[CONFIG] = props[target->type][i].config;
+		resolve_dir(proj, vars, values, target->type, buf, &outdir);
+		fs_write(fs, f, STRVS(outdir));
+		fs_write(fs, f, STRV("\n"));
+	}
+
+	switch (target->type) {
+	case TARGET_TYPE_LIB:
+		fs_write(fs, f, STRV("\tPREFIX \"\"\n"));
+		break;
+	default:
+		break;
+	}
+
+	fs_write(fs, f, STRV(")\n"));
+
+	return 0;
+}
+
 static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, arr_t *deps, strv_t build_dir)
 {
 	const pkg_t *pkg = proj_get_pkg(proj, id);
@@ -116,9 +611,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 		}
 	}
 
-	strv_t inc = proj_get_str(proj, pkg->strs + PKG_STR_INC);
 	strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
-	strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
 
 	for (int i = 0; i < __VARS_CNT; i++) {
 		strv_t val = vars->vars[i].val;
@@ -132,14 +625,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 		case DIR_TMP_EXT_PKG_SRC_ROOT:
 		case DIR_TMP_EXT_PKG_BUILD:
 		case DIR_TMP_DL_PKG:
-		case DIR_OUT_EXT_PKG:
-		case ABS_DIR_OUT_EXT_PKG:
 			if (uri.len == 0) {
-				continue;
-			}
-			break;
-		case DIR_PKG_INC:
-			if (inc.len == 0) {
 				continue;
 			}
 			break;
@@ -150,13 +636,12 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 				continue;
 			}
 			break;
+		case DIR_PKG_SRC:
+		case DIR_PKG_INC:
 		case DIR_PKG_TST:
+		case DIR_OUT_INT_SRC:
 		case DIR_OUT_INT_TST:
-		case DIR_OUT_TST_FILE:
-			if (tst.len == 0) {
-				continue;
-			}
-			break;
+			continue;
 		case PN_DRIVERS:
 			if (drv.len == 0) {
 				continue;
@@ -190,445 +675,12 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 
 	fs_write(fs, f, STRV("\n"));
 
-	strv_t svalues[__VARS_CNT] = {
-		[ARCH]	 = STRVT("${ARCH}"),
-		[CONFIG] = STRVT("${CONFIG}"),
-	};
-
 	if (pkg->has_targets) {
 		const target_t *target;
-		list_node_t target_id = pkg->targets;
-		list_foreach(&proj->targets, target_id, target)
+		list_node_t i = pkg->targets;
+		list_foreach(&proj->targets, i, target)
 		{
-			fs_write(fs, f, STRV("set(TN \""));
-			strv_t name = proj_get_str(proj, target->strs + TARGET_NAME);
-			if (name.len > 0) {
-				fs_write(fs, f, name);
-			}
-			fs_write(fs, f, STRV("\")\n"));
-
-			for (int i = 0; i < __VARS_CNT; i++) {
-				if (!(vars->vars[i].deps & (1 << TN))) {
-					continue;
-				}
-
-				strv_t val = vars->vars[i].val;
-				switch (i) {
-				case TGT_SRC: {
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					val = STRV("${DIR_TMP_EXT_PKG_SRC_ROOT}");
-					break;
-				}
-				case TGT_BUILD: {
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					val = STRV("${DIR_TMP_EXT_PKG_BUILD}");
-					break;
-				}
-				case TGT_PREP: {
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
-					resolve_var(vars, prep, svalues, &buf);
-					val = STRVS(buf);
-					break;
-				}
-				case TGT_CONF: {
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
-					resolve_var(vars, conf, svalues, &buf);
-					val = STRVS(buf);
-					break;
-				}
-				case TGT_COMP: {
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
-					resolve_var(vars, comp, svalues, &buf);
-					val = STRVS(buf);
-					break;
-				}
-				case TGT_INST: {
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
-					resolve_var(vars, inst, svalues, &buf);
-					val = STRVS(buf);
-					break;
-				}
-				case TGT_OUT: {
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
-					resolve_var(vars, out, svalues, &buf);
-					val = STRVS(buf);
-					break;
-				}
-				case DIR_OUT_EXT_FILE:
-					if (target->type != TARGET_TYPE_EXT) {
-						continue;
-					}
-					break;
-				default:       // LCOV_EXCL_LINE
-					break; // LCOV_EXCL_LINE
-				}
-
-				if (val.data == NULL) {
-					continue; // LCOV_EXCL_LINE
-				}
-
-				buf.len = 0;
-				str_cat(&buf, val);
-
-				var_convert(&buf, '{', '}', '{', '}');
-
-				fs_write(fs, f, STRV("set("));
-				fs_write(fs, f, vars->vars[i].name);
-				fs_write(fs, f, STRV(" "));
-				if (buf.len > 0) {
-					fs_write(fs, f, STRVS(buf));
-				}
-				fs_write(fs, f, STRV(")\n"));
-			}
-			fs_write(fs, f, STRV("\n"));
-
-			if (target->type != TARGET_TYPE_EXT) {
-				fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
-
-				path_t tmp = {0};
-
-				switch (target->type) {
-				case TARGET_TYPE_TST:
-					path_init_s(&tmp, tst, '/');
-					break;
-				default:
-					path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_STR_SRC), '/');
-					break;
-				}
-
-				size_t src_len = tmp.len;
-				path_push_s(&tmp, STRV("*.h"), '/');
-				fs_write(fs, f, STRVS(tmp));
-
-				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				tmp.len = src_len;
-				path_push_s(&tmp, STRV("*.c"), '/');
-				fs_write(fs, f, STRVS(tmp));
-
-				if (target->type != TARGET_TYPE_LIB) {
-					if (drv.len > 0) {
-						tmp.len = 0;
-						path_init_s(&tmp, drv, '/');
-						path_push_s(&tmp, STRV("*.c"), '/');
-						fs_write(fs, f, STRV(" ${DIR_PKG}"));
-						fs_write(fs, f, STRVS(tmp));
-					}
-
-					deps->cnt = 0;
-					proj_get_deps(proj, target_id, deps);
-					if (deps->cnt > 0) {
-						uint i = 0;
-						const uint *dep;
-						arr_foreach(deps, i, dep)
-						{
-							const target_t *dtarget = list_get(&proj->targets, *dep);
-							const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-							strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
-							if (ddriver.len > 0) {
-								fs_write(fs, f, STRV(" ${"));
-								fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-								fs_write(fs, f, STRV("_DRIVERS}"));
-							}
-						}
-					}
-				}
-
-				fs_write(fs, f, STRV(")\n"));
-			}
-
-			strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
-
-			switch (target->type) {
-			case TARGET_TYPE_EXE: {
-				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-				if (inc.len > 0 || src.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
-					if (inc.len > 0) {
-						fs_write(fs, f, STRV(" ${DIR_PKG}"));
-						fs_write(fs, f, inc);
-					}
-
-					if (src.len > 0) {
-						fs_write(fs, f, STRV(" ${DIR_PKG}"));
-						fs_write(fs, f, src);
-					}
-
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				fs_write(fs,
-					 f,
-					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-					      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-					      "\t)\n"
-					      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-					      "\t)\n"
-					      "endif()\n"));
-				fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
-				if (target->has_deps) {
-					const list_node_t *dep_target_id;
-					list_node_t j = target->deps;
-					list_foreach(&proj->deps, j, dep_target_id)
-					{
-						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-						fs_write(fs, f, STRV("_"));
-						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-					}
-				}
-				fs_write(fs, f, STRV(")\n"));
-				break;
-			}
-			case TARGET_TYPE_LIB: {
-				fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-				if (inc.len > 0 || src.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
-					if (inc.len > 0) {
-						fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
-						fs_write(fs, f, inc);
-					}
-
-					if (src.len > 0) {
-						fs_write(fs, f, STRV(" PRIVATE ${DIR_PKG}"));
-						fs_write(fs, f, src);
-					}
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				fs_write(fs,
-					 f,
-					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-					      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-					      "\t)\n"
-					      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-					      "\t)\n"
-					      "endif()\n"));
-				fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
-				if (target->has_deps) {
-					const list_node_t *dep_target_id;
-					list_node_t j = target->deps;
-					list_foreach(&proj->deps, j, dep_target_id)
-					{
-						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-						fs_write(fs, f, STRV("_"));
-						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-					}
-				}
-				fs_write(fs, f, STRV(")\n"));
-				break;
-			}
-			case TARGET_TYPE_EXT: {
-				fs_write(fs,
-					 f,
-					 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
-					      "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
-					      "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\" \"${TGT_BUILD_DEBUG}\" "
-					      "\"${TGT_BUILD_RELEASE}\")\n"
-					      "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_URI_FILE}\n"
-					      "\tSHOW_PROGRESS\n"
-					      ")\n"
-					      "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_URI_FILE}\" DESTINATION "
-					      "\"${DIR_TMP_EXT_PKG_SRC}\")\n"
-					      "add_custom_target(${PN}_${TN}_build\n"
-					      "\tALL\n"
-					      "\tCOMMAND ${TGT_PREP}\n"
-					      "\tCOMMAND ${TGT_CONF}\n"
-					      "\tCOMMAND ${TGT_COMP}\n"
-					      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-					      "\tCOMMAND ${TGT_INST}\n"
-					      "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
-					      ")\n"));
-
-				switch (target->out_type) {
-				case TARGET_OUT_TYPE_LIB:
-					fs_write(fs, f, STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"));
-					break;
-				case TARGET_OUT_TYPE_EXE:
-					fs_write(fs, f, STRV("add_executable(${PN}_${TN} IMPORTED)\n"));
-					break;
-				default:
-					break;
-				}
-
-				fs_write(fs, f, STRV("add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
-
-				if (target->has_deps) {
-					fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
-					const list_node_t *dep_target_id;
-					list_node_t j = target->deps;
-					list_foreach(&proj->deps, j, dep_target_id)
-					{
-						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-						fs_write(fs, f, STRV("_"));
-						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-					}
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				break;
-			}
-			case TARGET_TYPE_TST: {
-				fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-
-				strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
-				if (src.len > 0 || tst.len > 0) {
-					fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
-					if (src.len > 0) {
-						fs_write(fs, f, STRV(" ${DIR_PKG}"));
-						fs_write(fs, f, src);
-					}
-					if (tst.len > 0) {
-						fs_write(fs, f, STRV(" ${DIR_PKG}"));
-						fs_write(fs, f, tst);
-					}
-					fs_write(fs, f, STRV(")\n"));
-				}
-
-				fs_write(fs,
-					 f,
-					 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-					      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-					      "\t)\n"
-					      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-					      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-					      "\t)\n"
-					      "endif()\n"));
-				fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
-				if (target->has_deps) {
-					const list_node_t *dep_target_id;
-					list_node_t j = target->deps;
-					list_foreach(&proj->deps, j, dep_target_id)
-					{
-						const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-						const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-						fs_write(fs, f, STRV(" "));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-						fs_write(fs, f, STRV("_"));
-						fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
-					}
-				}
-				fs_write(fs, f, STRV(")\n"));
-				fs_write(fs,
-					 f,
-					 STRV("add_test(\n"
-					      "\tNAME ${PN}_${TN}\n"
-					      "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
-					      ")\n"));
-				break;
-			}
-			default:
-				break;
-			}
-
-			strv_t values[__VARS_CNT] = {0};
-
-			if (target->type == TARGET_TYPE_EXT) {
-				fs_write(fs,
-					 f,
-					 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
-					      "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE "
-					      "\"${DIR_OUT_EXT_FILE}\")\n"));
-			}
-
-			fs_write(fs, f, STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"));
-
-			if (target->type == TARGET_TYPE_EXT) {
-				fs_write(fs,
-					 f,
-					 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
-					      "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
-					      "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"));
-
-				if (target->out_type == TARGET_OUT_TYPE_LIB) {
-					fs_write(fs, f, STRV("\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_SRC_ROOT}include\n"));
-				}
-			}
-
-			fs_write(fs, f, STRV("\tOUTPUT_NAME \"${PN}\"\n"));
-
-			path_t outdir = {0};
-
-			struct {
-				strv_t name;
-				strv_t config;
-			} props[__TARGET_TYPE_MAX][3] = {
-				[TARGET_TYPE_EXE] =
-					{
-						{STRVT("RUNTIME_OUTPUT_DIRECTORY"), STRVT("Debug")},
-						{STRVT("RUNTIME_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
-						{STRVT("RUNTIME_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
-					},
-				[TARGET_TYPE_LIB] =
-					{
-						{STRVT("ARCHIVE_OUTPUT_DIRECTORY"), STRVT("Debug")},
-						{STRVT("ARCHIVE_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
-						{STRVT("ARCHIVE_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
-					},
-				[TARGET_TYPE_TST] =
-					{
-						{STRVT("RUNTIME_OUTPUT_DIRECTORY"), STRVT("Debug")},
-						{STRVT("RUNTIME_OUTPUT_DIRECTORY_DEBUG"), STRVT("Debug")},
-						{STRVT("RUNTIME_OUTPUT_DIRECTORY_RELEASE"), STRVT("Release")},
-					},
-			};
-
-			size_t props_cnt = sizeof(props[target->type]) / sizeof(props[target->type][0]);
-
-			for (size_t i = 0; i < props_cnt; i++) {
-				if (props[target->type]->name.data == NULL) {
-					continue;
-				}
-
-				fs_write(fs, f, STRV("\t"));
-				fs_write(fs, f, props[target->type][i].name);
-				fs_write(fs, f, STRV(" "));
-				values[CONFIG] = props[target->type][i].config;
-				resolve_dir(proj, vars, values, target->type, &buf, &outdir);
-				fs_write(fs, f, STRVS(outdir));
-				fs_write(fs, f, STRV("\n"));
-			}
-
-			switch (target->type) {
-			case TARGET_TYPE_LIB:
-				fs_write(fs, f, STRV("\tPREFIX \"\"\n"));
-				break;
-			default:
-				break;
-			}
-
-			fs_write(fs, f, STRV(")\n"));
+			gen_tgt(proj, vars, fs, f, id, pkg, i, target, deps, &buf);
 		}
 	}
 
@@ -674,6 +726,14 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"
 		      "list(LENGTH CONFIGS _config_count)\n"
 		      "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
+		      "\n"
+		      "if(WIN32)\n"
+		      "\tset(EXT_LIB .lib)\n"
+		      "\tset(EXT_EXE .exe)\n"
+		      "else()\n"
+		      "\tset(EXT_LIB .a)\n"
+		      "\tset(EXT_EXE )\n"
+		      "endif()\n"
 		      "\n"));
 
 	path_t tmp = {0};
@@ -735,14 +795,6 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	fs_write(drv->fs,
 		 f,
 		 STRV("\n"
-		      "if(WIN32)\n"
-		      "\tset(EXT_LIB .lib)\n"
-		      "\tset(EXT_EXE .exe)\n"
-		      "else()\n"
-		      "\tset(EXT_LIB .a)\n"
-		      "\tset(EXT_EXE )\n"
-		      "endif()\n"
-		      "\n"
 		      "enable_testing()\n"
 		      "\n"
 		      "if(_arch_count GREATER 0 AND _config_count GREATER 0)\n"
@@ -862,26 +914,15 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\t\tendif()\n"
 		      "\tendif()\n"));
 
-	int types[__TARGET_TYPE_MAX] = {0};
-
-	list_node_t i = 0;
-	const target_t *target;
-	list_foreach_all(&proj->targets, i, target)
-	{
-		types[target->type] = 1;
-	}
-
-	(void)types;
-
 	if (proj->pkgs.cnt > 0) {
 		arr_t order = {0};
-		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
+		arr_init(&order, proj->pkgs.cnt, sizeof(uint), ALLOC_STD);
 		proj_get_pkg_build_order(proj, &order, ALLOC_STD);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
 
-		i = 0;
+		uint i = 0;
 		const uint *id;
 		arr_foreach(&order, i, id)
 		{

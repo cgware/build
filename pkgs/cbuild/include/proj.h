@@ -20,13 +20,14 @@ typedef enum target_str_e {
 	TARGET_COMP,
 	TARGET_INST,
 	TARGET_OUT,
+	TARGET_TGT,
 	__TARGET_STR_CNT,
 } target_str_t;
 
 typedef enum target_out_type_e {
-	TARGET_OUT_TYPE_UNKNOWN,
-	TARGET_OUT_TYPE_LIB,
-	TARGET_OUT_TYPE_EXE,
+	TARGET_TGT_TYPE_UNKNOWN,
+	TARGET_TGT_TYPE_LIB,
+	TARGET_TGT_TYPE_EXE,
 	__TARGET_TYPE_CNT,
 } target_out_type_t;
 

@@ -481,7 +481,7 @@ TEST(proj_print)
 
 	char buf[512] = {0};
 	EXPECT_EQ(proj_print(NULL, DST_BUF(buf)), 0);
-	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 362);
+	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 374);
 	EXPECT_STR(buf,
 		   "[project]\n"
 		   "NAME: \n"
@@ -507,6 +507,7 @@ TEST(proj_print)
 		   "COMP: \n"
 		   "INST: \n"
 		   "OUT: \n"
+		   "TGT: \n"
 		   "TYPE: 0\n"
 		   "DEPS: :\n"
 		   "\n"
@@ -530,6 +531,7 @@ TEST(proj_print)
 		   "COMP: \n"
 		   "INST: \n"
 		   "OUT: \n"
+		   "TGT: \n"
 		   "TYPE: 0\n"
 		   "DEPS:\n")
 

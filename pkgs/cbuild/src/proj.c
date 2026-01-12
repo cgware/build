@@ -142,7 +142,7 @@ target_t *proj_add_target(proj_t *proj, uint pkg, uint *id)
 	target->strs	 = strs_cnt;
 	target->has_deps = 0;
 	target->pkg	 = pkg;
-	target->out_type = TARGET_OUT_TYPE_UNKNOWN;
+	target->out_type = TARGET_TGT_TYPE_UNKNOWN;
 
 	id ? *id = tmp : (uint)0;
 
@@ -343,7 +343,7 @@ int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 	};
 
 	arr_t stack = {0};
-	arr_init(&stack, proj->targets.cnt, sizeof(list_node_t), alloc);
+	arr_init(&stack, proj->pkgs.cnt, sizeof(list_node_t), alloc);
 
 	pkg_t *pkg;
 	uint i = 0;
@@ -367,6 +367,10 @@ int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 		pkg->state = VISITING;
 
 		const pkg_t *pkg = arr_get(&proj->pkgs, *pkg_id);
+		if(!pkg->has_targets) {
+			continue;
+		}
+
 		const target_t *target;
 		list_node_t targets = pkg->targets;
 		list_foreach(&proj->targets, targets, target)
@@ -493,6 +497,7 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 				strv_t comp	= proj_get_str(proj, target->strs + TARGET_COMP);
 				strv_t inst	= proj_get_str(proj, target->strs + TARGET_INST);
 				strv_t tgt_out	= proj_get_str(proj, target->strs + TARGET_OUT);
+				strv_t tgt_tgt	= proj_get_str(proj, target->strs + TARGET_TGT);
 				dst.off += dputf(dst,
 						 "NAME: %.*s\n"
 						 "TYPE: %s\n"
@@ -501,6 +506,7 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 						 "COMP: %.*s\n"
 						 "INST: %.*s\n"
 						 "OUT: %.*s\n"
+						 "TGT: %.*s\n"
 						 "TYPE: %d\n",
 						 tgt_name.len,
 						 tgt_name.data,
@@ -515,6 +521,8 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 						 inst.data,
 						 tgt_out.len,
 						 tgt_out.data,
+						 tgt_tgt.len,
+						 tgt_tgt.data,
 						 target->out_type);
 				dst.off += dputf(dst, "DEPS:");
 

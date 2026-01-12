@@ -76,7 +76,7 @@ exit /b %ret%
 	call :gen 07_exe_driver "bin/07_exe_driver.exe"
 	call :gen 08_lib_driver "bin/exe.exe test/lib.exe"
 	call :gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.lib bin/exe.exe"
-	call :gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz ext/cbase/cbase.lib bin/exe.exe"
+	call :gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.lib bin/exe.exe"
 	rem call :gen 11_hello "ext/11_hello/bin/hello.exe"
 
 	exit /b 0
