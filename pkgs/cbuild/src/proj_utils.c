@@ -137,27 +137,47 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 			return 1;
 		}
 
-		strv_t archive = until_char(uri, &i, '/');
-		if (!strv_eq(archive, STRV("archive"))) {
-			log_error("cbuild", "proj", NULL, "expected archive: '%.*s'", uri.len, uri.data);
-			log_error("cbuild", "proj", NULL, "                   %*s^", i, "");
-			return 1;
-		}
+		strv_t ar = until_char(uri, &i, '/');
+		if (strv_eq(ar, STRV("archive"))) {
+			strv_t refs = until_char(uri, &i, '/');
+			if (strv_eq(refs, STRV("refs"))) {
+				strv_t ht = until_char(uri, &i, '/');
+				if (strv_eq(ht, STRV("tags"))) {
+					if (name.data[0] == 'v') {
+						name = STRVN(&name.data[1], name.len - 1);
+					}
+				} else if (strv_eq(ht, STRV("heads"))) {
 
-		strv_t refs = until_char(uri, &i, '/');
-		if (strv_eq(refs, STRV("refs"))) {
-			strv_t ht = until_char(uri, &i, '/');
-			if (strv_eq(ht, STRV("tags"))) {
-				if (name.data[0] == 'v') {
-					name = STRVN(&name.data[1], name.len - 1);
+				} else {
+					log_error("cbuild", "proj", NULL, "expexted tags or heads: '%.*s'", uri.len, uri.data);
+					log_error("cbuild", "proj", NULL, "                         %*s^", i, "");
+					return 1;
 				}
-			} else if (strv_eq(ht, STRV("heads"))) {
-
-			} else {
-				log_error("cbuild", "proj", NULL, "expexted tags or heads: '%.*s'", uri.len, uri.data);
-				log_error("cbuild", "proj", NULL, "                         %*s^", i, "");
+			}
+		} else if (strv_eq(ar, STRV("releases"))) {
+			strv_t download = until_char(uri, &i, '/');
+			if (!strv_eq(download, STRV("download"))) {
+				log_error("cbuild", "proj", NULL, "expected download: '%.*s'", uri.len, uri.data);
+				log_error("cbuild", "proj", NULL, "                    %*s^", i, "");
 				return 1;
 			}
+
+			strv_t tag = until_char(uri, &i, '/');
+			if (tag.len < 1) {
+				log_error("cbuild", "proj", NULL, "expected tag: '%.*s'", uri.len, uri.data);
+				log_error("cbuild", "proj", NULL, "               %*s^", i, "");
+				return 1;
+			}
+
+			if (tag.data[0] == 'v') {
+				name = STRVN(&tag.data[1], tag.len - 1);
+			} else {
+				name = tag;
+			}
+		} else {
+			log_error("cbuild", "proj", NULL, "expected archive or releases: '%.*s'", uri.len, uri.data);
+			log_error("cbuild", "proj", NULL, "                               %*s^", i, "");
+			return 1;
 		}
 
 		ver  = name;

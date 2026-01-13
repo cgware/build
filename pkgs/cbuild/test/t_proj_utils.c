@@ -80,6 +80,9 @@ TEST(proj_set_uri_github_invalid)
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/name.zip")), 1);
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/name.zip")), 1);
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/refs/main.zip")), 1);
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/releases/name/main.zip")), 1);
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/releases/download/main.zip")), 1);
+
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
@@ -290,6 +293,64 @@ TEST(proj_set_uri_github_hash_tar_gz)
 	END;
 }
 
+TEST(proj_set_uri_github_release_tag_tar_gz)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	pkg_t *pkg = proj_add_pkg(&proj, NULL);
+	strv_t val;
+
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/releases/download/1.0/repo-1.0.tar.gz")), 0);
+	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
+	EXPECT_STRN(val.data, "https://github.com/user/repo/releases/download/1.0/repo-1.0.tar.gz", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
+	EXPECT_STRN(val.data, "repo-1.0.tar.gz", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_NAME);
+	EXPECT_STRN(val.data, "repo", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_VER);
+	EXPECT_STRN(val.data, "1.0", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_DIR);
+	EXPECT_STRN(val.data, "repo-1.0" SEP, val.len);
+
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_set_uri_github_release_vtag_tar_gz)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	pkg_t *pkg = proj_add_pkg(&proj, NULL);
+	strv_t val;
+
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/releases/download/v1.0/repo-1.0.tar.gz")), 0);
+	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
+	EXPECT_STRN(val.data, "https://github.com/user/repo/releases/download/v1.0/repo-1.0.tar.gz", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
+	EXPECT_STRN(val.data, "repo-1.0.tar.gz", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_NAME);
+	EXPECT_STRN(val.data, "repo", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_VER);
+	EXPECT_STRN(val.data, "1.0", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_DIR);
+	EXPECT_STRN(val.data, "repo-1.0" SEP, val.len);
+
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_set_uri_git)
 {
 	START;
@@ -467,6 +528,8 @@ STEST(proj_utils)
 	RUN(proj_set_uri_github_tag_tar_gz);
 	RUN(proj_set_uri_github_hash_zip);
 	RUN(proj_set_uri_github_hash_tar_gz);
+	RUN(proj_set_uri_github_release_tag_tar_gz);
+	RUN(proj_set_uri_github_release_vtag_tar_gz);
 	RUN(proj_set_uri_git);
 	RUN(proj_set_uri_name_zip);
 	RUN(proj_set_uri_name_ver_zip);
