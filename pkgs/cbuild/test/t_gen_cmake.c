@@ -856,9 +856,9 @@ TEST(gen_cmake_pkg_exe)
 		    "endif()\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/bin/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -1046,9 +1046,9 @@ TEST(gen_cmake_pkg_lib)
 		    "endif()\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n",
 		    tmp.len);
@@ -2664,12 +2664,12 @@ TEST(gen_cmake_pkg_ext_zip)
 	END;
 }
 
-TEST(gen_cmake_pkg_ext_tar_gz)
+TEST(gen_cmake_pkg_ext_tar)
 {
 	START;
 
 	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_ext_tar_gz(&com, STRV("C")), 0);
+	EXPECT_EQ(t_gen_pkg_ext_tar(&com, STRV("C")), 0);
 
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
@@ -2866,7 +2866,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_ext_lib);
 	RUN(gen_cmake_pkg_ext_exe);
 	RUN(gen_cmake_pkg_ext_zip);
-	RUN(gen_cmake_pkg_ext_tar_gz);
+	RUN(gen_cmake_pkg_ext_tar);
 	RUN(gen_cmake_pkg_ext_deps);
 
 	SEND;

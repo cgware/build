@@ -186,7 +186,7 @@ TEST(proj_set_uri_github_branch_tar_gz)
 
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/refs/heads/master.tar.gz")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
-	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR_GZ);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
 	EXPECT_STRN(val.data, "https://github.com/user/repo/archive/refs/heads/master.tar.gz", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
@@ -215,7 +215,7 @@ TEST(proj_set_uri_github_tag_tar_gz)
 
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/refs/tags/1.0.tar.gz")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
-	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR_GZ);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
 	EXPECT_STRN(val.data, "https://github.com/user/repo/archive/refs/tags/1.0.tar.gz", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
@@ -273,7 +273,7 @@ TEST(proj_set_uri_github_hash_tar_gz)
 
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/hash.tar.gz")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
-	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR_GZ);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
 	EXPECT_STRN(val.data, "https://github.com/user/repo/archive/hash.tar.gz", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
@@ -383,11 +383,38 @@ TEST(proj_set_uri_name_tar_gz)
 
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://domain/name.tar.gz")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
-	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR_GZ);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
 	EXPECT_STRN(val.data, "https://domain/name.tar.gz", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
 	EXPECT_STRN(val.data, "name.tar.gz", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_NAME);
+	EXPECT_STRN(val.data, "name", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_VER);
+	EXPECT_STRN(val.data, "", val.len);
+
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_set_uri_name_tar_xz)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	pkg_t *pkg = proj_add_pkg(&proj, NULL);
+	strv_t val;
+
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://domain/name.tar.xz")), 0);
+	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
+	EXPECT_STRN(val.data, "https://domain/name.tar.xz", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
+	EXPECT_STRN(val.data, "name.tar.xz", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_NAME);
 	EXPECT_STRN(val.data, "name", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_VER);
@@ -410,7 +437,7 @@ TEST(proj_set_uri_name_ver_tar_gz)
 
 	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://domain/name-ver.tar.gz")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
-	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR_GZ);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_TAR);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
 	EXPECT_STRN(val.data, "https://domain/name-ver.tar.gz", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
@@ -444,6 +471,7 @@ STEST(proj_utils)
 	RUN(proj_set_uri_name_zip);
 	RUN(proj_set_uri_name_ver_zip);
 	RUN(proj_set_uri_name_tar_gz);
+	RUN(proj_set_uri_name_tar_xz);
 	RUN(proj_set_uri_name_ver_tar_gz);
 
 	SEND;

@@ -97,7 +97,7 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 	strv_t file = after_char(uri, &tmp, '/');
 
 	tmp	    = file.len;
-	strv_t ext1 = after_char(file, &tmp, '.'); // ext
+	strv_t ext1 = after_char(file, &tmp, '.');
 	if (ext1.data == NULL) {
 		log_error("cbuild", "proj", NULL, "expected .: '%.*s'", uri.len, uri.data);
 		log_error("cbuild", "proj", NULL, "             %*s^", i, "");
@@ -106,10 +106,10 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 
 	if (strv_eq(ext1, STRV("zip"))) {
 		pkg->uri.ext = PKG_URI_EXT_ZIP;
-	} else if (strv_eq(ext1, STRV("gz"))) {
-		strv_t ext2 = after_char(file, &tmp, '.'); // ext
+	} else if (strv_eq(ext1, STRV("gz")) || strv_eq(ext1, STRV("xz"))) {
+		strv_t ext2 = after_char(file, &tmp, '.');
 		if (strv_eq(ext2, STRV("tar"))) {
-			pkg->uri.ext = PKG_URI_EXT_TAR_GZ;
+			pkg->uri.ext = PKG_URI_EXT_TAR;
 		}
 	} else if (strv_eq(ext1, STRV("git"))) {
 		pkg->uri.proto = PKG_URI_PROTO_GIT;

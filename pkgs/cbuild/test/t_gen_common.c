@@ -182,6 +182,7 @@ int t_gen_pkg_exe(t_gen_common_t *com, strv_t p)
 	fs_init(&com->fs, 2, 1, ALLOC_STD);
 
 	proj_init(&com->proj, 1, 1, ALLOC_STD);
+	proj_set_str(&com->proj, com->proj.outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
 	uint exe;
 	pkg_t *pkg;
@@ -274,6 +275,7 @@ int t_gen_pkg_lib(t_gen_common_t *com, strv_t p)
 	fs_init(&com->fs, 2, 1, ALLOC_STD);
 
 	proj_init(&com->proj, 1, 1, ALLOC_STD);
+	proj_set_str(&com->proj, com->proj.outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
 	uint lib;
 	pkg_t *pkg;
@@ -943,7 +945,7 @@ int t_gen_pkg_ext_zip(t_gen_common_t *com, strv_t p)
 	return drv.gen(&drv, &com->proj, STRV_NULL, STRV_NULL);
 }
 
-int t_gen_pkg_ext_tar_gz(t_gen_common_t *com, strv_t p)
+int t_gen_pkg_ext_tar(t_gen_common_t *com, strv_t p)
 {
 	fs_init(&com->fs, 2, 1, ALLOC_STD);
 
@@ -960,7 +962,7 @@ int t_gen_pkg_ext_tar_gz(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_VER, STRV("1.0"));
 	proj_set_str(&com->proj, pkg->strs + PKG_STR_URI_DIR, STRV("main"));
 	pkg->uri.proto = PKG_URI_PROTO_HTTPS;
-	pkg->uri.ext   = PKG_URI_EXT_TAR_GZ;
+	pkg->uri.ext   = PKG_URI_EXT_TAR;
 
 	target	     = proj_add_target(&com->proj, ext, NULL);
 	target->type = TARGET_TYPE_EXT;

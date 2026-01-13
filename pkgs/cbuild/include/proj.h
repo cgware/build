@@ -50,7 +50,7 @@ typedef enum pkg_uri_proto_e {
 typedef enum pkg_uri_ext_e {
 	PKG_URI_EXT_UNKNOWN,
 	PKG_URI_EXT_ZIP,
-	PKG_URI_EXT_TAR_GZ,
+	PKG_URI_EXT_TAR,
 	__PKG_URI_EXT_MAX,
 } pkg_uri_ext_t;
 

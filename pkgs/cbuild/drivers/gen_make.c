@@ -736,8 +736,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	};
 
 	defines_t exts_defs[] = {
-		[PKG_URI_EXT_ZIP]    = {STRVT("ext_zip")},
-		[PKG_URI_EXT_TAR_GZ] = {STRVT("ext_tar_gz")},
+		[PKG_URI_EXT_ZIP] = {STRVT("ext_zip")},
+		[PKG_URI_EXT_TAR] = {STRVT("ext_tar")},
 	};
 
 	defines_t defines[] = {
@@ -807,11 +807,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, act);
 	}
 
-	if (exts[PKG_URI_EXT_TAR_GZ]) {
+	if (exts[PKG_URI_EXT_TAR]) {
 		make_act_t def;
-		make_def(&make, exts_defs[PKG_URI_EXT_TAR_GZ].name, &def);
+		make_def(&make, exts_defs[PKG_URI_EXT_TAR].name, &def);
 		make_add_act(&make, root, def);
-		exts_defs[PKG_URI_EXT_TAR_GZ].def = def;
+		exts_defs[PKG_URI_EXT_TAR].def = def;
 
 		make_act_t ext;
 		make_rule(&make, MRULE(MSTR(STRV("$(DIR_TMP_EXT_PKG_SRC)"))), 1, &ext);
@@ -820,7 +820,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
 		make_rule_add_act(&make, ext, act);
-		make_cmd(&make, MCMD(STRV("tar -xzf $$< -C $$@")), &act);
+		make_cmd(&make, MCMD(STRV("tar -xf $$< -C $$@")), &act);
 		make_rule_add_act(&make, ext, act);
 
 		make_empty(&make, &act);

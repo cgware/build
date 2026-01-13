@@ -2113,12 +2113,12 @@ TEST(gen_make_pkg_ext_zip)
 	END;
 }
 
-TEST(gen_make_pkg_ext_tar_gz)
+TEST(gen_make_pkg_ext_tar)
 {
 	START;
 
 	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_ext_tar_gz(&com, STRV("M")), 0);
+	EXPECT_EQ(t_gen_pkg_ext_tar(&com, STRV("M")), 0);
 
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
@@ -2132,7 +2132,7 @@ TEST(gen_make_pkg_ext_tar_gz)
 		    "$(PN)_URI_NAME := name-1.0\n"
 		    "$(PN)_URI_ROOT := main\n"
 		    "$(eval $(call fetch_wget))\n"
-		    "$(eval $(call ext_tar_gz))\n"
+		    "$(eval $(call ext_tar))\n"
 		    "TN := \n"
 		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
 		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
@@ -2217,7 +2217,7 @@ STEST(gen_make)
 	RUN(gen_make_pkg_ext_lib);
 	RUN(gen_make_pkg_ext_exe);
 	RUN(gen_make_pkg_ext_zip);
-	RUN(gen_make_pkg_ext_tar_gz);
+	RUN(gen_make_pkg_ext_tar);
 	RUN(gen_make_pkg_ext_deps);
 
 	SEND;
