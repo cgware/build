@@ -73,8 +73,8 @@ test() {
 	gen 06_lib_test "lib/lib1.a lib/lib2.a test/lib1 test/lib2 ../../tmp/report/cov/index.html"
 	gen 07_exe_driver "bin/07_exe_driver"
 	gen 08_lib_driver "bin/exe test/lib"
-	gen 09_zip "../../tmp/dl/pkgs/cbase/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
-	gen 10_tar_gz "../../tmp/dl/pkgs/cbase/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
+	gen 09_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
+	gen 10_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
 	gen 11_hello "exe/bin/hello"
 }
 

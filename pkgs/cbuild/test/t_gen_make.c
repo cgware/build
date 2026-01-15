@@ -64,7 +64,6 @@ TEST(gen_make_proj_build_dir)
 		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -192,7 +191,6 @@ TEST(gen_make_proj_empty)
 		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -320,7 +318,6 @@ TEST(gen_make_proj_name)
 		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -448,7 +445,6 @@ TEST(gen_make_proj_unknown)
 		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -586,7 +582,6 @@ TEST(gen_make_proj_exe)
 		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -674,9 +669,9 @@ TEST(gen_make_proj_exe)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _exe,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3947);
+		3906);
 
-	EXPECT_STRN(tmp.data + 3947,
+	EXPECT_STRN(tmp.data + 3906,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -699,7 +694,7 @@ TEST(gen_make_proj_exe)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3947);
+		    tmp.len - 3906);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -764,7 +759,6 @@ TEST(gen_make_proj_lib)
 		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -849,9 +843,9 @@ TEST(gen_make_proj_lib)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _lib,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3693);
+		3652);
 
-	EXPECT_STRN(tmp.data + 3693,
+	EXPECT_STRN(tmp.data + 3652,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -874,7 +868,7 @@ TEST(gen_make_proj_lib)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3693);
+		    tmp.len - 3652);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -938,7 +932,6 @@ TEST(gen_make_proj_ext)
 		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		    "DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -992,14 +985,14 @@ TEST(gen_make_proj_ext)
 		    "all:\n"
 		    "\n"
 		    "define fetch_wget\n"
-		    "$(DIR_TMP_DL_PKG)$(PKG_URI_FILE):\n"
+		    "$(DIR_TMP_DL)$(PKG_URI_FILE):\n"
 		    "\t@mkdir -pv $$(@D)\n"
 		    "\twget $(PKG_URI) -O $$@\n"
 		    "\n"
 		    "endef\n"
 		    "\n"
 		    "define ext_zip\n"
-		    "$(DIR_TMP_EXT_PKG_SRC): $(DIR_TMP_DL_PKG)$(PKG_URI_FILE)\n"
+		    "$(DIR_TMP_EXT_PKG_SRC): $(DIR_TMP_DL)$(PKG_URI_FILE)\n"
 		    "\t@mkdir -pv $$(@D)\n"
 		    "\tunzip $$< -d $$@\n"
 		    "\n"
@@ -1027,9 +1020,9 @@ TEST(gen_make_proj_ext)
 		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _ext,$(a),$(c)))))\n"
 		    "endef\n"
 		    "\n",
-		    3587);
+		    3538);
 
-	EXPECT_STRN(tmp.data + 3587,
+	EXPECT_STRN(tmp.data + 3538,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -1052,7 +1045,7 @@ TEST(gen_make_proj_ext)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3587);
+		    tmp.len - 3538);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1124,7 +1117,6 @@ TEST(gen_make_proj_test)
 		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
 		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
 		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		"DIR_TMP_DL_PKG = $(DIR_TMP_DL)$(PKG_DIR)\n"
 		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
 		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
 		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
@@ -1216,9 +1208,9 @@ TEST(gen_make_proj_test)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _test,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		4013);
+		3972);
 
-	EXPECT_STRN(tmp.data + 4013,
+	EXPECT_STRN(tmp.data + 3972,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -1241,7 +1233,7 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 4013);
+		    tmp.len - 3972);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,

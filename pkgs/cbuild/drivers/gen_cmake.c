@@ -361,14 +361,25 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 			 f,
 			 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 			      "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
-			      "file(MAKE_DIRECTORY \"${DIR_TMP_DL_PKG}\" \"${TGT_BUILD_DEBUG}\" "
-			      "\"${TGT_BUILD_RELEASE}\")\n"
-			      "file(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL_PKG}${PKG_URI_FILE}\n"
-			      "\tSHOW_PROGRESS\n"
-			      ")\n"
-			      "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL_PKG}${PKG_URI_FILE}\" DESTINATION "
-			      "\"${DIR_TMP_EXT_PKG_SRC}\")\n"
-			      "add_custom_target(${PN}_${TN}_build\n"
+			      "file(MAKE_DIRECTORY \"${DIR_TMP_DL}\" \"${TGT_BUILD_DEBUG}\" "
+			      "\"${TGT_BUILD_RELEASE}\")\n"));
+
+		strv_t uri = proj_get_str(proj, pkg->strs + PKG_STR_URI);
+		if (uri.len > 0) {
+			fs_write(fs,
+				 f,
+				 STRV("if(NOT EXISTS ${DIR_TMP_DL}${PKG_URI_FILE})\n"
+				      "\tfile(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL}${PKG_URI_FILE}\n"
+				      "\t\tSHOW_PROGRESS\n"
+				      ")\n"
+				      "endif()\n"
+				      "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL}${PKG_URI_FILE}\" DESTINATION "
+				      "\"${DIR_TMP_EXT_PKG_SRC}\")\n"));
+		}
+
+		fs_write(fs,
+			 f,
+			 STRV("add_custom_target(${PN}_${TN}_build\n"
 			      "\tALL\n"
 			      "\tCOMMAND ${TGT_PREP}\n"
 			      "\tCOMMAND ${TGT_CONF}\n"
@@ -624,7 +635,6 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 		case DIR_TMP_EXT_PKG_SRC:
 		case DIR_TMP_EXT_PKG_SRC_ROOT:
 		case DIR_TMP_EXT_PKG_BUILD:
-		case DIR_TMP_DL_PKG:
 			if (uri.len == 0) {
 				continue;
 			}

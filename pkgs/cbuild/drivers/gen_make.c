@@ -775,7 +775,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		protos_defs[PKG_URI_PROTO_HTTPS].def = def;
 
 		make_act_t dl;
-		make_rule(&make, MRULE(MSTR(STRV("$(DIR_TMP_DL_PKG)$(PKG_URI_FILE)"))), 1, &dl);
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_TMP_DL)$(PKG_URI_FILE)"))), 1, &dl);
 		make_def_add_act(&make, def, dl);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
@@ -795,7 +795,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t ext;
 		make_rule(&make, MRULE(MSTR(STRV("$(DIR_TMP_EXT_PKG_SRC)"))), 1, &ext);
-		make_rule_add_depend(&make, ext, MRULE(MSTR(STRV("$(DIR_TMP_DL_PKG)$(PKG_URI_FILE)"))));
+		make_rule_add_depend(&make, ext, MRULE(MSTR(STRV("$(DIR_TMP_DL)$(PKG_URI_FILE)"))));
 		make_def_add_act(&make, def, ext);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
@@ -815,7 +815,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t ext;
 		make_rule(&make, MRULE(MSTR(STRV("$(DIR_TMP_EXT_PKG_SRC)"))), 1, &ext);
-		make_rule_add_depend(&make, ext, MRULE(MSTR(STRV("$(DIR_TMP_DL_PKG)$(PKG_URI_FILE)"))));
+		make_rule_add_depend(&make, ext, MRULE(MSTR(STRV("$(DIR_TMP_DL)$(PKG_URI_FILE)"))));
 		make_def_add_act(&make, def, ext);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
