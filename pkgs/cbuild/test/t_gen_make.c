@@ -1256,15 +1256,6 @@ TEST(gen_make_pkg)
 	t_gen_common_t com = {0};
 	EXPECT_EQ(t_gen_pkg(&com, STRV("M")), 0);
 
-	char buf[256] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := pkg\n"
-		    "$(PN)_DIR :=\n",
-		    tmp.len);
-
 	t_gen_free(&com);
 
 	END;
@@ -1280,11 +1271,11 @@ TEST(gen_make_pkg_exe)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
 		    "$(eval $(call exe))\n",
 		    tmp.len);
@@ -1304,11 +1295,11 @@ TEST(gen_make_pkg_exe_out)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(abspath exes)/\n"
 		    "$(eval $(call exe))\n",
 		    tmp.len);
@@ -1328,11 +1319,11 @@ TEST(gen_make_pkg_exe_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
 		    "$(PN)_$(TN)_DRIVERS := $(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)\n"
 		    "$(eval $(call exe))\n",
@@ -1353,11 +1344,11 @@ TEST(gen_make_pkg_exe_drv_inc)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
@@ -1380,11 +1371,11 @@ TEST(gen_make_pkg_lib)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
@@ -1404,11 +1395,11 @@ TEST(gen_make_pkg_lib_out)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(abspath libs)/\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
@@ -1428,11 +1419,11 @@ TEST(gen_make_pkg_lib_inc)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
 		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
@@ -1455,11 +1446,11 @@ TEST(gen_make_pkg_lib_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(PN)_$(TN)_DRIVERS := $(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)\n"
 		    "$(eval $(call lib))\n",
@@ -1480,11 +1471,11 @@ TEST(gen_make_pkg_lib_drv_inc)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
 		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
@@ -1508,11 +1499,11 @@ TEST(gen_make_pkg_test)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
 		    "$(eval $(call test))\n",
 		    tmp.len);
@@ -1532,11 +1523,11 @@ TEST(gen_make_pkg_test_out)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(abspath tests)/\n"
 		    "$(eval $(call test))\n",
 		    tmp.len);
@@ -1556,11 +1547,11 @@ TEST(gen_make_pkg_test_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
 		    "$(PN)_$(TN)_DRIVERS := $(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)\n"
 		    "$(eval $(call test))\n",
@@ -1581,13 +1572,19 @@ TEST(gen_make_pkg_lib_test)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
 		    "TN := lib\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := test\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
 		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
@@ -1609,7 +1606,7 @@ TEST(gen_make_pkg_lib_test_inc)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1618,7 +1615,13 @@ TEST(gen_make_pkg_lib_test_inc)
 		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := test\n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_lib_INCLUDE)\n"
@@ -1642,7 +1645,7 @@ TEST(gen_make_pkg_lib_test_inc_src)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1651,7 +1654,13 @@ TEST(gen_make_pkg_lib_test_inc_src)
 		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := test\n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)src $(_lib_INCLUDE)\n"
@@ -1675,14 +1684,20 @@ TEST(gen_make_pkg_lib_exe_drv)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
 		    "TN := lib\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(PN)_$(TN)_DRIVERS := $(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)\n"
-		    "$(eval $(call lib))\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := exe\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
 		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
@@ -1705,14 +1720,20 @@ TEST(gen_make_pkg_lib_test_drv)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
 		    "TN := lib\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(PN)_$(TN)_DRIVERS := $(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)\n"
-		    "$(eval $(call lib))\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := test\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
 		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
@@ -1735,7 +1756,7 @@ TEST(gen_make_pkg_lib_test_drv_inc)
 	char buf[1024] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1745,7 +1766,13 @@ TEST(gen_make_pkg_lib_test_drv_inc)
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(PN)_$(TN)_DRIVERS := $(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)\n"
-		    "$(eval $(call lib))\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := test\n"
 		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
 		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_lib_INCLUDE)\n"
@@ -1770,20 +1797,20 @@ TEST(gen_make_pkg_multi)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./a/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./a/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := a\n"
 		    "$(PN)_DIR := a" SEP "\n"
-		    "TN := a\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
 		    "$(eval $(call exe))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./b/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./b/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := b\n"
 		    "$(PN)_DIR := b" SEP "\n"
-		    "TN := b\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
 		    "$(eval $(call exe))\n",
 		    tmp.len);
@@ -1803,22 +1830,22 @@ TEST(gen_make_pkg_depends)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./lib/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./lib/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib\n"
 		    "$(PN)_DIR := lib" SEP "\n"
-		    "TN := lib\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./exe/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./exe/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := exe\n"
 		    "$(PN)_DIR := exe" SEP "\n"
-		    "TN := exe\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := lib_lib\n"
+		    "$(PN)_$(TN)_LIBS_PRIV := lib_\n"
 		    "$(eval $(call exe))\n",
 		    tmp.len);
 
@@ -1837,42 +1864,42 @@ TEST(gen_make_pkg_rdepends)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./base/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./base/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := base\n"
 		    "$(PN)_DIR := base" SEP "\n"
-		    "TN := base\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./lib1/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./lib1/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib1\n"
 		    "$(PN)_DIR := lib1" SEP "\n"
-		    "TN := lib1\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(PN)_$(TN)_LIBS := base_base\n"
+		    "$(PN)_$(TN)_LIBS := base_\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./lib2/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./lib2/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib2\n"
 		    "$(PN)_DIR := lib2" SEP "\n"
-		    "TN := lib2\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(PN)_$(TN)_LIBS := base_base\n"
+		    "$(PN)_$(TN)_LIBS := base_\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./exe/pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("./exe/.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := exe\n"
 		    "$(PN)_DIR := exe" SEP "\n"
-		    "TN := exe\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := lib1_lib1 lib2_lib2 base_base\n"
+		    "$(PN)_$(TN)_LIBS_PRIV := lib1_ lib2_ base_\n"
 		    "$(eval $(call exe))\n",
 		    tmp.len);
 
@@ -1891,7 +1918,7 @@ TEST(gen_make_pkg_ext_unknown)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1917,7 +1944,7 @@ TEST(gen_make_pkg_ext_uri)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1947,11 +1974,11 @@ TEST(gen_make_pkg_ext_cmd)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := pkg\n"
+		    "TN := \n"
 		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
 		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
 		    "$(PN)_$(TN)_OUT = $(abspath $(DIR_OUT_EXT))/\n"
@@ -1978,7 +2005,7 @@ TEST(gen_make_pkg_ext_out)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2004,7 +2031,7 @@ TEST(gen_make_pkg_ext_inc)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2031,7 +2058,7 @@ TEST(gen_make_pkg_ext_lib)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2057,7 +2084,7 @@ TEST(gen_make_pkg_ext_exe)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2083,7 +2110,7 @@ TEST(gen_make_pkg_ext_zip)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2115,7 +2142,7 @@ TEST(gen_make_pkg_ext_tar)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2147,13 +2174,19 @@ TEST(gen_make_pkg_ext_deps)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
 		    "TN := lib\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("ext.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
 		    "TN := ext\n"
 		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
 		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"

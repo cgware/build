@@ -18,9 +18,12 @@ static void resolve_var(const vars_t *vars, strv_t var, const strv_t *values, st
 	vars_replace(vars, buf, values);
 }
 
-static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint pkg_id, const pkg_t *pkg, uint tgt_id, const target_t *target,
-		   make_act_t inc, const defines_t *defines, arr_t *deps, str_t *buf)
+static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint tgt_id, make_act_t inc, const defines_t *defines, arr_t *deps,
+		   str_t *buf)
 {
+	const target_t *target = proj_get_target(proj, tgt_id);
+	const pkg_t *pkg       = proj_get_pkg(proj, target->pkg);
+
 	make_act_t act;
 
 	strv_t svalues[__VARS_CNT] = {
@@ -225,7 +228,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint pk
 					str_cat(buf, STRV("_DRIVERS)"));
 					make_var_add_val(make, act, MSTR(STRVS(*buf)));
 					buf->len = buf_len;
-					lib_drv |= dtarget->pkg == pkg_id;
+					lib_drv |= dtarget->pkg == target->pkg;
 				}
 			}
 		}
@@ -311,7 +314,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint pk
 					str_cat(buf, STRV("_DRIVERS)"));
 					make_var_add_val(make, act, MSTR(STRVS(*buf)));
 					buf->len = buf_len;
-					lib_drv |= dtarget->pkg == pkg_id;
+					lib_drv |= dtarget->pkg == target->pkg;
 				}
 			}
 		}
@@ -410,11 +413,13 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint pk
 	return 0;
 }
 
-static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *fs, uint id, make_act_t inc, const defines_t *protos_defs,
-		   const defines_t *exts_defs, const defines_t *defines, arr_t *deps, str_t *buf, strv_t build_dir)
+static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *fs, uint tgt_id, make_act_t inc,
+		   const defines_t *protos_defs, const defines_t *exts_defs, const defines_t *defines, arr_t *deps, str_t *buf,
+		   strv_t build_dir)
 
 {
-	const pkg_t *pkg = proj_get_pkg(proj, id);
+	const target_t *target = proj_get_target(proj, tgt_id);
+	const pkg_t *pkg       = proj_get_pkg(proj, target->pkg);
 
 	path_t path = {0};
 	path_init(&path, build_dir);
@@ -423,7 +428,11 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 		fs_mkpath(fs, STRVS(path), pkg_dir);
 	}
 	path_push(&path, pkg_dir);
-	path_push(&path, STRV("pkg.mk"));
+	buf->len	= 0;
+	strv_t tgt_name = proj_get_str(proj, target->strs + TARGET_NAME);
+	str_cat(buf, tgt_name);
+	str_cat(buf, STRV(".mk"));
+	path_push(&path, STRVS(*buf));
 
 	log_info("cbuild", "gen_make", NULL, "generating package: '%.*s'", path.len, path.data);
 
@@ -483,14 +492,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 		}
 	}
 
-	if (pkg->has_targets) {
-		uint i = pkg->targets;
-		const target_t *target;
-		list_foreach(&proj->targets, i, target)
-		{
-			gen_tgt(proj, vars, make, id, pkg, i, target, inc, defines, deps, buf);
-		}
-	}
+	gen_tgt(proj, vars, make, tgt_id, inc, defines, deps, buf);
 
 	void *file;
 	fs_open(fs, STRVS(path), "w", &file);
@@ -1253,12 +1255,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_add_act(&make, root, act);
 	}
 
-	if (proj->pkgs.cnt > 0) {
+	if (proj->targets.cnt > 0) {
 		str_t buf2 = strz(16);
 
 		arr_t order = {0};
-		arr_init(&order, proj->pkgs.cnt, sizeof(uint), ALLOC_STD);
-		proj_get_pkg_build_order(proj, &order, ALLOC_STD);
+		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
+		proj_get_tgt_build_order(proj, &order, ALLOC_STD);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
@@ -1267,10 +1269,15 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		const uint *id;
 		arr_foreach(&order, i, id)
 		{
-			const pkg_t *pkg = proj_get_pkg(proj, *id);
+			const target_t *tgt = proj_get_target(proj, *id);
+			const pkg_t *pkg    = proj_get_pkg(proj, tgt->pkg);
 
+			strv_t name = proj_get_str(proj, tgt->strs + TARGET_NAME);
 			path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_STR_PATH), '/');
-			path_push_s(&tmp, STRV("pkg.mk"), '/');
+			buf.len = 0;
+			str_cat(&buf, name);
+			str_cat(&buf, STRV(".mk"));
+			path_push_s(&tmp, STRVS(buf), '/');
 
 			buf.len = 0;
 			str_cat(&buf, STRV("$(DIR_BUILD)"));
@@ -1280,7 +1287,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			make_inc(&make, STRVS(buf), &inc);
 			make_add_act(&make, root, inc);
 
-			gen_pkg(proj, &vars, &make, drv->fs, *id, inc, protos_defs, exts_defs, defines, &deps, &buf2, build_dir);
+			gen_pkg(proj, &vars, &make, drv->fs, *id, inc, protos_defs, exts_defs, defines, &deps, &buf, build_dir);
 		}
 
 		arr_free(&deps);

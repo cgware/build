@@ -461,6 +461,52 @@ TEST(proj_get_pkg_build_order)
 	END;
 }
 
+TEST(proj_get_tgt_build_order)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 3, 4, ALLOC_STD);
+
+	uint p1, p2, p3;
+	proj_add_pkg(&proj, &p1);
+	proj_add_pkg(&proj, &p2);
+	proj_add_pkg(&proj, &p3);
+
+	uint t1, t2, t3, t4;
+	proj_add_target(&proj, p1, &t1);
+	proj_add_target(&proj, p1, &t2);
+	proj_add_target(&proj, p2, &t3);
+	proj_add_target(&proj, p3, &t4);
+
+	proj_add_dep(&proj, t1, t3);
+	proj_add_dep(&proj, t1, t2);
+	proj_add_dep(&proj, t2, t3);
+	proj_add_dep(&proj, t3, t4);
+
+	arr_t order = {0};
+	arr_init(&order, 2, sizeof(uint), ALLOC_STD);
+
+	EXPECT_EQ(proj_get_tgt_build_order(NULL, NULL, ALLOC_STD), 1);
+	EXPECT_EQ(proj_get_tgt_build_order(&proj, &order, ALLOC_STD), 0);
+
+	EXPECT_EQ(order.cnt, 4);
+	EXPECT_EQ(*(uint *)arr_get(&order, 0), 3);
+	EXPECT_EQ(*(uint *)arr_get(&order, 1), 2);
+	EXPECT_EQ(*(uint *)arr_get(&order, 2), 1);
+	EXPECT_EQ(*(uint *)arr_get(&order, 3), 0);
+
+	proj_add_dep(&proj, t4, t3);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(proj_get_tgt_build_order(&proj, &order, ALLOC_STD), 1);
+	log_set_quiet(0, 0);
+
+	arr_free(&order);
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_print)
 {
 	START;
@@ -560,6 +606,7 @@ STEST(proj)
 	RUN(proj_get_pdeps);
 	RUN(proj_get_rdeps);
 	RUN(proj_get_pkg_build_order);
+	RUN(proj_get_tgt_build_order);
 	RUN(proj_print);
 
 	SEND;

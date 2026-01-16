@@ -367,7 +367,7 @@ int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 		pkg->state = VISITING;
 
 		const pkg_t *pkg = arr_get(&proj->pkgs, *pkg_id);
-		if(!pkg->has_targets) {
+		if (!pkg->has_targets) {
 			continue;
 		}
 
@@ -399,6 +399,71 @@ int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 				default:
 					break;
 				}
+			}
+		}
+	}
+
+	arr_free(&stack);
+
+	return 0;
+}
+
+int proj_get_tgt_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
+{
+	if (proj == NULL || order == NULL) {
+		return 1;
+	}
+
+	enum {
+		UNVISITED,
+		VISITING,
+		DONE
+	};
+
+	arr_t stack = {0};
+	arr_init(&stack, proj->targets.cnt, sizeof(list_node_t), alloc);
+
+	target_t *tgt;
+	list_node_t i = 0;
+	list_foreach_all(&proj->targets, i, tgt)
+	{
+		tgt->state			      = UNVISITED;
+		*(list_node_t *)arr_add(&stack, NULL) = i;
+	}
+
+	while (stack.cnt > 0) {
+		list_node_t *tgt_id = arr_get(&stack, stack.cnt - 1);
+		tgt		    = list_get(&proj->targets, *tgt_id);
+
+		if (tgt->state == VISITING) {
+			stack.cnt--;
+			arr_addu(order, tgt_id, NULL);
+			tgt->state = DONE;
+			continue;
+		}
+
+		tgt->state = VISITING;
+
+		const target_t *tgt = list_get(&proj->targets, *tgt_id);
+		if (!tgt->has_deps) {
+			continue;
+		}
+
+		list_node_t *dep_tgt_id;
+		i = tgt->deps;
+		list_foreach(&proj->deps, i, dep_tgt_id)
+		{
+			const target_t *dep_tgt = list_get(&proj->targets, *dep_tgt_id);
+
+			switch (dep_tgt->state) {
+			case VISITING:
+				log_error("cbuild", "proj", NULL, "failed to get target build order: cycle detected");
+				arr_free(&stack);
+				return 1;
+			case UNVISITED:
+				*(list_node_t *)arr_add(&stack, NULL) = *dep_tgt_id;
+			default:
+				break;
 			}
 		}
 	}

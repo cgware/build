@@ -38,6 +38,7 @@ typedef struct target_s {
 	list_node_t deps;
 	uint has_deps;
 	target_out_type_t out_type;
+	uint state;
 } target_t;
 
 typedef enum pkg_uri_proto_e {
@@ -109,6 +110,7 @@ int proj_add_dep(proj_t *proj, uint target, uint dep);
 int proj_get_deps(const proj_t *proj, list_node_t target, arr_t *deps);
 
 int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc);
+int proj_get_tgt_build_order(const proj_t *proj, arr_t *order, alloc_t alloc);
 
 size_t proj_print(const proj_t *proj, dst_t dst);
 
