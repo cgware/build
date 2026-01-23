@@ -47,7 +47,8 @@ int t_gen_pkg_ext_lib(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_ext_exe(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_ext_zip(t_gen_common_t *com, strv_t p);
 int t_gen_pkg_ext_tar(t_gen_common_t *com, strv_t p);
-int t_gen_pkg_ext_deps(t_gen_common_t *com, strv_t p);
+int t_gen_pkg_ext_dep_lib(t_gen_common_t *com, strv_t p);
+int t_gen_pkg_ext_dep_exe(t_gen_common_t *com, strv_t p);
 
 void t_gen_free(t_gen_common_t *com);
 

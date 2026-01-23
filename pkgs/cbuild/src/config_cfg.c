@@ -50,7 +50,7 @@ static int config_inc(config_t *config, config_pkg_t *pkg, const cfg_t *cfg, cfg
 	return ret;
 }
 
-static int config_deps(config_t *config, list_node_t pkg, const cfg_t *cfg, cfg_var_t var)
+static int config_pkg_deps(config_t *config, list_node_t pkg, const cfg_t *cfg, cfg_var_t var)
 {
 	int ret = 0;
 	cfg_var_t dep_str;
@@ -64,7 +64,26 @@ static int config_deps(config_t *config, list_node_t pkg, const cfg_t *cfg, cfg_
 			continue;
 		}
 
-		config_add_dep(config, pkg, val);
+		config_pkg_add_dep(config, pkg, val);
+	}
+	return ret;
+}
+
+static int config_tgt_deps(config_t *config, list_node_t tgt, const cfg_t *cfg, cfg_var_t var)
+{
+	int ret = 0;
+	cfg_var_t dep_str;
+	void *data;
+	cfg_foreach(cfg, var, data, &dep_str)
+	{
+		strv_t val = {0};
+		if (cfg_get_lit(cfg, dep_str, &val)) {
+			log_error("cbuild", "config_cfg", NULL, "invalid dependency");
+			ret = 1;
+			continue;
+		}
+
+		config_tgt_add_dep(config, tgt, val);
 	}
 	return ret;
 }
@@ -92,7 +111,7 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 				pkg = config_add_pkg(config, dir, &pkg_id);
 			}
 
-			ret |= config_deps(config, pkg_id, cfg, tbl);
+			ret |= config_pkg_deps(config, pkg_id, cfg, tbl);
 		} else if (strv_eq(key, STRV("uri"))) {
 			if (pkg == NULL) {
 				pkg = config_add_pkg(config, dir, &pkg_id);
@@ -110,7 +129,7 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 
 			cfg_var_t var;
 			if (cfg_has_var(cfg, tbl, STRV("deps"), &var)) {
-				ret |= config_deps(config, pkg_id, cfg, var);
+				ret |= config_pkg_deps(config, pkg_id, cfg, var);
 			}
 			if (cfg_has_var(cfg, tbl, STRV("uri"), &var)) {
 				ret |= config_uri(config, pkg, cfg, var);
@@ -123,50 +142,54 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 				pkg = config_add_pkg(config, dir, &pkg_id);
 			}
 
-			target = config_add_target(config, pkg_id, NULL);
+			list_node_t tgt_id;
+			target = config_add_target(config, pkg_id, &tgt_id);
 
 			cfg_var_t var;
+			strv_t val;
+			if (cfg_has_var(cfg, tbl, STRV("name"), &var)) {
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_NAME, val);
+			}
+
 			if (cfg_has_var(cfg, tbl, STRV("prep"), &var)) {
-				strv_t cmd = {0};
-				cfg_get_str(cfg, var, &cmd);
-				config_set_str(config, target->strs + CONFIG_TARGET_PREP, cmd);
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_PREP, val);
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("conf"), &var)) {
-				strv_t cmd = {0};
-				cfg_get_str(cfg, var, &cmd);
-				config_set_str(config, target->strs + CONFIG_TARGET_CONF, cmd);
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_CONF, val);
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("comp"), &var)) {
-				strv_t cmd = {0};
-				cfg_get_str(cfg, var, &cmd);
-				config_set_str(config, target->strs + CONFIG_TARGET_COMP, cmd);
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_COMP, val);
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("inst"), &var)) {
-				strv_t install = {0};
-				cfg_get_str(cfg, var, &install);
-				config_set_str(config, target->strs + CONFIG_TARGET_INST, install);
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_INST, val);
+			}
+
+			if (cfg_has_var(cfg, tbl, STRV("deps"), &var)) {
+				ret |= config_tgt_deps(config, tgt_id, cfg, var);
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("out"), &var)) {
-				strv_t out = {0};
-				cfg_get_str(cfg, var, &out);
-				config_set_str(config, target->strs + CONFIG_TARGET_OUT, out);
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_OUT, val);
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("lib"), &var)) {
-				strv_t lib = {0};
-				cfg_get_str(cfg, var, &lib);
-				config_set_str(config, target->strs + CONFIG_TARGET_TGT, lib);
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_TGT, val);
 				target->out_type = CONFIG_TARGET_TGT_TYPE_LIB;
 			}
 
 			if (cfg_has_var(cfg, tbl, STRV("exe"), &var)) {
-				strv_t exe = {0};
-				cfg_get_str(cfg, var, &exe);
-				config_set_str(config, target->strs + CONFIG_TARGET_TGT, exe);
+				cfg_get_str(cfg, var, &val);
+				config_set_str(config, target->strs + CONFIG_TARGET_TGT, val);
 				target->out_type = CONFIG_TARGET_TGT_TYPE_EXE;
 			}
 		} else if (strv_eq(key, STRV("ext"))) {
@@ -219,7 +242,9 @@ int config_cfg(config_t *config, cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *p
 					}
 				}
 
-				config_fs(config, fs, proc, base_path, STRVS(dir), name, buf, alloc, dst);
+				if (config_fs(config, fs, proc, base_path, STRVS(dir), name, buf, alloc, dst) == NULL) {
+					ret = 1;
+				}
 			}
 		}
 	}

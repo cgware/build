@@ -76,6 +76,7 @@ test() {
 	gen 09_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
 	gen 10_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
 	gen 11_hello "exe/bin/hello"
+	gen 12_hello_deps "ext/hello/bin/hello"
 }
 
 test

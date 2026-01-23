@@ -26,6 +26,7 @@ typedef enum var_name_e {
 	DIR_OUT_LIB,
 	DIR_OUT_DRV,
 	DIR_OUT_BIN,
+	ABS_DIR_OUT_BIN,
 	DIR_OUT_EXT,
 	DIR_OUT_TST,
 	// PKG

@@ -59,15 +59,17 @@ config_dir_t *config_fs(config_t *config, fs_t *fs, proc_t *proc, strv_t base_pa
 		strbuf_foreach(&pkgs, i, subdir)
 		{
 			path_push(&full_path, subdir);
-			config_fs(config,
-				  fs,
-				  proc,
-				  base_path,
-				  STRVN(&full_path.data[dir_path_len], full_path.len - dir_path_len),
-				  subdir,
-				  buf,
-				  alloc,
-				  dst);
+			if (config_fs(config,
+				      fs,
+				      proc,
+				      base_path,
+				      STRVN(&full_path.data[dir_path_len], full_path.len - dir_path_len),
+				      subdir,
+				      buf,
+				      alloc,
+				      dst) == NULL) {
+				dir = NULL;
+			}
 			full_path.len = pkgs_path_len;
 		}
 
@@ -87,7 +89,9 @@ config_dir_t *config_fs(config_t *config, fs_t *fs, proc_t *proc, strv_t base_pa
 		cfg_prs_parse(&prs, STRVS(*buf), &cfg, alloc, &root, dst);
 		cfg_prs_free(&prs);
 
-		config_cfg(config, &cfg, root, fs, proc, base_path, dir_id, buf, alloc, dst);
+		if (config_cfg(config, &cfg, root, fs, proc, base_path, dir_id, buf, alloc, dst)) {
+			dir = NULL;
+		}
 
 		cfg_free(&cfg);
 	}

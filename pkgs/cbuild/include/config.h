@@ -22,9 +22,12 @@ typedef enum config_target_out_type_e {
 	__CONFIG_TARGET_TYPE_CNT,
 } config_target_out_type_t;
 
-typedef struct config_target_out_type_s {
+typedef struct config_target_s {
 	uint strs;
+	list_node_t deps;
+	list_node_t tgt;
 	config_target_out_type_t out_type;
+	uint has_deps : 1;
 } config_target_t;
 
 typedef enum config_pkg_str_e {
@@ -80,7 +83,8 @@ config_pkg_t *config_get_pkg(config_t *config, list_node_t id);
 config_target_t *config_add_target(config_t *config, list_node_t pkg, list_node_t *id);
 config_target_t *config_get_target(config_t *config, list_node_t id);
 
-int config_add_dep(config_t *config, list_node_t pkg, strv_t dep);
+int config_pkg_add_dep(config_t *config, list_node_t pkg, strv_t dep);
+int config_tgt_add_dep(config_t *config, list_node_t tgt, strv_t dep);
 
 int config_set_str(config_t *config, uint id, strv_t val);
 strv_t config_get_str(const config_t *config, uint id);

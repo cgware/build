@@ -508,6 +508,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		return 1;
 	}
 
+	int ret = 0;
+
 	path_t path = {0};
 	path_init(&path, build_dir);
 	path_push(&path, STRV("Makefile"));
@@ -585,6 +587,10 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			}
 			str_cat(&buf, STRVS(poutdir));
 			val = STRVS(buf);
+			break;
+		}
+		case ABS_DIR_OUT_BIN: {
+			val =  STRV("$(abspath ${DIR_OUT_BIN})/");
 			break;
 		}
 		default:
@@ -1260,7 +1266,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		arr_t order = {0};
 		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
-		proj_get_tgt_build_order(proj, &order, ALLOC_STD);
+		ret |= proj_get_tgt_build_order(proj, &order, ALLOC_STD);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
@@ -1307,7 +1313,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	str_free(&buf);
 
-	return 0;
+	return ret;
 }
 
 static gen_driver_t make = {

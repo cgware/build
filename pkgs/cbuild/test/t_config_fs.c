@@ -1,5 +1,6 @@
 #include "config_fs.h"
 
+#include "log.h"
 #include "path.h"
 #include "test.h"
 
@@ -191,6 +192,73 @@ TEST(config_fs_main)
 	END;
 }
 
+TEST(config_fs_invalid_cfg)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	void *f;
+	fs_open(&fs, STRV("build.cfg"), "w", &f);
+	fs_write(&fs,
+		 f,
+		 STRV(":ext\n"
+		      "uri = invalid\n"));
+	fs_close(&fs, f);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+	config_dir_t *dir;
+
+	char tmp[128] = {0};
+	str_t buf     = STRB(tmp, 0);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(dir = config_fs(&config, &fs, NULL, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()), NULL);
+	log_set_quiet(0, 0);
+
+	config_free(&config);
+	fs_free(&fs);
+
+	END;
+}
+
+TEST(config_fs_invalid_fs)
+{
+	START;
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("pkgs"));
+	fs_mkdir(&fs, STRV("pkgs/a"));
+
+	void *f;
+	fs_open(&fs, STRV("pkgs/a/build.cfg"), "w", &f);
+	fs_write(&fs,
+		 f,
+		 STRV(":ext\n"
+		      "uri = invalid\n"));
+	fs_close(&fs, f);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+	config_dir_t *dir;
+
+	char tmp[128] = {0};
+	str_t buf     = STRB(tmp, 0);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(dir = config_fs(&config, &fs, NULL, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()), NULL);
+	log_set_quiet(0, 0);
+
+	config_free(&config);
+	fs_free(&fs);
+
+	END;
+}
+
 STEST(config_fs)
 {
 	SSTART;
@@ -202,6 +270,8 @@ STEST(config_fs)
 	RUN(config_fs_pkgs);
 	RUN(config_fs_build_cfg);
 	RUN(config_fs_main);
+	RUN(config_fs_invalid_cfg);
+	RUN(config_fs_invalid_fs);
 
 	SEND;
 }

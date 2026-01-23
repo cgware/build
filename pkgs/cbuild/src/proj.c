@@ -101,7 +101,7 @@ pkg_t *proj_find_pkg(const proj_t *proj, strv_t name, uint *id)
 	return NULL;
 }
 
-target_t *proj_add_target(proj_t *proj, uint pkg, uint *id)
+target_t *proj_add_target(proj_t *proj, uint pkg, list_node_t *id)
 {
 	if (proj == NULL) {
 		return NULL;
@@ -149,7 +149,7 @@ target_t *proj_add_target(proj_t *proj, uint pkg, uint *id)
 	return target;
 }
 
-target_t *proj_get_target(const proj_t *proj, uint id)
+target_t *proj_get_target(const proj_t *proj, list_node_t id)
 {
 	if (proj == NULL) {
 		return NULL;
@@ -164,7 +164,7 @@ target_t *proj_get_target(const proj_t *proj, uint id)
 	return target;
 }
 
-target_t *proj_find_target(const proj_t *proj, uint pkg, strv_t name, uint *id)
+target_t *proj_find_target(const proj_t *proj, uint pkg, strv_t name, list_node_t *id)
 {
 	if (proj == NULL) {
 		return NULL;
@@ -391,7 +391,16 @@ int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 					if (*pkg_id == dep_target->pkg) {
 						break;
 					}
-					log_error("cbuild", "proj", NULL, "failed to get package build order: cycle detected");
+					strv_t pkg_name	    = proj_get_str(proj, pkg->strs + PKG_STR_NAME);
+					strv_t dep_pkg_name = proj_get_str(proj, dep_pkg->strs + PKG_STR_NAME);
+					log_error("cbuild",
+						  "proj",
+						  NULL,
+						  "failed to get package build order: cycle detected: %.*s - %.*s",
+						  pkg_name.len,
+						  pkg_name.data,
+						  dep_pkg_name.len,
+						  dep_pkg_name.data);
 					arr_free(&stack);
 					return 1;
 				case UNVISITED:
@@ -456,10 +465,20 @@ int proj_get_tgt_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 			const target_t *dep_tgt = list_get(&proj->targets, *dep_tgt_id);
 
 			switch (dep_tgt->state) {
-			case VISITING:
-				log_error("cbuild", "proj", NULL, "failed to get target build order: cycle detected");
+			case VISITING: {
+				strv_t tgt_name	    = proj_get_str(proj, tgt->strs + TARGET_NAME);
+				strv_t dep_tgt_name = proj_get_str(proj, dep_tgt->strs + TARGET_NAME);
+				log_error("cbuild",
+					  "proj",
+					  NULL,
+					  "failed to get target build order: cycle detected: %.*s - %.*s",
+					  tgt_name.len,
+					  tgt_name.data,
+					  dep_tgt_name.len,
+					  dep_tgt_name.data);
 				arr_free(&stack);
 				return 1;
+			}
 			case UNVISITED:
 				*(list_node_t *)arr_add(&stack, NULL) = *dep_tgt_id;
 			default:

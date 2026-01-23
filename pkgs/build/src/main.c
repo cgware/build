@@ -38,12 +38,16 @@ static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t
 
 	config_t config = {0};
 	config_init(&config, 4, 8, 16, ALLOC_STD);
-	config_fs(&config, &fs, proc, STRVS(proj_rel), STRV_NULL, name, buf, ALLOC_STD, DST_STD());
+	if (config_fs(&config, &fs, proc, STRVS(proj_rel), STRV_NULL, name, buf, ALLOC_STD, DST_STD()) == NULL) {
+		ret = 1;
+	}
 	config_print(&config, DST_STD());
 	proj_t proj = {0};
 	proj_init(&proj, 8, 16, ALLOC_STD);
 	proj_set_str(&proj, proj.name, name);
-	proj_cfg(&proj, &config);
+	if (proj_cfg(&proj, &config)) {
+		ret = 1;
+	}
 
 	config_free(&config);
 

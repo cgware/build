@@ -281,7 +281,7 @@ TEST(config_cfg_pkg)
 	END;
 }
 
-TEST(config_cfg_target_cmds)
+TEST(config_cfg_target)
 {
 	START;
 
@@ -298,6 +298,8 @@ TEST(config_cfg_target_cmds)
 	cfg_root(&cfg, &root);
 	cfg_tbl(&cfg, STRV("target"), &tbl);
 	cfg_add_var(&cfg, root, tbl);
+	cfg_str(&cfg, STRV("name"), STRV("name"), &var);
+	cfg_add_var(&cfg, tbl, var);
 	cfg_str(&cfg, STRV("prep"), STRV("prep"), &var);
 	cfg_add_var(&cfg, tbl, var);
 	cfg_str(&cfg, STRV("conf"), STRV("conf"), &var);
@@ -318,6 +320,8 @@ TEST(config_cfg_target_cmds)
 
 	strv_t val;
 
+	val = config_get_str(&config, target->strs + CONFIG_TARGET_NAME);
+	EXPECT_STRN(val.data, "name", val.len);
 	val = config_get_str(&config, target->strs + CONFIG_TARGET_PREP);
 	EXPECT_STRN(val.data, "prep", val.len);
 	val = config_get_str(&config, target->strs + CONFIG_TARGET_CONF);
@@ -329,6 +333,82 @@ TEST(config_cfg_target_cmds)
 	val = config_get_str(&config, target->strs + CONFIG_TARGET_OUT);
 	EXPECT_STRN(val.data, "out", val.len);
 	val = config_get_str(&config, target->strs + CONFIG_TARGET_TGT);
+
+	cfg_free(&cfg);
+	config_free(&config);
+
+	END;
+}
+
+TEST(config_cfg_target_deps)
+{
+	START;
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, tbl, deps, var;
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &tbl);
+	cfg_add_var(&cfg, root, tbl);
+	cfg_arr(&cfg, STRV("deps"), &deps);
+	cfg_add_var(&cfg, tbl, deps);
+	cfg_lit(&cfg, STRV_NULL, STRV("dep"), &var);
+	cfg_add_var(&cfg, deps, var);
+
+	char tmp[128] = {0};
+	str_t buf     = STRB(tmp, 0);
+
+	EXPECT_EQ(config_cfg(&config, &cfg, root, NULL, NULL, STRV_NULL, dir, &buf, ALLOC_STD, DST_NONE()), 0);
+
+	const config_target_t *target = config_get_target(&config, 0);
+
+	uint *dep_id = list_get_at(&config.deps, target->deps, 0, NULL);
+	strv_t val;
+
+	val = config_get_str(&config, *dep_id);
+	EXPECT_STRN(val.data, "dep", val.len);
+
+	cfg_free(&cfg);
+	config_free(&config);
+
+	END;
+}
+
+TEST(config_cfg_target_deps_invalid)
+{
+	START;
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, tbl, deps, var;
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("target"), &tbl);
+	cfg_add_var(&cfg, root, tbl);
+	cfg_arr(&cfg, STRV("deps"), &deps);
+	cfg_add_var(&cfg, tbl, deps);
+	cfg_str(&cfg, STRV_NULL, STRV("dep"), &var);
+	cfg_add_var(&cfg, deps, var);
+
+	char tmp[128] = {0};
+	str_t buf     = STRB(tmp, 0);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(config_cfg(&config, &cfg, root, NULL, NULL, STRV_NULL, dir, &buf, ALLOC_STD, DST_NONE()), 1);
+	log_set_quiet(0, 0);
 
 	cfg_free(&cfg);
 	config_free(&config);
@@ -490,6 +570,59 @@ TEST(config_cfg_ext_invalid)
 	END;
 }
 
+TEST(config_cfg_ext_invalid_fs)
+{
+	START;
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	cfg_t cfg = {0};
+	cfg_init(&cfg, 1, 1, ALLOC_STD);
+
+	cfg_var_t root, tbl, var;
+	cfg_root(&cfg, &root);
+	cfg_tbl(&cfg, STRV("ext"), &tbl);
+	cfg_add_var(&cfg, root, tbl);
+	cfg_str(&cfg, STRV_NULL, STRV("repo"), &var);
+	cfg_add_var(&cfg, tbl, var);
+
+	fs_t fs = {0};
+	fs_init(&fs, 1, 1, ALLOC_STD);
+
+	fs_mkdir(&fs, STRV("tmp"));
+	fs_mkdir(&fs, STRV("tmp/ext"));
+	fs_mkdir(&fs, STRV("tmp/ext/repo"));
+
+	void *f;
+	fs_open(&fs, STRV("tmp/ext/repo/build.cfg"), "w", &f);
+	fs_write(&fs,
+		 f,
+		 STRV(":ext\n"
+		      "uri = invalid\n"));
+	fs_close(&fs, f);
+
+	proc_t proc = {0};
+	proc_init(&proc, 32, 1);
+
+	char tmp[128] = {0};
+	str_t buf     = STRB(tmp, 0);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(config_cfg(&config, &cfg, root, &fs, &proc, STRV_NULL, dir, &buf, ALLOC_STD, DST_STD()), 1);
+	log_set_quiet(0, 0);
+
+	proc_free(&proc);
+	fs_free(&fs);
+	cfg_free(&cfg);
+	config_free(&config);
+
+	END;
+}
+
 STEST(config_cfg)
 {
 	SSTART;
@@ -502,11 +635,14 @@ STEST(config_cfg)
 	RUN(config_cfg_inc);
 	RUN(config_cfg_inc_invalid);
 	RUN(config_cfg_pkg);
-	RUN(config_cfg_target_cmds);
+	RUN(config_cfg_target);
+	RUN(config_cfg_target_deps);
+	RUN(config_cfg_target_deps_invalid);
 	RUN(config_cfg_target_lib);
 	RUN(config_cfg_target_exe);
 	RUN(config_cfg_ext);
 	RUN(config_cfg_ext_invalid);
+	RUN(config_cfg_ext_invalid_fs);
 
 	SEND;
 }

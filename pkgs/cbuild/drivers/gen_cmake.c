@@ -389,6 +389,33 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 			      "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
 			      ")\n"));
 
+		if (target->has_deps) {
+			int header = 0;
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				if (dtarget->type == TARGET_TYPE_LIB ||
+				    (dtarget->type == TARGET_TYPE_EXT && dtarget->out_type == TARGET_TGT_TYPE_LIB)) {
+					continue;
+				}
+
+				if (header == 0) {
+					fs_write(fs, f, STRV("add_dependencies(${PN}_${TN}_build"));
+					header = 1;
+				}
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_write(fs, f, STRV("_"));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			if (header) {
+				fs_write(fs, f, STRV(")\n"));
+			}
+		}
+
 		switch (target->out_type) {
 		case TARGET_TGT_TYPE_LIB:
 			fs_write(fs, f, STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"));
@@ -403,19 +430,28 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 		fs_write(fs, f, STRV("add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
 
 		if (target->has_deps) {
-			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
+			int header = 0;
 			const list_node_t *dep_target_id;
 			list_node_t j = target->deps;
 			list_foreach(&proj->deps, j, dep_target_id)
 			{
 				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_write(fs, f, STRV(" "));
-				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				if (dtarget->type == TARGET_TYPE_LIB ||
+				    (dtarget->type == TARGET_TYPE_EXT && dtarget->out_type == TARGET_TGT_TYPE_LIB)) {
+					if (header == 0) {
+						fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
+						header = 1;
+					}
+					fs_write(fs, f, STRV(" "));
+					fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+					fs_write(fs, f, STRV("_"));
+					fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				}
 			}
-			fs_write(fs, f, STRV(")\n"));
+			if (header) {
+				fs_write(fs, f, STRV(")\n"));
+			}
 		}
 
 		break;
@@ -706,6 +742,8 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		return 1;
 	}
 
+	int ret = 0;
+
 	path_t path = {0};
 	path_init(&path, build_dir);
 	path_push(&path, STRV("CMakeLists.txt"));
@@ -927,7 +965,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	if (proj->pkgs.cnt > 0) {
 		arr_t order = {0};
 		arr_init(&order, proj->pkgs.cnt, sizeof(uint), ALLOC_STD);
-		proj_get_pkg_build_order(proj, &order, ALLOC_STD);
+		ret |= proj_get_pkg_build_order(proj, &order, ALLOC_STD);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
@@ -973,7 +1011,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	str_free(&buf);
 
-	return 0;
+	return ret;
 }
 
 static gen_driver_t cmake = {

@@ -48,6 +48,7 @@ TEST(gen_make_proj_build_dir)
 		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
@@ -175,6 +176,7 @@ TEST(gen_make_proj_empty)
 		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
@@ -302,6 +304,7 @@ TEST(gen_make_proj_name)
 		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
@@ -429,6 +432,7 @@ TEST(gen_make_proj_unknown)
 		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
@@ -566,6 +570,7 @@ TEST(gen_make_proj_exe)
 		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		"ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		"DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		"DIR_OUT_TST = $(DIR_OUT)test/\n"
 		"PKG_DIR = $($(PN)_DIR)\n"
@@ -669,9 +674,9 @@ TEST(gen_make_proj_exe)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _exe,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3906);
+		3951);
 
-	EXPECT_STRN(tmp.data + 3906,
+	EXPECT_STRN(tmp.data + 3951,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -694,7 +699,7 @@ TEST(gen_make_proj_exe)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3906);
+		    tmp.len - 3951);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -743,6 +748,7 @@ TEST(gen_make_proj_lib)
 		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		"ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		"DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		"DIR_OUT_TST = $(DIR_OUT)test/\n"
 		"PKG_DIR = $($(PN)_DIR)\n"
@@ -843,9 +849,9 @@ TEST(gen_make_proj_lib)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _lib,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3652);
+		3697);
 
-	EXPECT_STRN(tmp.data + 3652,
+	EXPECT_STRN(tmp.data + 3697,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -868,7 +874,7 @@ TEST(gen_make_proj_lib)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3652);
+		    tmp.len - 3697);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -916,6 +922,7 @@ TEST(gen_make_proj_ext)
 		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		    "DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
 		    "PKG_DIR = $($(PN)_DIR)\n"
@@ -1020,9 +1027,9 @@ TEST(gen_make_proj_ext)
 		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _ext,$(a),$(c)))))\n"
 		    "endef\n"
 		    "\n",
-		    3538);
+		    3583);
 
-	EXPECT_STRN(tmp.data + 3538,
+	EXPECT_STRN(tmp.data + 3583,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -1045,7 +1052,7 @@ TEST(gen_make_proj_ext)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3538);
+		    tmp.len - 3583);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1101,6 +1108,7 @@ TEST(gen_make_proj_test)
 		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
 		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
 		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		"ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
 		"DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
 		"DIR_OUT_TST = $(DIR_OUT)test/\n"
 		"PKG_DIR = $($(PN)_DIR)\n"
@@ -1208,9 +1216,9 @@ TEST(gen_make_proj_test)
 		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _test,$(a),$(c)))))\n"
 		"endef\n"
 		"\n",
-		3972);
+		4017);
 
-	EXPECT_STRN(tmp.data + 3972,
+	EXPECT_STRN(tmp.data + 4017,
 		    "define _cov\n"
 		    ".PHONY: precov_$(ARCH)_$(CONFIG) cov_$(ARCH)_$(CONFIG)\n"
 		    "\n"
@@ -1233,7 +1241,7 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3972);
+		    tmp.len - 4017);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -2164,12 +2172,12 @@ TEST(gen_make_pkg_ext_tar)
 	END;
 }
 
-TEST(gen_make_pkg_ext_deps)
+TEST(gen_make_pkg_ext_dep_lib)
 {
 	START;
 
 	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_ext_deps(&com, STRV("M")), 0);
+	EXPECT_EQ(t_gen_pkg_ext_dep_lib(&com, STRV("M")), 0);
 
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
@@ -2181,6 +2189,41 @@ TEST(gen_make_pkg_ext_deps)
 		    "TN := lib\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	fs_read(&com.fs, STRV("ext.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := ext\n"
+		    "$(PN)_$(TN)_SRC = $(abspath $(DIR_TMP_EXT_PKG_SRC_ROOT))/\n"
+		    "$(PN)_$(TN)_BUILD = $(abspath $(DIR_TMP_EXT_PKG_BUILD))/\n"
+		    "$(PN)_$(TN)_OUT = $(abspath $(DIR_OUT_EXT))/\n"
+		    "$(eval $(call ext))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_ext_dep_exe)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_dep_exe(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := exe\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
+		    "$(eval $(call exe))\n",
 		    tmp.len);
 
 	fs_read(&com.fs, STRV("ext.mk"), 0, &tmp);
@@ -2243,7 +2286,8 @@ STEST(gen_make)
 	RUN(gen_make_pkg_ext_exe);
 	RUN(gen_make_pkg_ext_zip);
 	RUN(gen_make_pkg_ext_tar);
-	RUN(gen_make_pkg_ext_deps);
+	RUN(gen_make_pkg_ext_dep_lib);
+	RUN(gen_make_pkg_ext_dep_exe);
 
 	SEND;
 }

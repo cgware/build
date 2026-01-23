@@ -123,6 +123,7 @@ TEST(gen_cmake_proj_build_dir)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
+		    "\tset(ABS_DIR_OUT_BIN ${DIR_OUT}bin/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -260,6 +261,7 @@ TEST(gen_cmake_proj_empty)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
+		    "\tset(ABS_DIR_OUT_BIN ${DIR_OUT}bin/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -397,6 +399,7 @@ TEST(gen_cmake_proj_name)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
+		    "\tset(ABS_DIR_OUT_BIN ${DIR_OUT}bin/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -534,6 +537,7 @@ TEST(gen_cmake_proj_unknown)
 		    "\tset(DIR_OUT_LIB ${DIR_OUT}lib/)\n"
 		    "\tset(DIR_OUT_DRV ${DIR_OUT}drivers/)\n"
 		    "\tset(DIR_OUT_BIN ${DIR_OUT}bin/)\n"
+		    "\tset(ABS_DIR_OUT_BIN ${DIR_OUT}bin/)\n"
 		    "\tset(DIR_OUT_TST ${DIR_OUT}test/)\n"
 		    "\n"
 		    "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -2719,12 +2723,12 @@ TEST(gen_cmake_pkg_ext_tar)
 	END;
 }
 
-TEST(gen_cmake_pkg_ext_deps)
+TEST(gen_cmake_pkg_ext_dep_lib)
 {
 	START;
 
 	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_ext_deps(&com, STRV("C")), 0);
+	EXPECT_EQ(t_gen_pkg_ext_dep_lib(&com, STRV("C")), 0);
 
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
@@ -2799,6 +2803,85 @@ TEST(gen_cmake_pkg_ext_deps)
 	END;
 }
 
+TEST(gen_cmake_pkg_ext_dep_exe)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_ext_dep_exe(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"exe\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
+		    ")\n"
+		    "set(TN \"ext\")\n"
+		    "set(TGT_SRC ${DIR_TMP_EXT_PKG_SRC_ROOT})\n"
+		    "set(TGT_BUILD ${DIR_TMP_EXT_PKG_BUILD})\n"
+		    "set(TGT_OUT ${DIR_OUT_EXT})\n"
+		    "set(TGT_PREP )\n"
+		    "set(TGT_CONF )\n"
+		    "set(TGT_COMP )\n"
+		    "set(TGT_INST )\n"
+		    "set(TGT_TGT )\n"
+		    "set(DIR_OUT_EXT_PKG ${TGT_OUT})\n"
+		    "set(DIR_OUT_EXT_FILE ${DIR_OUT_EXT_PKG}${TGT_TGT})\n"
+		    "\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
+		    "file(MAKE_DIRECTORY \"${DIR_TMP_DL}\" \"${TGT_BUILD_DEBUG}\" \"${TGT_BUILD_RELEASE}\")\n"
+		    "add_custom_target(${PN}_${TN}_build\n"
+		    "\tALL\n"
+		    "\tCOMMAND ${TGT_PREP}\n"
+		    "\tCOMMAND ${TGT_CONF}\n"
+		    "\tCOMMAND ${TGT_COMP}\n"
+		    "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+		    "\tCOMMAND ${TGT_INST}\n"
+		    "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
+		    ")\n"
+		    "add_dependencies(${PN}_${TN}_build _exe)\n"
+		    "add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
+		    "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE \"${DIR_OUT_EXT_FILE}\")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
+		    "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
+		    "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 STEST(gen_cmake)
 {
 	SSTART;
@@ -2843,7 +2926,8 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_ext_exe);
 	RUN(gen_cmake_pkg_ext_zip);
 	RUN(gen_cmake_pkg_ext_tar);
-	RUN(gen_cmake_pkg_ext_deps);
+	RUN(gen_cmake_pkg_ext_dep_lib);
+	RUN(gen_cmake_pkg_ext_dep_exe);
 
 	SEND;
 }

@@ -62,87 +62,111 @@ int proj_cfg(proj_t *proj, const config_t *config)
 			}
 		}
 
-		if (dir->has_pkgs) {
-			config_pkg_t *cfg_pkg;
-			list_node_t pkgs = dir->pkgs;
-			list_foreach(&config->pkgs, pkgs, cfg_pkg)
-			{
-				strv_t uri     = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_URI);
-				strv_t pkg_inc = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_INC);
+		if (!dir->has_pkgs) {
+			continue;
+		}
 
-				if (pkg == NULL || uri.len > 0) {
-					pkg = proj_add_pkg(proj, &pkg_id);
+		config_pkg_t *cfg_pkg;
+		list_node_t pkgs = dir->pkgs;
+		list_foreach(&config->pkgs, pkgs, cfg_pkg)
+		{
+			strv_t uri     = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_URI);
+			strv_t pkg_inc = config_get_str(config, cfg_pkg->strs + CONFIG_PKG_INC);
 
-					proj_set_str(proj, pkg->strs + PKG_STR_PATH, path);
-					proj_set_str(proj, pkg->strs + PKG_STR_SRC, src);
-					proj_set_str(proj, pkg->strs + PKG_STR_INC, pkg_inc.len > 0 ? pkg_inc : inc);
-					proj_set_str(proj, pkg->strs + PKG_STR_DRV, drv);
-					proj_set_str(proj, pkg->strs + PKG_STR_TST, test);
+			if (pkg == NULL || uri.len > 0) {
+				pkg = proj_add_pkg(proj, &pkg_id);
 
-					if (uri.len > 0) {
-						ret |= proj_set_uri(proj, pkg, uri);
-						strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_STR_URI_NAME);
-						if (name.len == 0) {
-							name = uri_name;
-						}
-					}
-					proj_set_str(proj, pkg->strs + PKG_STR_NAME, name);
-				}
+				proj_set_str(proj, pkg->strs + PKG_STR_PATH, path);
+				proj_set_str(proj, pkg->strs + PKG_STR_SRC, src);
+				proj_set_str(proj, pkg->strs + PKG_STR_INC, pkg_inc.len > 0 ? pkg_inc : inc);
+				proj_set_str(proj, pkg->strs + PKG_STR_DRV, drv);
+				proj_set_str(proj, pkg->strs + PKG_STR_TST, test);
 
-				cfg_pkg->pkg = pkg_id;
-
-				if (cfg_pkg->has_targets) {
-					config_target_t *cfg_target;
-					list_node_t targets = cfg_pkg->targets;
-
-					list_node_t target_id = pkg->targets;
-
-					target = pkg->has_targets ? list_get(&proj->targets, pkg->targets) : NULL;
-
-					int created = 0;
-
-					list_foreach(&config->targets, targets, cfg_target)
-					{
-						strv_t prep = config_get_str(config, cfg_target->strs + CONFIG_TARGET_PREP);
-						strv_t conf = config_get_str(config, cfg_target->strs + CONFIG_TARGET_CONF);
-						strv_t comp = config_get_str(config, cfg_target->strs + CONFIG_TARGET_COMP);
-						strv_t inst = config_get_str(config, cfg_target->strs + CONFIG_TARGET_INST);
-						strv_t out  = config_get_str(config, cfg_target->strs + CONFIG_TARGET_OUT);
-						strv_t tgt  = config_get_str(config, cfg_target->strs + CONFIG_TARGET_TGT);
-
-						if (target == NULL || uri.len > 0) {
-							target = proj_add_target(proj, pkg_id, &target_id);
-							proj_set_str(proj, target->strs + TARGET_NAME, name);
-							created = 1;
-						}
-
-						proj_set_str(proj, target->strs + TARGET_PREP, prep);
-						proj_set_str(proj, target->strs + TARGET_CONF, conf);
-						proj_set_str(proj, target->strs + TARGET_COMP, comp);
-						proj_set_str(proj, target->strs + TARGET_INST, inst);
-						proj_set_str(proj, target->strs + TARGET_OUT, out);
-						proj_set_str(proj, target->strs + TARGET_TGT, tgt);
-
-						static const target_out_type_t out_type[__TARGET_TYPE_CNT] = {
-							[CONFIG_TARGET_TGT_TYPE_UNKNOWN] = TARGET_TGT_TYPE_UNKNOWN,
-							[CONFIG_TARGET_TGT_TYPE_LIB]	 = TARGET_TGT_TYPE_LIB,
-							[CONFIG_TARGET_TGT_TYPE_EXE]	 = TARGET_TGT_TYPE_EXE,
-						};
-
-						target->out_type = out_type[cfg_target->out_type];
-
-						if (uri.len > 0) {
-							target->type = TARGET_TYPE_EXT;
-						}
-
-						if (!created) {
-							target = list_get_next(&proj->targets, target_id, &target_id);
-						}
+				if (uri.len > 0) {
+					ret |= proj_set_uri(proj, pkg, uri);
+					strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_STR_URI_NAME);
+					if (name.len == 0) {
+						name = uri_name;
 					}
 				}
-
-				pkg = NULL;
+				proj_set_str(proj, pkg->strs + PKG_STR_NAME, name);
 			}
+
+			cfg_pkg->pkg = pkg_id;
+
+			if (!cfg_pkg->has_targets) {
+				pkg = NULL;
+				continue;
+			}
+
+			config_target_t *cfg_target;
+			list_node_t targets = cfg_pkg->targets;
+
+			list_node_t target_id = pkg->targets;
+
+			target = pkg->has_targets ? list_get(&proj->targets, pkg->targets) : NULL;
+
+			int created = 0;
+
+			list_foreach(&config->targets, targets, cfg_target)
+			{
+				strv_t tgt_name = config_get_str(config, cfg_target->strs + CONFIG_TARGET_NAME);
+				strv_t prep	= config_get_str(config, cfg_target->strs + CONFIG_TARGET_PREP);
+				strv_t conf	= config_get_str(config, cfg_target->strs + CONFIG_TARGET_CONF);
+				strv_t comp	= config_get_str(config, cfg_target->strs + CONFIG_TARGET_COMP);
+				strv_t inst	= config_get_str(config, cfg_target->strs + CONFIG_TARGET_INST);
+				strv_t out	= config_get_str(config, cfg_target->strs + CONFIG_TARGET_OUT);
+				strv_t tgt	= config_get_str(config, cfg_target->strs + CONFIG_TARGET_TGT);
+
+				if (tgt_name.len == 0) {
+					tgt_name = name;
+				}
+
+				if (target == NULL || uri.len > 0) {
+					if (proj_find_target(proj, pkg_id, tgt_name, NULL) != NULL) {
+						strv_t pkg_name = proj_get_str(proj, pkg->strs + PKG_STR_NAME);
+						log_error("cbuild",
+							  "proj_cfg",
+							  NULL,
+							  "duplicate target name: '%.*s' in package: '%.*s'",
+							  tgt_name.len,
+							  tgt_name.data,
+							  pkg_name.len,
+							  pkg_name.data);
+						ret = 1;
+					}
+					target = proj_add_target(proj, pkg_id, &target_id);
+					proj_set_str(proj, target->strs + TARGET_NAME, tgt_name);
+					created = 1;
+				}
+
+				cfg_target->tgt = target_id;
+
+				proj_set_str(proj, target->strs + TARGET_PREP, prep);
+				proj_set_str(proj, target->strs + TARGET_CONF, conf);
+				proj_set_str(proj, target->strs + TARGET_COMP, comp);
+				proj_set_str(proj, target->strs + TARGET_INST, inst);
+				proj_set_str(proj, target->strs + TARGET_OUT, out);
+				proj_set_str(proj, target->strs + TARGET_TGT, tgt);
+
+				static const target_out_type_t out_type[__TARGET_TYPE_CNT] = {
+					[CONFIG_TARGET_TGT_TYPE_UNKNOWN] = TARGET_TGT_TYPE_UNKNOWN,
+					[CONFIG_TARGET_TGT_TYPE_LIB]	 = TARGET_TGT_TYPE_LIB,
+					[CONFIG_TARGET_TGT_TYPE_EXE]	 = TARGET_TGT_TYPE_EXE,
+				};
+
+				target->out_type = out_type[cfg_target->out_type];
+
+				if (uri.len > 0) {
+					target->type = TARGET_TYPE_EXT;
+				}
+
+				if (!created) {
+					target = list_get_next(&proj->targets, target_id, &target_id);
+				}
+			}
+
+			pkg = NULL;
 		}
 	}
 
@@ -160,6 +184,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 				pkg_t *dep_pkg = proj_find_pkg(proj, dep_str, &dep_pkg_id);
 				if (dep_pkg == NULL) {
 					log_error("cbuild", "proj_cfg", NULL, "package not found: %.*s", dep_str.len, dep_str.data);
+					ret = 1;
 					continue;
 				}
 
@@ -186,6 +211,72 @@ int proj_cfg(proj_t *proj, const config_t *config)
 							proj_add_dep(proj, j, dep_target_id);
 						}
 					}
+				}
+			}
+		}
+
+		if (!cfg_pkg->has_targets) {
+			continue;
+		}
+
+		const config_target_t *cfg_tgt;
+		list_node_t targets = cfg_pkg->targets;
+		list_foreach(&config->targets, targets, cfg_tgt)
+		{
+			if (!cfg_tgt->has_deps) {
+				continue;
+			}
+
+			const uint *dep;
+			list_node_t deps = cfg_tgt->deps;
+			list_foreach(&config->deps, deps, dep)
+			{
+				strv_t dep_str = config_get_str(config, *dep);
+				strv_t dep_pkg_name, dep_target_name;
+				strv_lsplit(dep_str, ':', &dep_pkg_name, &dep_target_name);
+
+				uint dep_pkg_id;
+				pkg_t *dep_pkg = proj_find_pkg(proj, dep_pkg_name, &dep_pkg_id);
+				if (dep_pkg == NULL) {
+					log_error(
+						"cbuild", "proj_cfg", NULL, "package not found: %.*s", dep_pkg_name.len, dep_pkg_name.data);
+					ret = 1;
+					continue;
+				}
+
+				uint dep_target_id;
+				uint found = 0;
+
+				if (dep_target_name.len > 0) {
+					target_t *target = proj_find_target(proj, dep_pkg_id, dep_target_name, &dep_target_id);
+					if (target == NULL) {
+						log_error("cbuild",
+							  "proj_cfg",
+							  NULL,
+							  "target not found: %.*s:%.*s",
+							  dep_pkg_name.len,
+							  dep_pkg_name.data,
+							  dep_target_name.len,
+							  dep_target_name.data);
+						ret = 1;
+						continue;
+					}
+					found = 1;
+				} else {
+					if (dep_pkg->has_targets) {
+						target_t *target;
+						list_node_t j = dep_pkg->targets;
+						list_foreach(&proj->targets, j, target)
+						{
+							dep_target_id = j;
+							found	      = 1;
+							break;
+						}
+					}
+				}
+
+				if (found) {
+					proj_add_dep(proj, cfg_tgt->tgt, dep_target_id);
 				}
 			}
 		}

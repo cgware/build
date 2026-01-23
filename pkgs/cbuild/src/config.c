@@ -168,6 +168,7 @@ config_target_t *config_add_target(config_t *config, list_node_t pkg, list_node_
 
 	target->strs	 = strs_cnt;
 	target->out_type = CONFIG_TARGET_TGT_TYPE_UNKNOWN;
+	target->has_deps = 0;
 
 	if (p->has_targets) {
 		list_app(&config->targets, p->targets, tmp);
@@ -196,7 +197,7 @@ config_target_t *config_get_target(config_t *config, list_node_t id)
 	return target;
 }
 
-int config_add_dep(config_t *config, list_node_t pkg, strv_t dep)
+int config_pkg_add_dep(config_t *config, list_node_t pkg, strv_t dep)
 {
 	if (config == NULL) {
 		return 1;
@@ -219,6 +220,36 @@ int config_add_dep(config_t *config, list_node_t pkg, strv_t dep)
 	} else {
 		p->deps	    = dep_id;
 		p->has_deps = 1;
+	}
+
+	strbuf_add(&config->strs, dep, data);
+
+	return 0;
+}
+
+int config_tgt_add_dep(config_t *config, list_node_t tgt, strv_t dep)
+{
+	if (config == NULL) {
+		return 1;
+	}
+
+	config_target_t *t = list_get(&config->targets, tgt);
+	if (t == NULL) {
+		log_error("cbuild", "config", NULL, "failed to get target");
+		return 1;
+	}
+
+	list_node_t dep_id;
+	uint *data = list_node(&config->deps, &dep_id);
+	if (data == NULL) {
+		return 1;
+	}
+
+	if (t->has_deps) {
+		list_app(&config->deps, t->deps, dep_id);
+	} else {
+		t->deps	    = dep_id;
+		t->has_deps = 1;
 	}
 
 	strbuf_add(&config->strs, dep, data);
@@ -294,29 +325,84 @@ size_t config_print(const config_t *config, dst_t dst)
 
 		dst.off += dputf(dst, "\n");
 
-		if (dir->has_pkgs) {
-			const config_pkg_t *pkg;
-			list_node_t pkgs = dir->pkgs;
-			list_foreach(&config->pkgs, pkgs, pkg)
+		if (!dir->has_pkgs) {
+			continue;
+		}
+
+		const config_pkg_t *pkg;
+		list_node_t pkgs = dir->pkgs;
+		list_foreach(&config->pkgs, pkgs, pkg)
+		{
+			dst.off += dputf(dst, "[pkg]\n");
+			strv_t pkg_name = config_get_str(config, pkg->strs + CONFIG_PKG_NAME);
+			strv_t uri	= config_get_str(config, pkg->strs + CONFIG_PKG_URI);
+			strv_t inc	= config_get_str(config, pkg->strs + CONFIG_PKG_INC);
+			dst.off += dputf(dst,
+					 "NAME: %.*s\n"
+					 "URI: %.*s\n"
+					 "INC: %.*s\n",
+					 pkg_name.len,
+					 pkg_name.data,
+					 uri.len,
+					 uri.data,
+					 inc.len,
+					 inc.data);
+			dst.off += dputf(dst, "DEPS:");
+			if (pkg->has_deps) {
+				const uint *dep;
+				list_node_t deps = pkg->deps;
+				list_foreach(&config->deps, deps, dep)
+				{
+					strv_t dep_str = config_get_str(config, *dep);
+					dst.off += dputf(dst, " %.*s", dep_str.len, dep_str.data);
+				}
+			}
+			dst.off += dputf(dst, "\n\n");
+
+			if (!pkg->has_targets) {
+				continue;
+			}
+
+			const config_target_t *target;
+			list_node_t targets = pkg->targets;
+			list_foreach(&config->targets, targets, target)
 			{
-				dst.off += dputf(dst, "[pkg]\n");
-				strv_t pkg_name = config_get_str(config, pkg->strs + CONFIG_PKG_NAME);
-				strv_t uri	= config_get_str(config, pkg->strs + CONFIG_PKG_URI);
-				strv_t inc	= config_get_str(config, pkg->strs + CONFIG_PKG_INC);
+				dst.off += dputf(dst, "[target]\n");
+				strv_t tgt_name = config_get_str(config, target->strs + CONFIG_TARGET_NAME);
+				strv_t prep	= config_get_str(config, target->strs + CONFIG_TARGET_PREP);
+				strv_t conf	= config_get_str(config, target->strs + CONFIG_TARGET_CONF);
+				strv_t comp	= config_get_str(config, target->strs + CONFIG_TARGET_COMP);
+				strv_t inst	= config_get_str(config, target->strs + CONFIG_TARGET_INST);
+				strv_t tgt_out	= config_get_str(config, target->strs + CONFIG_TARGET_OUT);
+				strv_t tgt_tgt	= config_get_str(config, target->strs + CONFIG_TARGET_TGT);
 				dst.off += dputf(dst,
 						 "NAME: %.*s\n"
-						 "URI: %.*s\n"
-						 "INC: %.*s\n",
-						 pkg_name.len,
-						 pkg_name.data,
-						 uri.len,
-						 uri.data,
-						 inc.len,
-						 inc.data);
+						 "PREP: %.*s\n"
+						 "CONF: %.*s\n"
+						 "COMP: %.*s\n"
+						 "INST: %.*s\n"
+						 "OUT: %.*s\n"
+						 "TGT: %.*s\n"
+						 "TYPE: %d\n",
+						 tgt_name.len,
+						 tgt_name.data,
+						 prep.len,
+						 prep.data,
+						 conf.len,
+						 conf.data,
+						 comp.len,
+						 comp.data,
+						 inst.len,
+						 inst.data,
+						 tgt_out.len,
+						 tgt_out.data,
+						 tgt_tgt.len,
+						 tgt_tgt.data,
+						 target->out_type);
 				dst.off += dputf(dst, "DEPS:");
-				if (pkg->has_deps) {
+				if (target->has_deps) {
 					const uint *dep;
-					list_node_t deps = pkg->deps;
+					list_node_t deps = target->deps;
 					list_foreach(&config->deps, deps, dep)
 					{
 						strv_t dep_str = config_get_str(config, *dep);
@@ -324,47 +410,6 @@ size_t config_print(const config_t *config, dst_t dst)
 					}
 				}
 				dst.off += dputf(dst, "\n\n");
-
-				if (pkg->has_targets) {
-					const config_target_t *target;
-					list_node_t targets = pkg->targets;
-					list_foreach(&config->targets, targets, target)
-					{
-						dst.off += dputf(dst, "[target]\n");
-						strv_t tgt_name = config_get_str(config, target->strs + CONFIG_TARGET_NAME);
-						strv_t prep	= config_get_str(config, target->strs + CONFIG_TARGET_PREP);
-						strv_t conf	= config_get_str(config, target->strs + CONFIG_TARGET_CONF);
-						strv_t comp	= config_get_str(config, target->strs + CONFIG_TARGET_COMP);
-						strv_t inst	= config_get_str(config, target->strs + CONFIG_TARGET_INST);
-						strv_t tgt_out	= config_get_str(config, target->strs + CONFIG_TARGET_OUT);
-						strv_t tgt_tgt	= config_get_str(config, target->strs + CONFIG_TARGET_TGT);
-						dst.off += dputf(dst,
-								 "NAME: %.*s\n"
-								 "PREP: %.*s\n"
-								 "CONF: %.*s\n"
-								 "COMP: %.*s\n"
-								 "INST: %.*s\n"
-								 "OUT: %.*s\n"
-								 "TGT: %.*s\n"
-								 "TYPE: %d\n",
-								 tgt_name.len,
-								 tgt_name.data,
-								 prep.len,
-								 prep.data,
-								 conf.len,
-								 conf.data,
-								 comp.len,
-								 comp.data,
-								 inst.len,
-								 inst.data,
-								 tgt_out.len,
-								 tgt_out.data,
-								 tgt_tgt.len,
-								 tgt_tgt.data,
-								 target->out_type);
-						dst.off += dputf(dst, "\n");
-					}
-				}
 			}
 		}
 	}

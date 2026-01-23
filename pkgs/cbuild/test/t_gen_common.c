@@ -953,7 +953,7 @@ int t_gen_pkg_ext_tar(t_gen_common_t *com, strv_t p)
 	return drv.gen(&drv, &com->proj, STRV_NULL, STRV_NULL);
 }
 
-int t_gen_pkg_ext_deps(t_gen_common_t *com, strv_t p)
+int t_gen_pkg_ext_dep_lib(t_gen_common_t *com, strv_t p)
 {
 	fs_init(&com->fs, 2, 1, ALLOC_STD);
 
@@ -967,6 +967,34 @@ int t_gen_pkg_ext_deps(t_gen_common_t *com, strv_t p)
 	target = proj_add_target(&com->proj, pkg, &lib);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("lib"));
 	target->type = TARGET_TYPE_LIB;
+
+	target = proj_add_target(&com->proj, pkg, &ext);
+	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("ext"));
+	target->type = TARGET_TYPE_EXT;
+
+	proj_add_dep(&com->proj, ext, lib);
+
+	gen_driver_t drv = *gen_find_param(p);
+
+	drv.fs = &com->fs;
+
+	return drv.gen(&drv, &com->proj, STRV_NULL, STRV_NULL);
+}
+
+int t_gen_pkg_ext_dep_exe(t_gen_common_t *com, strv_t p)
+{
+	fs_init(&com->fs, 2, 1, ALLOC_STD);
+
+	proj_init(&com->proj, 1, 2, ALLOC_STD);
+
+	uint pkg, ext, lib;
+	target_t *target;
+
+	proj_add_pkg(&com->proj, &pkg);
+
+	target = proj_add_target(&com->proj, pkg, &lib);
+	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("exe"));
+	target->type = TARGET_TYPE_EXE;
 
 	target = proj_add_target(&com->proj, pkg, &ext);
 	proj_set_str(&com->proj, target->strs + TARGET_NAME, STRV("ext"));

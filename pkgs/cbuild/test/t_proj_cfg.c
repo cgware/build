@@ -345,6 +345,36 @@ TEST(proj_cfg_target_ext)
 	END;
 }
 
+TEST(proj_cfg_target_dup)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_PKG_NAME, STRV("p0"));
+
+	list_node_t pkg;
+	config_pkg_t *p = config_add_pkg(&config, dir, &pkg);
+	config_set_str(&config, p->strs + CONFIG_PKG_URI, STRV("https://host.com/file.zip"));
+	config_add_target(&config, pkg, NULL);
+	config_add_target(&config, pkg, NULL);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(proj_cfg(&proj, &config), 1);
+	log_set_quiet(0, 0);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_cfg_pkg_dep)
 {
 	START;
@@ -368,7 +398,7 @@ TEST(proj_cfg_pkg_dep)
 
 	list_node_t cpkg2;
 	config_add_pkg(&config, dir, &cpkg2);
-	config_add_dep(&config, cpkg2, STRV("dep"));
+	config_pkg_add_dep(&config, cpkg2, STRV("dep"));
 
 	EXPECT_EQ(proj_cfg(&proj, &config), 0);
 
@@ -400,10 +430,10 @@ TEST(proj_cfg_pkg_dep_not_found)
 
 	list_node_t cpkg;
 	config_add_pkg(&config, dir, &cpkg);
-	config_add_dep(&config, cpkg, STRV("dep"));
+	config_pkg_add_dep(&config, cpkg, STRV("dep"));
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+	EXPECT_EQ(proj_cfg(&proj, &config), 1);
 	log_set_quiet(0, 0);
 
 	config_free(&config);
@@ -443,6 +473,144 @@ TEST(proj_cfg_pkg_dep_test)
 	END;
 }
 
+TEST(proj_cfg_tgt_dep)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_PKG_NAME, STRV("p0"));
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	list_node_t cpkg, ctgt;
+	config_add_pkg(&config, dir, &cpkg);
+
+	config_add_pkg(&config, dir, &cpkg);
+	config_add_target(&config, cpkg, &ctgt);
+
+	config_tgt_add_dep(&config, ctgt, STRV("p0"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	arr_t deps = {0};
+	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
+	proj_get_deps(&proj, 1, &deps);
+	EXPECT_EQ(deps.cnt, 1);
+	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 0);
+	arr_free(&deps);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_tgt_dep_tgt)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_PKG_NAME, STRV("p0"));
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	list_node_t cpkg, ctgt0, ctgt1;
+	config_add_pkg(&config, dir, &cpkg);
+	config_add_target(&config, cpkg, &ctgt0);
+	config_target_t *t = config_add_target(&config, cpkg, &ctgt1);
+	config_set_str(&config, t->strs + CONFIG_TARGET_NAME, STRV("t1"));
+
+	config_tgt_add_dep(&config, ctgt0, STRV("p0:t1"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	arr_t deps = {0};
+	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
+	proj_get_deps(&proj, 0, &deps);
+	EXPECT_EQ(deps.cnt, 1);
+	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 1);
+	arr_free(&deps);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_tgt_dep_not_found)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_add_dir(&config, &dir);
+
+	list_node_t cpkg, ctgt;
+	config_add_pkg(&config, dir, &cpkg);
+	config_add_target(&config, cpkg, &ctgt);
+
+	config_tgt_add_dep(&config, ctgt, STRV("a"));
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(proj_cfg(&proj, &config), 1);
+	log_set_quiet(0, 0);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_tgt_dep_tgt_not_found)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_PKG_NAME, STRV("p0"));
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	list_node_t cpkg, ctgt0, ctgt1;
+	config_add_pkg(&config, dir, &cpkg);
+	config_add_target(&config, cpkg, &ctgt0);
+	config_target_t *t = config_add_target(&config, cpkg, &ctgt1);
+	config_set_str(&config, t->strs + CONFIG_TARGET_NAME, STRV("t1"));
+
+	config_tgt_add_dep(&config, ctgt0, STRV("p0:t2"));
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(proj_cfg(&proj, &config), 1);
+	log_set_quiet(0, 0);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
 STEST(proj_cfg)
 {
 	SSTART;
@@ -459,9 +627,14 @@ STEST(proj_cfg)
 	RUN(proj_cfg_target);
 	RUN(proj_cfg_target_mod);
 	RUN(proj_cfg_target_ext);
+	RUN(proj_cfg_target_dup);
 	RUN(proj_cfg_pkg_dep);
 	RUN(proj_cfg_pkg_dep_not_found);
 	RUN(proj_cfg_pkg_dep_test);
+	RUN(proj_cfg_tgt_dep);
+	RUN(proj_cfg_tgt_dep_tgt);
+	RUN(proj_cfg_tgt_dep_not_found);
+	RUN(proj_cfg_tgt_dep_tgt_not_found);
 
 	SEND;
 }

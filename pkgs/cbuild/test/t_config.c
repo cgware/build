@@ -183,7 +183,7 @@ TEST(config_get_target)
 	END;
 }
 
-TEST(config_add_dep)
+TEST(config_pkg_add_dep)
 {
 	START;
 
@@ -198,15 +198,47 @@ TEST(config_add_dep)
 	config_add_dir(&config, &dir);
 	config_add_pkg(&config, dir, &pkg);
 
-	EXPECT_EQ(config_add_dep(NULL, config.pkgs.cnt, STRV_NULL), 1);
+	EXPECT_EQ(config_pkg_add_dep(NULL, config.pkgs.cnt, STRV_NULL), 1);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_add_dep(&config, config.pkgs.cnt, STRV_NULL), 1);
+	EXPECT_EQ(config_pkg_add_dep(&config, config.pkgs.cnt, STRV_NULL), 1);
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(config_add_dep(&config, pkg, STRV_NULL), 1);
+	EXPECT_EQ(config_pkg_add_dep(&config, pkg, STRV_NULL), 1);
 	mem_oom(0);
-	EXPECT_EQ(config_add_dep(&config, pkg, STRV_NULL), 0);
-	EXPECT_EQ(config_add_dep(&config, pkg, STRV_NULL), 0);
+	EXPECT_EQ(config_pkg_add_dep(&config, pkg, STRV_NULL), 0);
+	EXPECT_EQ(config_pkg_add_dep(&config, pkg, STRV_NULL), 0);
+
+	config_free(&config);
+
+	END;
+}
+
+TEST(config_tgt_add_dep)
+{
+	START;
+
+	config_t config = {0};
+	log_set_quiet(0, 1);
+	config_init(&config, 0, 0, 0, ALLOC_STD);
+	log_set_quiet(0, 0);
+
+	uint dir	= 0;
+	list_node_t pkg = 0;
+	list_node_t tgt = 0;
+
+	config_add_dir(&config, &dir);
+	config_add_pkg(&config, dir, &pkg);
+	config_add_target(&config, pkg, &tgt);
+
+	EXPECT_EQ(config_tgt_add_dep(NULL, config.targets.cnt, STRV_NULL), 1);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(config_tgt_add_dep(&config, config.targets.cnt, STRV_NULL), 1);
+	log_set_quiet(0, 0);
+	mem_oom(1);
+	EXPECT_EQ(config_tgt_add_dep(&config, tgt, STRV_NULL), 1);
+	mem_oom(0);
+	EXPECT_EQ(config_tgt_add_dep(&config, tgt, STRV_NULL), 0);
+	EXPECT_EQ(config_tgt_add_dep(&config, tgt, STRV_NULL), 0);
 
 	config_free(&config);
 
@@ -265,17 +297,61 @@ TEST(config_print)
 	config_t config = {0};
 	config_init(&config, 1, 1, 1, ALLOC_STD);
 
+	EXPECT_EQ(config_print(NULL, DST_NONE()), 0);
+
+	char buf[256] = {0};
+	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 0);
+	EXPECT_STR(buf, "")
+
+	config_free(&config);
+
+	END;
+}
+
+TEST(config_print_dir)
+{
+	START;
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
 	uint dir;
-	list_node_t pkg;
 	config_add_dir(&config, &dir);
-	config_add_pkg(&config, dir, &pkg);
-	config_add_target(&config, pkg, NULL);
-	config_add_dep(&config, pkg, STRV("dep"));
 
 	EXPECT_EQ(config_print(NULL, DST_NONE()), 0);
 
 	char buf[256] = {0};
-	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 155);
+	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 54);
+	EXPECT_STR(buf,
+		   "[dir]\n"
+		   "NAME: \n"
+		   "PATH: \n"
+		   "SRC: \n"
+		   "MAIN: 0\n"
+		   "INC: \n"
+		   "DRV: \n"
+		   "TEST: \n"
+		   "\n")
+
+	config_free(&config);
+
+	END;
+}
+
+TEST(config_print_pkg)
+{
+	START;
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	list_node_t pkg;
+	config_add_dir(&config, &dir);
+	config_add_pkg(&config, dir, &pkg);
+
+	char buf[256] = {0};
+	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 86);
 	EXPECT_STR(buf,
 		   "[dir]\n"
 		   "NAME: \n"
@@ -290,7 +366,46 @@ TEST(config_print)
 		   "NAME: \n"
 		   "URI: \n"
 		   "INC: \n"
-		   "DEPS: dep\n"
+		   "DEPS:\n"
+		   "\n")
+
+	config_free(&config);
+
+	END;
+}
+
+TEST(config_print_tgt)
+{
+	START;
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	list_node_t pkg, tgt;
+	config_add_dir(&config, &dir);
+	config_add_pkg(&config, dir, &pkg);
+	config_add_target(&config, pkg, &tgt);
+	config_pkg_add_dep(&config, pkg, STRV("pd"));
+	config_tgt_add_dep(&config, tgt, STRV("td"));
+
+	char buf[256] = {0};
+	EXPECT_EQ(config_print(&config, DST_BUF(buf)), 163);
+	EXPECT_STR(buf,
+		   "[dir]\n"
+		   "NAME: \n"
+		   "PATH: \n"
+		   "SRC: \n"
+		   "MAIN: 0\n"
+		   "INC: \n"
+		   "DRV: \n"
+		   "TEST: \n"
+		   "\n"
+		   "[pkg]\n"
+		   "NAME: \n"
+		   "URI: \n"
+		   "INC: \n"
+		   "DEPS: pd\n"
 		   "\n"
 		   "[target]\n"
 		   "NAME: \n"
@@ -301,6 +416,7 @@ TEST(config_print)
 		   "OUT: \n"
 		   "TGT: \n"
 		   "TYPE: 0\n"
+		   "DEPS: td\n"
 		   "\n")
 
 	config_free(&config);
@@ -319,10 +435,14 @@ STEST(config)
 	RUN(config_get_pkg);
 	RUN(config_add_target);
 	RUN(config_get_target);
-	RUN(config_add_dep);
+	RUN(config_pkg_add_dep);
+	RUN(config_tgt_add_dep);
 	RUN(config_set_str);
 	RUN(config_get_str);
 	RUN(config_print);
+	RUN(config_print_dir);
+	RUN(config_print_pkg);
+	RUN(config_print_tgt);
 
 	SEND;
 }

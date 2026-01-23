@@ -99,9 +99,9 @@ pkg_t *proj_add_pkg(proj_t *proj, uint *id);
 pkg_t *proj_get_pkg(const proj_t *proj, uint id);
 pkg_t *proj_find_pkg(const proj_t *proj, strv_t name, uint *id);
 
-target_t *proj_add_target(proj_t *proj, uint pkg, uint *id);
-target_t *proj_get_target(const proj_t *proj, uint id);
-target_t *proj_find_target(const proj_t *proj, uint pkg, strv_t name, uint *id);
+target_t *proj_add_target(proj_t *proj, uint pkg, list_node_t *id);
+target_t *proj_get_target(const proj_t *proj, list_node_t id);
+target_t *proj_find_target(const proj_t *proj, uint pkg, strv_t name, list_node_t *id);
 
 int proj_set_str(proj_t *proj, uint id, strv_t val);
 strv_t proj_get_str(const proj_t *proj, uint id);

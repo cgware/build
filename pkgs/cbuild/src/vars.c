@@ -42,6 +42,7 @@ static const svar_t s_vars[__VARS_CNT] = {
 	PSVAR(DIR_OUT_LIB, "${DIR_OUT}lib/"),
 	PSVAR(DIR_OUT_DRV, "${DIR_OUT}drivers/"),
 	PSVAR(DIR_OUT_BIN, "${DIR_OUT}bin/"),
+	PSVAR(ABS_DIR_OUT_BIN, "${DIR_OUT}bin/"),
 	PSVAR(DIR_OUT_EXT, "${DIR_OUT}ext/${PN}/"),
 	PSVAR(DIR_OUT_TST, "${DIR_OUT}test/"),
 	// PKG
