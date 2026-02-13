@@ -4,6 +4,7 @@
 #include "file/cfg_prs.h"
 #include "log.h"
 #include "path.h"
+#include "mod.h"
 
 config_dir_t *config_fs(config_t *config, fs_t *fs, proc_t *proc, strv_t base_path, strv_t dir_path, strv_t name, str_t *buf, alloc_t alloc,
 			dst_t dst)
@@ -41,9 +42,14 @@ config_dir_t *config_fs(config_t *config, fs_t *fs, proc_t *proc, strv_t base_pa
 	config_set_str(config, dir->strs + CONFIG_DIR_DRV, fs_isdir(fs, STRVS(full_path)) ? STRV("drivers") : STRV_NULL);
 	full_path.len = dir_path_len;
 
-	path_push(&full_path, STRV("test"));
-	config_set_str(config, dir->strs + CONFIG_DIR_TST, fs_isdir(fs, STRVS(full_path)) ? STRV("test") : STRV_NULL);
-	full_path.len = dir_path_len;
+	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
+		if (i->type == MOD_DRIVER_TYPE) {
+			mod_driver_t *drv = i->data;
+			if (drv->config_fs != NULL) {
+				drv->config_fs(drv, fs, config, dir, STRVS(full_path));
+			}
+		}
+	}
 
 	path_push(&full_path, STRV("pkgs"));
 	if (fs_isdir(fs, STRVS(full_path))) {
