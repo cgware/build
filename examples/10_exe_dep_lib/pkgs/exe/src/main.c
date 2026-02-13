@@ -1,7 +1,10 @@
+#include "lib.h"
+
 #include <stdio.h>
 
 int main()
 {
+	int ret = lib();
 	printf("exe\n");
-	return 0;
+	return ret;
 }

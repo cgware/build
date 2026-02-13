@@ -590,7 +590,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			break;
 		}
 		case ABS_DIR_OUT_BIN: {
-			val =  STRV("$(abspath ${DIR_OUT_BIN})/");
+			val = STRV("$(abspath ${DIR_OUT_BIN})/");
 			break;
 		}
 		default:
@@ -640,11 +640,19 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_var(&make, STRV("CFLAGS"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make, act, MSTR(STRV("-Wall -Wextra -Werror -pedantic")));
 	make_add_act(&make, root, act);
+
 	make_var(&make, STRV("CFLAGS_Debug"), MAKE_VAR_INST, &act);
-	make_var_add_val(&make, act, MSTR(STRV("-O0 -ggdb -coverage")));
+	make_var_add_val(&make, act, MSTR(STRV("-O0 -ggdb")));
 	make_add_act(&make, root, act);
+	make_var(&make, STRV("CFLAGS_COV_Debug"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make, act, MSTR(STRV("-coverage")));
+	make_add_act(&make, root, act);
+
 	make_var(&make, STRV("CFLAGS_Release"), MAKE_VAR_INST, &act);
 	make_add_act(&make, root, act);
+	make_var(&make, STRV("CFLAGS_COV_Release"), MAKE_VAR_INST, &act);
+	make_add_act(&make, root, act);
+
 	make_var(&make, STRV("LDFLAGS"), MAKE_VAR_INST, &act);
 	make_add_act(&make, root, act);
 	make_var(&make, STRV("LDFLAGS_Debug"), MAKE_VAR_INST, &act);
@@ -897,7 +905,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
 			 MCMD(STRV("$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) $(CFLAGS) "
-				   "$(CFLAGS_$(CONFIG)) "
+				   "$(CFLAGS_$(CONFIG)) $(CFLAGS_COV_$(CONFIG)) "
 				   "-o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
@@ -911,7 +919,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
 			 MCMD(STRV("$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_DRV:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) $(CFLAGS) "
-				   "$(CFLAGS_$(CONFIG)) "
+				   "$(CFLAGS_$(CONFIG)) $(CFLAGS_COV_$(CONFIG)) "
 				   "-o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
@@ -991,7 +999,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
 			 MCMD(STRV("$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) $(CFLAGS) "
-				   "$(CFLAGS_$(CONFIG)) "
+				   "$(CFLAGS_$(CONFIG)) $(CFLAGS_COV_$(CONFIG)) "
 				   "-o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
@@ -1005,7 +1013,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_rule_add_act(&make, def_rule_obj, act);
 		make_cmd(&make,
 			 MCMD(STRV("$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_DRV:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) $(CFLAGS) "
-				   "$(CFLAGS_$(CONFIG)) "
+				   "$(CFLAGS_$(CONFIG)) $(CFLAGS_COV_$(CONFIG)) "
 				   "-o $$@ $$<")),
 			 &act);
 		make_rule_add_act(&make, def_rule_obj, act);
@@ -1132,7 +1140,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		make_act_t def_cov;
 		make_rule(&make, MRULE(MSTR(STRV("cov_$(ARCH)_$(CONFIG)"))), 1, &def_cov);
-		make_rule_add_depend(&make, def_cov, MRULEACT(MSTR(STRV("$(PN)_$(TN)_$(ARCH)_$(CONFIG)")), STRV("/cov")));
+		make_rule_add_depend(&make, def_cov, MRULE(MSTR(STRV("$(DIR_OUT_INT)$(PN)/lcov.info"))));
 		make_def_add_act(&make, def, def_cov);
 
 		make_act_t def_phony;
@@ -1149,20 +1157,46 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_act_t def_run_test;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)_$(ARCH)_$(CONFIG)")), STRV("/test")), 1, &def_run_test);
 		make_rule_add_depend(&make, def_run_test, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])));
+		make_cmd(&make, MCMD(STRV("$(DIR_OUT_TST_FILE)")), &act);
+		make_rule_add_act(&make, def_run_test, act);
 		make_def_add_act(&make, def, def_run_test);
 
 		make_rule_add_depend(&make, def_phony, MRULEACT(MSTR(STRV("$(PN)_$(TN)_$(ARCH)_$(CONFIG)")), STRV("/cov")));
 		make_act_t def_run_cov;
 		make_rule(&make, MRULEACT(MSTR(STRV("$(PN)_$(TN)_$(ARCH)_$(CONFIG)")), STRV("/cov")), 1, &def_run_cov);
-		make_rule_add_depend(&make, def_run_cov, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])));
+		make_rule_add_depend(&make, def_run_cov, MRULE(MSTR(STRV("$(DIR_OUT_INT)$(PN)/lcov.info"))));
+		make_cmd(&make, MCMD(STRV("@if [ \"$(CONFIG)\" = \"Debug\" ]; then \\")), &act);
+		make_rule_add_act(&make, def_run_cov, act);
+		make_cmd(&make, MCMD(STRV("\tmkdir -pv $(DIR_TMP_COV); \\")), &act);
+		make_rule_add_act(&make, def_run_cov, act);
+		make_cmd(&make, MCMD(STRV("\tgenhtml -q -o $(DIR_TMP_COV) $$^; \\")), &act);
+		make_rule_add_act(&make, def_run_cov, act);
+		make_cmd(&make, MCMD(STRV("\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\")), &act);
+		make_rule_add_act(&make, def_run_cov, act);
+		make_cmd(&make, MCMD(STRV("fi")), &act);
+		make_rule_add_act(&make, def_run_cov, act);
 		make_def_add_act(&make, def, def_run_cov);
+
+		make_act_t def_lcov;
+		make_rule(&make, MRULE(MSTR(STRV("$(DIR_OUT_INT)$(PN)/lcov.info"))), 1, &def_lcov);
+		make_rule_add_depend(&make, def_lcov, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])));
+		make_cmd(&make, MCMD(STRV("@if [ \"$(CONFIG)\" = \"Debug\" ]; then \\")), &act);
+		make_rule_add_act(&make, def_lcov, act);
+		make_cmd(&make, MCMD(STRV("\trm -rf $(PKGSRC_GCDA); \\")), &act);
+		make_rule_add_act(&make, def_lcov, act);
+		make_cmd(&make, MCMD(STRV("\t$(DIR_OUT_TST_FILE); \\")), &act);
+		make_rule_add_act(&make, def_lcov, act);
+		make_cmd(&make, MCMD(STRV("\tlcov -c -o $$@ -d $(DIR_OUT) --include \"$(abspath $(DIR_PKG))/*\"; \\")), &act);
+		make_rule_add_act(&make, def_lcov, act);
+		make_cmd(&make, MCMD(STRV("fi")), &act);
+		make_rule_add_act(&make, def_lcov, act);
+		make_def_add_act(&make, def, def_lcov);
 
 		make_act_t def_rule_target;
 		make_rule(&make, MRULE(MVAR(mvars[DIR_OUT_TST_FILE])), 1, &def_rule_target);
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%)"))));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MVAR(objs[PKGTST_OBJ].var)));
 		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))"))));
-		make_rule_add_depend(&make, def_rule_target, MRULE(MSTR(STRV("| precov_$(ARCH)_$(CONFIG)"))));
 		make_def_add_act(&make, def, def_rule_target);
 
 		make_cmd(&make, MCMD(STRV("@mkdir -pv $$(@D)")), &act);
@@ -1172,8 +1206,6 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 				   "$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
 				   "$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))")),
 			 &act);
-		make_rule_add_act(&make, def_rule_target, act);
-		make_cmd(&make, MCMD(STRV("$(DIR_OUT_TST_FILE)")), &act);
 		make_rule_add_act(&make, def_rule_target, act);
 
 		make_act_t def_rule_obj;
@@ -1220,26 +1252,12 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_phony(&make, &def_phony);
 		make_def_add_act(&make, def, def_phony);
 
-		make_rule_add_depend(&make, def_phony, MRULE(MSTR(STRV("precov_$(ARCH)_$(CONFIG)"))));
-		make_act_t precov;
-		make_rule(&make, MRULE(MSTR(STRV("precov_$(ARCH)_$(CONFIG)"))), 1, &precov);
-		make_cmd(&make, MCMD(STRV("@rm -fv $$(GCDA_$(ARCH)_$(CONFIG))")), &act);
-		make_rule_add_act(&make, precov, act);
-		make_def_add_act(&make, def, precov);
-
 		make_rule_add_depend(&make, def_phony, MRULE(MSTR(STRV("cov_$(ARCH)_$(CONFIG)"))));
 		make_act_t cov;
 		make_rule(&make, MRULE(MSTR(STRV("cov_$(ARCH)_$(CONFIG)"))), 1, &cov);
-		make_cmd(&make, MCMD(STRV("@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\")), &act);
+		make_cmd(&make, MCMD(STRV("@if [ \"$(CONFIG)\" = \"Debug\" ]; then \\")), &act);
 		make_rule_add_act(&make, cov, act);
-		make_cmd(&make, MCMD(STRV("\tmkdir -pv $(DIR_TMP_COV); \\")), &act);
-		make_rule_add_act(&make, cov, act);
-		make_cmd(&make,
-			 MCMD(STRV(
-				 "\tlcov -q -c -o $(DIR_TMP_COV)lcov.info -d $(DIR_OUT) --exclude \"*/test/*\" --exclude \"*/tmp/*\"; \\")),
-			 &act);
-		make_rule_add_act(&make, cov, act);
-		make_cmd(&make, MCMD(STRV("\tgenhtml -q -o $(DIR_TMP_COV) $(DIR_TMP_COV)lcov.info; \\")), &act);
+		make_cmd(&make, MCMD(STRV("\tgenhtml -q -o $(DIR_TMP_COV) $$^; \\")), &act);
 		make_rule_add_act(&make, cov, act);
 		make_cmd(&make, MCMD(STRV("\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\")), &act);
 		make_rule_add_act(&make, cov, act);

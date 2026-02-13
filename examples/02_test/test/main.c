@@ -2,6 +2,6 @@
 
 int main()
 {
-	printf("exe\n");
+	printf("test\n");
 	return 0;
 }

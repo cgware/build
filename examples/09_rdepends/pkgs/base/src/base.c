@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-int main()
+int base()
 {
-	printf("exe\n");
+	printf("base\n");
 	return 0;
 }

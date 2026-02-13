@@ -1,5 +1,3 @@
-/bin/
 /build/
-/deps/
-/report/
+/.cache/
 /.vscode/

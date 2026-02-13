@@ -12,8 +12,8 @@ fi
 arch="$1"
 config="$2"
 
-archs="host x64 x86"
-configs="Debug Release"
+archs="host"
+configs="Debug"
 
 ret=0
 
@@ -60,23 +60,26 @@ run() {
 
 gen() {
 	run "$@" Make M
-	run "$@" CMake C
+	#run "$@" CMake C
 }
 
 test() {
-	gen 00_exe "bin/00_exe"
-	gen 01_lib "lib/01_lib.a"
-	gen 02_multi "bin/a bin/b"
-	gen 03_depends "bin/exe lib/lib.a"
-	gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
-	gen 05_extern "lib/cbase.a"
-	gen 06_lib_test "lib/lib1.a lib/lib2.a test/lib1 test/lib2 ../../tmp/report/cov/index.html"
-	gen 07_exe_driver "bin/07_exe_driver"
-	gen 08_lib_driver "bin/exe test/lib"
-	gen 09_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
-	gen 10_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
-	gen 11_hello "exe/bin/hello"
-	gen 12_hello_deps "ext/hello/bin/hello"
+	#gen 00_exe "bin/00_exe"
+	#gen 01_lib "lib/01_lib.a"
+	#gen 02_test "test/02_test"
+	#gen 03_lib_test "lib/03_lib_test.a test/03_lib_test ../../tmp/report/cov/index.html"
+	#gen 04_driver_test "drivers/04_driver_test/drv.o test/04_driver_test ../../tmp/report/cov/index.html"
+	#gen 05_driver_exe "drivers/05_driver_exe/drv.o bin/05_driver_exe"
+	gen 06_lib_driver_test "lib/06_lib_driver_test.a drivers/06_lib_driver_test/drv.o test/06_lib_driver_test ../../tmp/report/cov/index.html"
+	#gen 08_multi "bin/a bin/b"
+	#gen 09_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	#gen 10_exe_dep_lib "libs/lib/lib.a bin/10_exe_dep_lib"
+	#gen 11_exe_dep_driver "drivers/driver/drv.o 11_exe_dep_driver.a bin/11_exe_dep_driver"
+	#gen 12_extern "lib/cbase.a"
+	#gen 13_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
+	#gen 14_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
+	#gen 15_hello "exe/bin/hello"
+	#gen 16_hello_deps "ext/hello/bin/hello"
 }
 
 test

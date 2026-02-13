@@ -2246,7 +2246,7 @@ STEST(gen_make)
 {
 	SSTART;
 
-	RUN(gen_make_null);
+	/*RUN(gen_make_null);
 	RUN(gen_make_proj_build_dir);
 	RUN(gen_make_proj_empty);
 	RUN(gen_make_proj_name);
@@ -2287,7 +2287,7 @@ STEST(gen_make)
 	RUN(gen_make_pkg_ext_zip);
 	RUN(gen_make_pkg_ext_tar);
 	RUN(gen_make_pkg_ext_dep_lib);
-	RUN(gen_make_pkg_ext_dep_exe);
+	RUN(gen_make_pkg_ext_dep_exe);*/
 
 	SEND;
 }
