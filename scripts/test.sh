@@ -28,7 +28,7 @@ run() {
 	tmp="$dir/tmp"
 	build="$dir/build"
 
-	printf "%-13s %-5s " "$proj" "$name"
+	printf "%-18s %-5s " "$proj" "$name"
 
 	rm -rf "$bin" "$build" "$tmp"
 
@@ -66,17 +66,20 @@ gen() {
 test() {
 	gen 00_exe "bin/00_exe"
 	gen 01_lib "lib/01_lib.a"
-	gen 02_multi "bin/a bin/b"
-	gen 03_depends "bin/exe lib/lib.a"
-	gen 04_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
-	gen 05_extern "lib/cbase.a"
-	gen 06_lib_test "lib/lib1.a lib/lib2.a test/lib1 test/lib2 ../../tmp/report/cov/index.html"
-	gen 07_exe_driver "bin/07_exe_driver"
-	gen 08_lib_driver "bin/exe test/lib"
-	gen 09_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
-	gen 10_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
-	gen 11_hello "exe/bin/hello"
-	gen 12_hello_deps "ext/hello/bin/hello"
+	gen 02_test "test/02_test"
+	gen 03_lib_test "lib/03_lib_test.a test/03_lib_test ../../tmp/report/cov/index.html"
+	gen 04_drv_test "test/04_drv_test ../../tmp/report/cov/index.html"
+	gen 05_drv_exe "bin/05_drv_exe"
+	gen 06_lib_drv_test "lib/06_lib_drv_test.a test/06_lib_drv_test ../../tmp/report/cov/index.html"
+	gen 07_multi "bin/a bin/b"
+	gen 08_rdepends "lib/base.a lib/lib1.a lib/lib2.a bin/exe"
+	gen 09_exe_dep_lib_drv "lib/lib.a bin/exe"
+	gen 10_exe_drv_lib "bin/exe"
+	gen 11_extern "lib/cbase.a"
+	gen 12_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
+	gen 13_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
+	gen 14_hello "exe/bin/hello"
+	gen 15_hello_deps "ext/hello/bin/hello"
 }
 
 test

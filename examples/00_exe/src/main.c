@@ -1,6 +1,10 @@
 #include "priv/priv.h"
 
+#include <stdio.h>
+
 int main()
 {
-	return priv();
+	int ret = priv();
+	printf("exe\n");
+	return ret;
 }

@@ -160,6 +160,36 @@ TEST(proj_cfg_src_include_main)
 	END;
 }
 
+TEST(proj_cfg_drv)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+
+	config_set_str(&config, d->strs + CONFIG_DIR_DRV, STRV("drivers"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	const pkg_t *pkg       = proj_get_pkg(&proj, 0);
+	const target_t *target = proj_get_target(&proj, 0);
+
+	strv_t val = proj_get_str(&proj, pkg->strs + PKG_STR_DRV);
+	EXPECT_STRN(val.data, "drivers", val.len);
+	EXPECT_EQ(target->type, TARGET_TYPE_DRV);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_cfg_test)
 {
 	START;
@@ -442,6 +472,75 @@ TEST(proj_cfg_pkg_dep_not_found)
 	END;
 }
 
+TEST(proj_cfg_pkg_dep_not_test)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_PKG_NAME, STRV("dep"));
+	config_set_str(&config, d->strs + CONFIG_DIR_TST, STRV("test"));
+
+	list_node_t cpkg;
+	config_add_pkg(&config, dir, &cpkg);
+
+	d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	list_node_t cpkg2;
+	config_add_pkg(&config, dir, &cpkg2);
+	config_pkg_add_dep(&config, cpkg2, STRV("dep"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	arr_t deps = {0};
+	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
+	proj_get_deps(&proj, 1, &deps);
+	EXPECT_EQ(deps.cnt, 0);
+	arr_free(&deps);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
+TEST(proj_cfg_pkg_dep_exe)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, 1, 1, ALLOC_STD);
+
+	uint dir;
+	config_dir_t *d = config_add_dir(&config, &dir);
+	config_set_str(&config, d->strs + CONFIG_DIR_DRV, STRV("drivers"));
+	config_set_str(&config, d->strs + CONFIG_DIR_SRC, STRV("src"));
+
+	EXPECT_EQ(proj_cfg(&proj, &config), 0);
+
+	arr_t deps = {0};
+	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
+	proj_get_deps(&proj, 0, &deps);
+	EXPECT_EQ(deps.cnt, 1);
+	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 1);
+	arr_free(&deps);
+
+	config_free(&config);
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_cfg_pkg_dep_test)
 {
 	START;
@@ -621,6 +720,7 @@ STEST(proj_cfg)
 	RUN(proj_cfg_include);
 	RUN(proj_cfg_src_include);
 	RUN(proj_cfg_src_include_main);
+	RUN(proj_cfg_drv);
 	RUN(proj_cfg_test);
 	RUN(proj_cfg_pkg);
 	RUN(proj_cfg_uri);
@@ -630,6 +730,8 @@ STEST(proj_cfg)
 	RUN(proj_cfg_target_dup);
 	RUN(proj_cfg_pkg_dep);
 	RUN(proj_cfg_pkg_dep_not_found);
+	RUN(proj_cfg_pkg_dep_not_test);
+	RUN(proj_cfg_pkg_dep_exe);
 	RUN(proj_cfg_pkg_dep_test);
 	RUN(proj_cfg_tgt_dep);
 	RUN(proj_cfg_tgt_dep_tgt);
