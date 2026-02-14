@@ -55,6 +55,9 @@ static void get_path(const proj_t *proj, uint id, path_t *path)
 static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, uint pkg_id, const pkg_t *pkg, uint tgt_id,
 		   const target_t *target, arr_t *deps, str_t *buf)
 {
+	(void)pkg_id;
+	(void)tgt_id;
+	(void)deps; // TODO: remove
 	strv_t svalues[__VARS_CNT] = {
 		[ARCH]	 = STRVT("${ARCH}"),
 		[CONFIG] = STRVT("${CONFIG}"),
@@ -204,22 +207,15 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 	fs_write(fs, f, STRV("\n"));
 
 	strv_t inc = proj_get_str(proj, pkg->strs + PKG_STR_INC);
-	strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
-	strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
 
-	if (target->type != TARGET_TYPE_EXT) {
+	switch (target->type) {
+	case TARGET_TYPE_EXE: {
+		strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
 		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 		path_t tmp = {0};
 
-		switch (target->type) {
-		case TARGET_TYPE_TST:
-			path_init_s(&tmp, tst, '/');
-			break;
-		default:
-			path_init_s(&tmp, proj_get_str(proj, pkg->strs + PKG_STR_SRC), '/');
-			break;
-		}
+		path_init_s(&tmp, src, '/');
 
 		size_t src_len = tmp.len;
 		path_push_s(&tmp, STRV("*.h"), '/');
@@ -230,44 +226,8 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 		path_push_s(&tmp, STRV("*.c"), '/');
 		fs_write(fs, f, STRVS(tmp));
 
-		if (target->type != TARGET_TYPE_LIB) {
-			int lib_drv = 0;
-
-			deps->cnt = 0;
-			proj_get_deps(proj, tgt_id, deps);
-			if (deps->cnt > 0) {
-				uint i = 0;
-				const uint *dep;
-				arr_foreach(deps, i, dep)
-				{
-					const target_t *dtarget = list_get(&proj->targets, *dep);
-					const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-					strv_t ddriver		= proj_get_str(proj, dpkg->strs + PKG_STR_DRV);
-					if (ddriver.len > 0) {
-						fs_write(fs, f, STRV(" ${"));
-						fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-						fs_write(fs, f, STRV("_DRIVERS}"));
-						lib_drv |= dtarget->pkg == pkg_id;
-					}
-				}
-			}
-
-			if (!lib_drv && drv.len > 0) {
-				tmp.len = 0;
-				path_init_s(&tmp, drv, '/');
-				path_push_s(&tmp, STRV("*.c"), '/');
-				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				fs_write(fs, f, STRVS(tmp));
-			}
-		}
-
 		fs_write(fs, f, STRV(")\n"));
-	}
 
-	strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
-
-	switch (target->type) {
-	case TARGET_TYPE_EXE: {
 		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 		if (inc.len > 0 || src.len > 0) {
 			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
@@ -275,7 +235,6 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 				fs_write(fs, f, STRV(" ${DIR_PKG}"));
 				fs_write(fs, f, inc);
 			}
-
 			if (src.len > 0) {
 				fs_write(fs, f, STRV(" ${DIR_PKG}"));
 				fs_write(fs, f, src);
@@ -313,6 +272,24 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 		break;
 	}
 	case TARGET_TYPE_LIB: {
+		strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
+
+		path_t tmp = {0};
+
+		path_init_s(&tmp, src, '/');
+
+		size_t src_len = tmp.len;
+		path_push_s(&tmp, STRV("*.h"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(" ${DIR_PKG}"));
+		tmp.len = src_len;
+		path_push_s(&tmp, STRV("*.c"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(")\n"));
+
 		fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 		if (inc.len > 0 || src.len > 0) {
 			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
@@ -320,10 +297,70 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 				fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
 				fs_write(fs, f, inc);
 			}
-
 			if (src.len > 0) {
 				fs_write(fs, f, STRV(" PRIVATE ${DIR_PKG}"));
 				fs_write(fs, f, src);
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+
+		fs_write(fs,
+			 f,
+			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			      "\t)\n"
+			      "endif()\n"));
+
+		if (target->has_deps) {
+			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
+				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
+				fs_write(fs, f, STRV(" "));
+				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_write(fs, f, STRV("_"));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+			}
+			fs_write(fs, f, STRV(")\n"));
+		}
+		break;
+	}
+	case TARGET_TYPE_DRV: {
+		strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
+
+		path_t tmp = {0};
+
+		path_init_s(&tmp, drv, '/');
+
+		size_t src_len = tmp.len;
+		path_push_s(&tmp, STRV("*.h"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(" ${DIR_PKG}"));
+		tmp.len = src_len;
+		path_push_s(&tmp, STRV("*.c"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(")\n"));
+
+		fs_write(fs, f, STRV("add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"));
+		if (inc.len > 0 || drv.len > 0) {
+			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
+			if (inc.len > 0) {
+				fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
+				fs_write(fs, f, inc);
+			}
+			if (drv.len > 0) {
+				fs_write(fs, f, STRV(" PRIVATE ${DIR_PKG}"));
+				fs_write(fs, f, drv);
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}
@@ -457,13 +494,37 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, ui
 		break;
 	}
 	case TARGET_TYPE_TST: {
+		strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+		strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+		strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
+		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
+
+		path_t tmp = {0};
+
+		path_init_s(&tmp, tst, '/');
+
+		size_t src_len = tmp.len;
+		path_push_s(&tmp, STRV("*.h"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(" ${DIR_PKG}"));
+		tmp.len = src_len;
+		path_push_s(&tmp, STRV("*.c"), '/');
+		fs_write(fs, f, STRVS(tmp));
+
+		fs_write(fs, f, STRV(")\n"));
+
 		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 
-		if (src.len > 0 || tst.len > 0) {
+		if (src.len > 0 || drv.len > 0 || tst.len > 0) {
 			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
 			if (src.len > 0) {
 				fs_write(fs, f, STRV(" ${DIR_PKG}"));
 				fs_write(fs, f, src);
+			}
+			if (drv.len > 0) {
+				fs_write(fs, f, STRV(" ${DIR_PKG}"));
+				fs_write(fs, f, drv);
 			}
 			if (tst.len > 0) {
 				fs_write(fs, f, STRV(" ${DIR_PKG}"));
@@ -658,8 +719,6 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 		}
 	}
 
-	strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
-
 	for (int i = 0; i < __VARS_CNT; i++) {
 		strv_t val = vars->vars[i].val;
 		switch (i) {
@@ -678,21 +737,12 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, ar
 		case DIR_PKG_DRV:
 		case DIR_PKG_DRV_C:
 		case DIR_OUT_DRV_PKG:
-			if (drv.len == 0) {
-				continue;
-			}
-			break;
 		case DIR_PKG_SRC:
 		case DIR_PKG_INC:
 		case DIR_PKG_TST:
 		case DIR_OUT_INT_SRC:
 		case DIR_OUT_INT_TST:
-			continue;
 		case PN_DRIVERS:
-			if (drv.len == 0) {
-				continue;
-			}
-			fs_write(fs, f, STRV("set(${PN}_DRIVERS \"${DIR_PKG_DRV_C}\")\n"));
 			continue;
 		default:
 			if ((vars->vars[i].deps & ((1 << PN) | (1 << TN))) != (1 << PN)) {

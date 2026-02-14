@@ -496,6 +496,7 @@ static const char *target_type_str[] = {
 	[TARGET_TYPE_UNKNOWN] = "UNKNOWN",
 	[TARGET_TYPE_EXE]     = "EXE",
 	[TARGET_TYPE_LIB]     = "LIB",
+	[TARGET_TYPE_DRV]     = "DRV",
 	[TARGET_TYPE_EXT]     = "EXT",
 	[TARGET_TYPE_TST]     = "TEST",
 };

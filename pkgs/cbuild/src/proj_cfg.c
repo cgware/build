@@ -1,6 +1,7 @@
 #include "proj_cfg.h"
 
 #include "log.h"
+#include "proj.h"
 #include "proj_utils.h"
 
 int proj_cfg(proj_t *proj, const config_t *config)
@@ -29,7 +30,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 		pkg_t *pkg	 = NULL;
 		target_t *target = NULL;
 
-		if (src.len > 0 || inc.len > 0 || test.len > 0) {
+		if (src.len > 0 || inc.len > 0 || drv.len > 0 || test.len > 0) {
 			pkg = proj_add_pkg(proj, &pkg_id);
 
 			proj_set_str(proj, pkg->strs + PKG_STR_NAME, name);
@@ -39,7 +40,7 @@ int proj_cfg(proj_t *proj, const config_t *config)
 			proj_set_str(proj, pkg->strs + PKG_STR_DRV, drv);
 			proj_set_str(proj, pkg->strs + PKG_STR_TST, test);
 
-			if (src.len > 0 || inc.len > 0) {
+			if (src.len > 0 || (drv.len == 0 && inc.len > 0)) {
 				list_node_t target_id;
 				target = proj_add_target(proj, pkg_id, &target_id);
 				proj_set_str(proj, target->strs + TARGET_NAME, name);
@@ -49,8 +50,16 @@ int proj_cfg(proj_t *proj, const config_t *config)
 				} else if (src.len > 0) {
 					target->type = TARGET_TYPE_EXE;
 				} else if (inc.len > 0) {
-					target->type = TARGET_TYPE_LIB;
+					target->type = TARGET_TYPE_LIB; // TODO: TARGET_TYPE_INTERFACE
 				}
+			}
+
+			if (drv.len > 0) {
+				list_node_t target_id;
+				target = proj_add_target(proj, pkg_id, &target_id);
+				proj_set_str(proj, target->strs + TARGET_NAME, name);
+				strbuf_app(&proj->strs, target->strs + TARGET_NAME, STRV("_drv"));
+				target->type = TARGET_TYPE_DRV;
 			}
 
 			if (test.len > 0) {
@@ -174,6 +183,8 @@ int proj_cfg(proj_t *proj, const config_t *config)
 	config_pkg_t *cfg_pkg;
 	list_foreach_all(&config->pkgs, i, cfg_pkg)
 	{
+		pkg_t *pkg = arr_get(&proj->pkgs, cfg_pkg->pkg);
+
 		if (cfg_pkg->has_deps) {
 			const uint *dep;
 			list_node_t deps = cfg_pkg->deps;
@@ -188,27 +199,22 @@ int proj_cfg(proj_t *proj, const config_t *config)
 					continue;
 				}
 
-				uint dep_target_id;
-				uint found = 0;
 				if (dep_pkg->has_targets) {
 					target_t *target;
 					list_node_t j = dep_pkg->targets;
 					list_foreach(&proj->targets, j, target)
 					{
-						dep_target_id = j;
-						found	      = 1;
-						break;
-					}
-				}
+						if (target->type == TARGET_TYPE_TST) {
+							continue;
+						}
 
-				if (found) {
-					pkg_t *pkg = arr_get(&proj->pkgs, cfg_pkg->pkg);
-					if (pkg->has_targets) {
-						target_t *target;
-						list_node_t j = pkg->targets;
-						list_foreach(&proj->targets, j, target)
-						{
-							proj_add_dep(proj, j, dep_target_id);
+						if (pkg->has_targets) {
+							target_t *target;
+							list_node_t k = pkg->targets;
+							list_foreach(&proj->targets, k, target)
+							{
+								proj_add_dep(proj, k, j);
+							}
 						}
 					}
 				}
@@ -291,18 +297,34 @@ int proj_cfg(proj_t *proj, const config_t *config)
 			list_node_t j = pkg->targets;
 			list_foreach(&proj->targets, j, target)
 			{
-				if (target->type != TARGET_TYPE_TST) {
-					continue;
-				}
+				switch (target->type) {
+				case TARGET_TYPE_EXE: {
 
-				const target_t *dep_target;
-				list_node_t k = pkg->targets;
-				list_foreach(&proj->targets, k, dep_target)
-				{
-					if (dep_target->type == TARGET_TYPE_LIB) {
-						proj_add_dep(proj, j, k);
-						break;
+					const target_t *dep_target;
+					list_node_t k = pkg->targets;
+					list_foreach(&proj->targets, k, dep_target)
+					{
+						if (dep_target->type == TARGET_TYPE_DRV) {
+							proj_add_dep(proj, j, k);
+							break;
+						}
 					}
+					break;
+				}
+				case TARGET_TYPE_TST: {
+
+					const target_t *dep_target;
+					list_node_t k = pkg->targets;
+					list_foreach(&proj->targets, k, dep_target)
+					{
+						if (dep_target->type == TARGET_TYPE_LIB || dep_target->type == TARGET_TYPE_DRV) {
+							proj_add_dep(proj, j, k);
+						}
+					}
+					break;
+				}
+				default:
+					break;
 				}
 			}
 		}
