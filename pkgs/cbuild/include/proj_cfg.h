@@ -4,6 +4,6 @@
 #include "config.h"
 #include "proj.h"
 
-int proj_cfg(proj_t *proj, const config_t *config);
+int proj_cfg(proj_t *proj, const config_t *config, const registry_t *registry);
 
 #endif

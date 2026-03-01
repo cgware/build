@@ -3,32 +3,44 @@
 #include "test.h"
 
 STEST(config);
-STEST(config_cfg);
 STEST(config_fs);
 STEST(gen);
 STEST(gen_cmake);
 STEST(gen_make);
 STEST(gen_none);
+STEST(mod_cfg);
+STEST(mod_drv);
+STEST(mod_exe);
+STEST(mod_lib);
+STEST(mod_pkgs);
+STEST(mod_test);
 STEST(proj);
 STEST(proj_cfg);
 STEST(proj_gen);
 STEST(proj_utils);
+STEST(registry);
 STEST(vars);
 
 TEST(cbuild)
 {
 	SSTART;
 	RUN(config);
-	RUN(config_cfg);
 	RUN(config_fs);
 	RUN(gen);
 	RUN(gen_make);
 	RUN(gen_none);
 	RUN(gen_cmake);
+	RUN(mod_cfg);
+	RUN(mod_drv);
+	RUN(mod_exe);
+	RUN(mod_lib);
+	RUN(mod_pkgs);
+	RUN(mod_test);
 	RUN(proj);
 	RUN(proj_cfg);
 	RUN(proj_gen);
 	RUN(proj_utils);
+	RUN(registry);
 	RUN(vars);
 	SEND;
 }

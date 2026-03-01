@@ -1,11 +1,11 @@
-#ifndef CONFIG_FS_H
-#define CONFIG_FS_H
+#ifndef CONFIG_FS
+#define CONFIG_FS
 
 #include "config.h"
 #include "fs.h"
 #include "proc.h"
 
-config_dir_t *config_fs(config_t *config, fs_t *fs, proc_t *proc, strv_t base_path, strv_t dir_path, strv_t name, str_t *buf, alloc_t alloc,
-			dst_t dst);
+int config_fs(config_t *config, config_t *tmp, registry_t *registry, fs_t *fs, proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf,
+	      alloc_t alloc, dst_t dst);
 
 #endif

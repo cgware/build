@@ -480,131 +480,130 @@ TEST(gen_make_proj_exe)
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
-	EXPECT_STRN(
-		tmp.data,
-		"ARCHS := host\n"
-		"CONFIGS := Debug\n"
-		"OPEN := 1\n"
-		"\n"
-		"EXT_LIB := .a\n"
-		"EXT_EXE :=\n"
-		"\n"
-		"CP := cp\n"
-		"DIR_PROJ :=\n"
-		"DIR_BUILD :=\n"
-		"DIR_TMP := $(DIR_PROJ)tmp/\n"
-		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		"DIR_TMP_REP := $(DIR_TMP)report/\n"
-		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		"DIR_OUT_INT = $(DIR_OUT)int/\n"
-		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
-		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
-		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
-		"ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
-		"DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
-		"DIR_OUT_TST = $(DIR_OUT)test/\n"
-		"PKG_DIR = $($(PN)_DIR)\n"
-		"PKG_URI = $($(PN)_URI)\n"
-		"PKG_URI_FILE = $($(PN)_URI_FILE)\n"
-		"PKG_URI_NAME = $($(PN)_URI_NAME)\n"
-		"PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		"DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
-		"DIR_PKG_SRC = $(DIR_PKG)src/\n"
-		"DIR_PKG_INC = $(DIR_PKG)include/\n"
-		"DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
-		"DIR_PKG_TST = $(DIR_PKG)test/\n"
-		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
-		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		"TGT_SRC = $($(PN)_$(TN)_SRC)\n"
-		"TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
-		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		"TGT_PREP = $($(PN)_$(TN)_PREP)\n"
-		"TGT_CONF = $($(PN)_$(TN)_CONF)\n"
-		"TGT_COMP = $($(PN)_$(TN)_COMP)\n"
-		"TGT_INST = $($(PN)_$(TN)_INST)\n"
-		"TGT_TGT = $($(PN)_$(TN)_TGT)\n"
-		"DIR_OUT_LIB_FILE = $(TGT_OUT)$(PN)$(EXT_LIB)\n"
-		"DIR_OUT_BIN_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
-		"DIR_OUT_EXT_PKG = $(TGT_OUT)\n"
-		"DIR_OUT_TST_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
-		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_TGT)\n"
-		"\n"
-		"TCC_host := $(CC)\n"
-		"FLAGS_host :=\n"
-		"TCC_x64 := $(CC)\n"
-		"FLAGS_x64 := -m64\n"
-		"TCC_x86 := $(CC)\n"
-		"FLAGS_x86 := -m32\n"
-		"\n"
-		"CFLAGS := -Wall -Wextra -Werror -pedantic\n"
-		"CFLAGS_Debug := -O0 -ggdb\n"
-		"CFLAGS_COV_Debug := -coverage\n"
-		"CFLAGS_Release :=\n"
-		"CFLAGS_COV_Release :=\n"
-		"LDFLAGS :=\n"
-		"LDFLAGS_Debug := -coverage\n"
-		"LDFLAGS_Release :=\n"
-		"\n"
-		"PKGSRC_C = $(shell find $(DIR_PKG_SRC) -type f -name '*.c' 2>/dev/null)\n"
-		"PKGSRC_H = $(shell find $(DIR_PKG_SRC) -type f -name '*.h' 2>/dev/null)\n"
-		"PKGDRV_C = $(shell find $(DIR_PKG_DRV) -type f -name '*.c' 2>/dev/null)\n"
-		"PKGDRV_H = $(shell find $(DIR_PKG_DRV) -type f -name '*.h' 2>/dev/null)\n"
-		"PKGTST_C = $(shell find $(DIR_PKG_TST) -type f -name '*.c' 2>/dev/null)\n"
-		"PKGTST_H = $(shell find $(DIR_PKG_TST) -type f -name '*.h' 2>/dev/null)\n"
-		"PKGINC_H = $(shell find $(DIR_PKG_INC) -type f -name '*.h' 2>/dev/null)\n"
-		"\n"
-		"PKGSRC_OBJ = $(patsubst $(DIR_PKG_SRC)%.c,$(DIR_OUT_INT_SRC)%.o,$(PKGSRC_C))\n"
-		"PKGSRC_GCDA = $(patsubst %.o,%.gcda,$(PKGSRC_OBJ))\n"
-		"PKGDRV_OBJ = $(patsubst $(DIR_PKG_DRV)%.c,$(DIR_OUT_DRV_PKG)%.o,$(PKGDRV_C))\n"
-		"PKGDRV_GCDA = $(patsubst %.o,%.gcda,$(PKGDRV_OBJ))\n"
-		"PKGTST_OBJ = $(patsubst $(DIR_PKG_TST)%.c,$(DIR_OUT_INT_TST)%.o,$(PKGTST_C))\n"
-		"PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
-		"\n"
-		"ARCH = $1\n"
-		"CONFIG = $2\n"
-		"\n"
-		".PHONY: all test cov\n"
-		"\n"
-		"all:\n"
-		"\n"
-		"define _exe\n"
-		"$(PN)_$(TN)_$(ARCH)_$(CONFIG) := $(DIR_OUT_BIN_FILE)\n"
-		"\n"
-		"all: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
-		"\n"
-		".PHONY: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
-		"\n"
-		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile: $(DIR_OUT_BIN_FILE)\n"
-		"\n"
-		"$(DIR_OUT_BIN_FILE): $($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) $(PKGSRC_OBJ) "
-		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
-		"\t@mkdir -pv $$(@D)\n"
-		"\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGSRC_OBJ) "
-		"$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
-		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
-		"\n"
-		"$(DIR_OUT_INT_SRC)%.o: $(DIR_PKG_SRC)%.c $(PKGSRC_H) $($(PN)_$(TN)_HEADERS) "
-		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
-		"\t@mkdir -pv $$(@D)\n"
-		"\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) "
-		"$(CFLAGS_COV_$(CONFIG)) -o $$@ $$<\n"
-		"\n"
-		"endef\n"
-		"\n"
-		"define exe\n"
-		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _exe,$(a),$(c)))))\n"
-		"endef\n"
-		"\n"
-		"include $(DIR_BUILD)pkg.mk\n"
-		"\n",
-		tmp.len);
+	EXPECT_STRN(tmp.data,
+		    "ARCHS := host\n"
+		    "CONFIGS := Debug\n"
+		    "OPEN := 1\n"
+		    "\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
+		    "\n"
+		    "CP := cp\n"
+		    "DIR_PROJ :=\n"
+		    "DIR_BUILD :=\n"
+		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
+		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
+		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
+		    "DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
+		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
+		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
+		    "PKG_URI_FILE = $($(PN)_URI_FILE)\n"
+		    "PKG_URI_NAME = $($(PN)_URI_NAME)\n"
+		    "PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
+		    "DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
+		    "DIR_PKG_SRC = $(DIR_PKG)src/\n"
+		    "DIR_PKG_INC = $(DIR_PKG)include/\n"
+		    "DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
+		    "DIR_PKG_TST = $(DIR_PKG)test/\n"
+		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
+		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
+		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
+		    "TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		    "TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		    "TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		    "TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		    "TGT_INST = $($(PN)_$(TN)_INST)\n"
+		    "TGT_TGT = $($(PN)_$(TN)_TGT)\n"
+		    "DIR_OUT_LIB_FILE = $(TGT_OUT)$(PN)$(EXT_LIB)\n"
+		    "DIR_OUT_BIN_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
+		    "DIR_OUT_EXT_PKG = $(TGT_OUT)\n"
+		    "DIR_OUT_TST_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_TGT)\n"
+		    "\n"
+		    "TCC_host := $(CC)\n"
+		    "FLAGS_host :=\n"
+		    "TCC_x64 := $(CC)\n"
+		    "FLAGS_x64 := -m64\n"
+		    "TCC_x86 := $(CC)\n"
+		    "FLAGS_x86 := -m32\n"
+		    "\n"
+		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
+		    "CFLAGS_Debug := -O0 -ggdb\n"
+		    "CFLAGS_COV_Debug := -coverage\n"
+		    "CFLAGS_Release :=\n"
+		    "CFLAGS_COV_Release :=\n"
+		    "LDFLAGS :=\n"
+		    "LDFLAGS_Debug := -coverage\n"
+		    "LDFLAGS_Release :=\n"
+		    "\n"
+		    "PKGSRC_C = $(shell find $(DIR_PKG_SRC) -type f -name '*.c' 2>/dev/null)\n"
+		    "PKGSRC_H = $(shell find $(DIR_PKG_SRC) -type f -name '*.h' 2>/dev/null)\n"
+		    "PKGDRV_C = $(shell find $(DIR_PKG_DRV) -type f -name '*.c' 2>/dev/null)\n"
+		    "PKGDRV_H = $(shell find $(DIR_PKG_DRV) -type f -name '*.h' 2>/dev/null)\n"
+		    "PKGTST_C = $(shell find $(DIR_PKG_TST) -type f -name '*.c' 2>/dev/null)\n"
+		    "PKGTST_H = $(shell find $(DIR_PKG_TST) -type f -name '*.h' 2>/dev/null)\n"
+		    "PKGINC_H = $(shell find $(DIR_PKG_INC) -type f -name '*.h' 2>/dev/null)\n"
+		    "\n"
+		    "PKGSRC_OBJ = $(patsubst $(DIR_PKG_SRC)%.c,$(DIR_OUT_INT_SRC)%.o,$(PKGSRC_C))\n"
+		    "PKGSRC_GCDA = $(patsubst %.o,%.gcda,$(PKGSRC_OBJ))\n"
+		    "PKGDRV_OBJ = $(patsubst $(DIR_PKG_DRV)%.c,$(DIR_OUT_DRV_PKG)%.o,$(PKGDRV_C))\n"
+		    "PKGDRV_GCDA = $(patsubst %.o,%.gcda,$(PKGDRV_OBJ))\n"
+		    "PKGTST_OBJ = $(patsubst $(DIR_PKG_TST)%.c,$(DIR_OUT_INT_TST)%.o,$(PKGTST_C))\n"
+		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
+		    "\n"
+		    "ARCH = $1\n"
+		    "CONFIG = $2\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
+		    "\n"
+		    "all:\n"
+		    "\n"
+		    "define _exe\n"
+		    "$(PN)_$(TN)_$(ARCH)_$(CONFIG) := $(DIR_OUT_BIN_FILE)\n"
+		    "\n"
+		    "all: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
+		    "\n"
+		    ".PHONY: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
+		    "\n"
+		    "$(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile: $(DIR_OUT_BIN_FILE)\n"
+		    "\n"
+		    "$(DIR_OUT_BIN_FILE): $($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) $(PKGSRC_OBJ) "
+		    "$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGSRC_OBJ) "
+		    "$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
+		    "$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		    "\n"
+		    "$(DIR_OUT_INT_SRC)%.o: $(DIR_PKG_SRC)%.c $(PKGSRC_H) $($(PN)_$(TN)_HEADERS) "
+		    "$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) "
+		    "$($(PN)_$(TN)_INCLUDE:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) $(CFLAGS_COV_$(CONFIG)) -o $$@ $$<\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "define exe\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _exe,$(a),$(c)))))\n"
+		    "endef\n"
+		    "\n"
+		    "include $(DIR_BUILD)pkg.mk\n"
+		    "\n",
+		    tmp.len);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -631,130 +630,129 @@ TEST(gen_make_proj_lib)
 	str_t tmp      = STRB(buf, 0);
 
 	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
-	EXPECT_STRN(
-		tmp.data,
-		"ARCHS := host\n"
-		"CONFIGS := Debug\n"
-		"OPEN := 1\n"
-		"\n"
-		"EXT_LIB := .a\n"
-		"EXT_EXE :=\n"
-		"\n"
-		"CP := cp\n"
-		"DIR_PROJ :=\n"
-		"DIR_BUILD :=\n"
-		"DIR_TMP := $(DIR_PROJ)tmp/\n"
-		"DIR_TMP_EXT := $(DIR_TMP)ext/\n"
-		"DIR_TMP_REP := $(DIR_TMP)report/\n"
-		"DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
-		"DIR_TMP_DL := $(DIR_TMP)dl/\n"
-		"DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
-		"DIR_OUT_INT = $(DIR_OUT)int/\n"
-		"DIR_OUT_LIB = $(DIR_OUT)lib/\n"
-		"DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
-		"DIR_OUT_BIN = $(DIR_OUT)bin/\n"
-		"ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
-		"DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
-		"DIR_OUT_TST = $(DIR_OUT)test/\n"
-		"PKG_DIR = $($(PN)_DIR)\n"
-		"PKG_URI = $($(PN)_URI)\n"
-		"PKG_URI_FILE = $($(PN)_URI_FILE)\n"
-		"PKG_URI_NAME = $($(PN)_URI_NAME)\n"
-		"PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
-		"DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
-		"DIR_PKG_SRC = $(DIR_PKG)src/\n"
-		"DIR_PKG_INC = $(DIR_PKG)include/\n"
-		"DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
-		"DIR_PKG_TST = $(DIR_PKG)test/\n"
-		"DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
-		"DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
-		"DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
-		"DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
-		"DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
-		"DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
-		"DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
-		"TGT_SRC = $($(PN)_$(TN)_SRC)\n"
-		"TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
-		"TGT_OUT = $($(PN)_$(TN)_OUT)\n"
-		"TGT_PREP = $($(PN)_$(TN)_PREP)\n"
-		"TGT_CONF = $($(PN)_$(TN)_CONF)\n"
-		"TGT_COMP = $($(PN)_$(TN)_COMP)\n"
-		"TGT_INST = $($(PN)_$(TN)_INST)\n"
-		"TGT_TGT = $($(PN)_$(TN)_TGT)\n"
-		"DIR_OUT_LIB_FILE = $(TGT_OUT)$(PN)$(EXT_LIB)\n"
-		"DIR_OUT_BIN_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
-		"DIR_OUT_EXT_PKG = $(TGT_OUT)\n"
-		"DIR_OUT_TST_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
-		"DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_TGT)\n"
-		"\n"
-		"TCC_host := $(CC)\n"
-		"FLAGS_host :=\n"
-		"TCC_x64 := $(CC)\n"
-		"FLAGS_x64 := -m64\n"
-		"TCC_x86 := $(CC)\n"
-		"FLAGS_x86 := -m32\n"
-		"\n"
-		"CFLAGS := -Wall -Wextra -Werror -pedantic\n"
-		"CFLAGS_Debug := -O0 -ggdb\n"
-		"CFLAGS_COV_Debug := -coverage\n"
-		"CFLAGS_Release :=\n"
-		"CFLAGS_COV_Release :=\n"
-		"LDFLAGS :=\n"
-		"LDFLAGS_Debug := -coverage\n"
-		"LDFLAGS_Release :=\n"
-		"\n"
-		"PKGSRC_C = $(shell find $(DIR_PKG_SRC) -type f -name '*.c' 2>/dev/null)\n"
-		"PKGSRC_H = $(shell find $(DIR_PKG_SRC) -type f -name '*.h' 2>/dev/null)\n"
-		"PKGDRV_C = $(shell find $(DIR_PKG_DRV) -type f -name '*.c' 2>/dev/null)\n"
-		"PKGDRV_H = $(shell find $(DIR_PKG_DRV) -type f -name '*.h' 2>/dev/null)\n"
-		"PKGTST_C = $(shell find $(DIR_PKG_TST) -type f -name '*.c' 2>/dev/null)\n"
-		"PKGTST_H = $(shell find $(DIR_PKG_TST) -type f -name '*.h' 2>/dev/null)\n"
-		"PKGINC_H = $(shell find $(DIR_PKG_INC) -type f -name '*.h' 2>/dev/null)\n"
-		"\n"
-		"PKGSRC_OBJ = $(patsubst $(DIR_PKG_SRC)%.c,$(DIR_OUT_INT_SRC)%.o,$(PKGSRC_C))\n"
-		"PKGSRC_GCDA = $(patsubst %.o,%.gcda,$(PKGSRC_OBJ))\n"
-		"PKGDRV_OBJ = $(patsubst $(DIR_PKG_DRV)%.c,$(DIR_OUT_DRV_PKG)%.o,$(PKGDRV_C))\n"
-		"PKGDRV_GCDA = $(patsubst %.o,%.gcda,$(PKGDRV_OBJ))\n"
-		"PKGTST_OBJ = $(patsubst $(DIR_PKG_TST)%.c,$(DIR_OUT_INT_TST)%.o,$(PKGTST_C))\n"
-		"PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
-		"\n"
-		"ARCH = $1\n"
-		"CONFIG = $2\n"
-		"\n"
-		".PHONY: all test cov\n"
-		"\n"
-		"all:\n"
-		"\n"
-		"define _lib\n"
-		"$(PN)_$(TN)_$(ARCH)_$(CONFIG) := $(DIR_OUT_LIB_FILE)\n"
-		"\n"
-		"GCDA_$(ARCH)_$(CONFIG) += $(PKGSRC_GCDA)\n"
-		"\n"
-		"all: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
-		"\n"
-		".PHONY: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
-		"\n"
-		"$(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile: $(DIR_OUT_LIB_FILE)\n"
-		"\n"
-		"$(DIR_OUT_LIB_FILE): $(PKGSRC_OBJ)\n"
-		"\t@mkdir -pv $$(@D)\n"
-		"\tar rcs $$@ $(PKGSRC_OBJ)\n"
-		"\n"
-		"$(DIR_OUT_INT_SRC)%.o: $(DIR_PKG_SRC)%.c $(PKGSRC_H) $($(PN)_$(TN)_HEADERS) "
-		"$($(PN)_$(TN)_LIBS:%=$$(%_$(ARCH)_$(CONFIG)))\n"
-		"\t@mkdir -pv $$(@D)\n"
-		"\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) "
-		"$(CFLAGS_COV_$(CONFIG)) -o $$@ $$<\n"
-		"\n"
-		"endef\n"
-		"\n"
-		"define lib\n"
-		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _lib,$(a),$(c)))))\n"
-		"endef\n"
-		"\n"
-		"include $(DIR_BUILD)pkg.mk\n"
-		"\n",
-		tmp.len);
+	EXPECT_STRN(tmp.data,
+		    "ARCHS := host\n"
+		    "CONFIGS := Debug\n"
+		    "OPEN := 1\n"
+		    "\n"
+		    "EXT_LIB := .a\n"
+		    "EXT_EXE :=\n"
+		    "\n"
+		    "CP := cp\n"
+		    "DIR_PROJ :=\n"
+		    "DIR_BUILD :=\n"
+		    "DIR_TMP := $(DIR_PROJ)tmp/\n"
+		    "DIR_TMP_EXT := $(DIR_TMP)ext/\n"
+		    "DIR_TMP_REP := $(DIR_TMP)report/\n"
+		    "DIR_TMP_COV := $(DIR_TMP_REP)cov/\n"
+		    "DIR_TMP_DL := $(DIR_TMP)dl/\n"
+		    "DIR_OUT = $(DIR_PROJ)bin/$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT = $(DIR_OUT)int/\n"
+		    "DIR_OUT_LIB = $(DIR_OUT)lib/\n"
+		    "DIR_OUT_DRV = $(DIR_OUT)drivers/\n"
+		    "DIR_OUT_BIN = $(DIR_OUT)bin/\n"
+		    "ABS_DIR_OUT_BIN = $(abspath $(DIR_OUT_BIN))/\n"
+		    "DIR_OUT_EXT = $(DIR_OUT)ext/$(PN)/\n"
+		    "DIR_OUT_TST = $(DIR_OUT)test/\n"
+		    "PKG_DIR = $($(PN)_DIR)\n"
+		    "PKG_URI = $($(PN)_URI)\n"
+		    "PKG_URI_FILE = $($(PN)_URI_FILE)\n"
+		    "PKG_URI_NAME = $($(PN)_URI_NAME)\n"
+		    "PKG_URI_ROOT = $($(PN)_URI_ROOT)\n"
+		    "DIR_PKG = $(DIR_PROJ)$(PKG_DIR)\n"
+		    "DIR_PKG_SRC = $(DIR_PKG)src/\n"
+		    "DIR_PKG_INC = $(DIR_PKG)include/\n"
+		    "DIR_PKG_DRV = $(DIR_PKG)drivers/\n"
+		    "DIR_PKG_TST = $(DIR_PKG)test/\n"
+		    "DIR_TMP_EXT_PKG = $(DIR_TMP_EXT)$(PKG_DIR)\n"
+		    "DIR_TMP_EXT_PKG_SRC = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-src/\n"
+		    "DIR_TMP_EXT_PKG_SRC_ROOT = $(DIR_TMP_EXT_PKG_SRC)$(PKG_URI_ROOT)\n"
+		    "DIR_TMP_EXT_PKG_BUILD = $(DIR_TMP_EXT_PKG)$(PKG_URI_NAME)-build-$(ARCH)-$(CONFIG)/\n"
+		    "DIR_OUT_INT_SRC = $(DIR_OUT_INT)$(PN)/src/\n"
+		    "DIR_OUT_INT_TST = $(DIR_OUT_INT)$(PN)/test/\n"
+		    "DIR_OUT_DRV_PKG = $(DIR_OUT_DRV)$(PN)/\n"
+		    "TGT_SRC = $($(PN)_$(TN)_SRC)\n"
+		    "TGT_BUILD = $($(PN)_$(TN)_BUILD)\n"
+		    "TGT_OUT = $($(PN)_$(TN)_OUT)\n"
+		    "TGT_PREP = $($(PN)_$(TN)_PREP)\n"
+		    "TGT_CONF = $($(PN)_$(TN)_CONF)\n"
+		    "TGT_COMP = $($(PN)_$(TN)_COMP)\n"
+		    "TGT_INST = $($(PN)_$(TN)_INST)\n"
+		    "TGT_TGT = $($(PN)_$(TN)_TGT)\n"
+		    "DIR_OUT_LIB_FILE = $(TGT_OUT)$(PN)$(EXT_LIB)\n"
+		    "DIR_OUT_BIN_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
+		    "DIR_OUT_EXT_PKG = $(TGT_OUT)\n"
+		    "DIR_OUT_TST_FILE = $(TGT_OUT)$(PN)$(EXT_EXE)\n"
+		    "DIR_OUT_EXT_FILE = $(DIR_OUT_EXT_PKG)$(TGT_TGT)\n"
+		    "\n"
+		    "TCC_host := $(CC)\n"
+		    "FLAGS_host :=\n"
+		    "TCC_x64 := $(CC)\n"
+		    "FLAGS_x64 := -m64\n"
+		    "TCC_x86 := $(CC)\n"
+		    "FLAGS_x86 := -m32\n"
+		    "\n"
+		    "CFLAGS := -Wall -Wextra -Werror -pedantic\n"
+		    "CFLAGS_Debug := -O0 -ggdb\n"
+		    "CFLAGS_COV_Debug := -coverage\n"
+		    "CFLAGS_Release :=\n"
+		    "CFLAGS_COV_Release :=\n"
+		    "LDFLAGS :=\n"
+		    "LDFLAGS_Debug := -coverage\n"
+		    "LDFLAGS_Release :=\n"
+		    "\n"
+		    "PKGSRC_C = $(shell find $(DIR_PKG_SRC) -type f -name '*.c' 2>/dev/null)\n"
+		    "PKGSRC_H = $(shell find $(DIR_PKG_SRC) -type f -name '*.h' 2>/dev/null)\n"
+		    "PKGDRV_C = $(shell find $(DIR_PKG_DRV) -type f -name '*.c' 2>/dev/null)\n"
+		    "PKGDRV_H = $(shell find $(DIR_PKG_DRV) -type f -name '*.h' 2>/dev/null)\n"
+		    "PKGTST_C = $(shell find $(DIR_PKG_TST) -type f -name '*.c' 2>/dev/null)\n"
+		    "PKGTST_H = $(shell find $(DIR_PKG_TST) -type f -name '*.h' 2>/dev/null)\n"
+		    "PKGINC_H = $(shell find $(DIR_PKG_INC) -type f -name '*.h' 2>/dev/null)\n"
+		    "\n"
+		    "PKGSRC_OBJ = $(patsubst $(DIR_PKG_SRC)%.c,$(DIR_OUT_INT_SRC)%.o,$(PKGSRC_C))\n"
+		    "PKGSRC_GCDA = $(patsubst %.o,%.gcda,$(PKGSRC_OBJ))\n"
+		    "PKGDRV_OBJ = $(patsubst $(DIR_PKG_DRV)%.c,$(DIR_OUT_DRV_PKG)%.o,$(PKGDRV_C))\n"
+		    "PKGDRV_GCDA = $(patsubst %.o,%.gcda,$(PKGDRV_OBJ))\n"
+		    "PKGTST_OBJ = $(patsubst $(DIR_PKG_TST)%.c,$(DIR_OUT_INT_TST)%.o,$(PKGTST_C))\n"
+		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
+		    "\n"
+		    "ARCH = $1\n"
+		    "CONFIG = $2\n"
+		    "\n"
+		    ".PHONY: all test cov\n"
+		    "\n"
+		    "all:\n"
+		    "\n"
+		    "define _lib\n"
+		    "$(PN)_$(TN)_$(ARCH)_$(CONFIG) := $(DIR_OUT_LIB_FILE)\n"
+		    "\n"
+		    "GCDA_$(ARCH)_$(CONFIG) += $(PKGSRC_GCDA)\n"
+		    "\n"
+		    "all: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
+		    "\n"
+		    ".PHONY: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile\n"
+		    "\n"
+		    "$(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile: $(DIR_OUT_LIB_FILE)\n"
+		    "\n"
+		    "$(DIR_OUT_LIB_FILE): $(PKGSRC_OBJ)\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\tar rcs $$@ $(PKGSRC_OBJ)\n"
+		    "\n"
+		    "$(DIR_OUT_INT_SRC)%.o: $(DIR_PKG_SRC)%.c $(PKGSRC_H) $($(PN)_$(TN)_HEADERS) "
+		    "$($(PN)_$(TN)_LIBS:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_SRC:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) "
+		    "$($(PN)_$(TN)_INCLUDE:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) $(CFLAGS_COV_$(CONFIG)) -o $$@ $$<\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "define lib\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _lib,$(a),$(c)))))\n"
+		    "endef\n"
+		    "\n"
+		    "include $(DIR_BUILD)pkg.mk\n"
+		    "\n",
+		    tmp.len);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1046,8 +1044,6 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "test: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/test\n"
 		    "\n"
-		    "cov_$(ARCH)_$(CONFIG): $(DIR_OUT_INT)$(PN)/lcov.info\n"
-		    "\n"
 		    ".PHONY: $(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile $(PN)_$(TN)_$(ARCH)_$(CONFIG)/test $(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov\n"
 		    "\n"
 		    "$(PN)_$(TN)_$(ARCH)_$(CONFIG)/compile: $(DIR_OUT_TST_FILE)\n"
@@ -1058,63 +1054,70 @@ TEST(gen_make_proj_test)
 		    "\t$(DIR_OUT_TST_FILE)\n"
 		    "\t@touch $(DIR_OUT_INT)$(PN)/.test\n"
 		    "\n"
+		    "ifeq ($(CONFIG),Debug)\n"
+		    "cov_$(ARCH)_$(CONFIG): $(DIR_OUT_INT)$(PN)/lcov.info\n"
+		    "\n"
 		    "$(PN)_$(TN)_$(ARCH)_$(CONFIG)/cov: $(DIR_OUT_INT)$(PN)/lcov.info\n"
-		    "\t@if [ \"$(CONFIG)\" = \"Debug\" ] && { [ -n \"$(PKGSRC_GCDA)\" ] || [ -n \"$(PKGDRV_GCDA)\" ] }; then \\\n"
-		    "\t\tmkdir -pv $(DIR_TMP_COV); \\\n"
-		    "\t\tgenhtml -q -o $(DIR_TMP_COV) $$^; \\\n"
-		    "\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
-		    "\tfi\n"
+		    "ifneq ($(PKGSRC_GCDA)$(PKGDRV_GCDA),)\n"
+		    "\tmkdir -pv $(DIR_TMP_COV)\n"
+		    "\tgenhtml -q -o $(DIR_TMP_COV) $$^\n"
+		    "ifeq ($(OPEN),1)\n"
+		    "\topen $(DIR_TMP_COV)index.html\n"
+		    "endif\n"
+		    "endif\n"
 		    "\n",
-		    3755);
+		    3701);
 
-	EXPECT_STRN(
-		tmp.data + 3755,
-		"$(DIR_OUT_INT)$(PN)/lcov.info: $(DIR_OUT_TST_FILE)\n"
-		"\t@if [ \"$(CONFIG)\" = \"Debug\" ]; then \\\n"
-		"\t\trm -rf $(PKGSRC_GCDA) $(PKGDRV_GCDA); \\\n"
-		"\t\t$(DIR_OUT_TST_FILE); \\\n"
-		"\t\tif [ -n \"$(PKGSRC_GCDA)\" ] || [ -n \"$(PKGDRV_GCDA)\" ]; then \\\n"
-		"\t\t\tlcov -c -o $$@ -d $(DIR_OUT) --include \"$(abspath $(DIR_PKG))/*\"; \\\n"
-		"\t\tfi; \\\n"
-		"\tfi\n"
-		"\n"
-		"$(DIR_OUT_TST_FILE): $($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) $(PKGTST_OBJ) "
-		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
-		"\t@mkdir -pv $$(@D)\n"
-		"\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGTST_OBJ) "
-		"$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
-		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
-		"\n"
-		"$(DIR_OUT_INT_TST)%.o: $(DIR_PKG_TST)%.c $(PKGSRC_H) $($(PN)_$(TN)_HEADERS) "
-		"$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
-		"\t@mkdir -pv $$(@D)\n"
-		"\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_TST:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) "
-		"-o $$@ $$<\n"
-		"\n"
-		"endef\n"
-		"\n"
-		"define test\n"
-		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _test,$(a),$(c)))))\n"
-		"endef\n"
-		"\n"
-		"define _cov\n"
-		".PHONY: cov_$(ARCH)_$(CONFIG)\n"
-		"\n"
-		"cov_$(ARCH)_$(CONFIG):\n"
-		"\t@if [ \"$(CONFIG)\" = \"Debug\" ] && [ -n \"$$(GCDA_$(ARCH)_$(CONFIG))\" ]; then \\\n"
-		"\t\tgenhtml -q -o $(DIR_TMP_COV) $$^; \\\n"
-		"\t\t[ \"$(OPEN)\" = \"1\" ] && open $(DIR_TMP_COV)index.html || true; \\\n"
-		"\tfi\n"
-		"\n"
-		"cov: cov_$(ARCH)_$(CONFIG)\n"
-		"\n"
-		"endef\n"
-		"\n"
-		"$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
-		"\n"
-		"include $(DIR_BUILD)pkg.mk\n"
-		"\n",
-		tmp.len - 3755);
+	EXPECT_STRN(tmp.data + 3701,
+		    "$(DIR_OUT_INT)$(PN)/lcov.info: $(DIR_OUT_TST_FILE)\n"
+		    "\trm -rf $(PKGSRC_GCDA) $(PKGDRV_GCDA)\n"
+		    "\t$(DIR_OUT_TST_FILE)\n"
+		    "ifneq ($(PKGSRC_GCDA)$(PKGDRV_GCDA),)\n"
+		    "\tlcov -q -c -o $$@ -d $(DIR_OUT) --include \"$(abspath $(DIR_PKG))/*\"\n"
+		    "endif\n"
+		    "\n"
+		    "endif\n"
+		    "$(DIR_OUT_TST_FILE): $($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) $(PKGTST_OBJ) "
+		    "$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) $(LDFLAGS) $(LDFLAGS_$(CONFIG)) -o $$@ $(PKGTST_OBJ) "
+		    "$($(PN)_$(TN)_DRIVERS:%=$(DIR_OUT_DRV)%) "
+		    "$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		    "\n"
+		    "$(DIR_OUT_INT_TST)%.o: $(DIR_PKG_TST)%.c $(PKGSRC_H) $($(PN)_$(TN)_HEADERS) "
+		    "$($(PN)_$(TN)_LIBS_PRIV:%=$$(%_$(ARCH)_$(CONFIG)))\n"
+		    "\t@mkdir -pv $$(@D)\n"
+		    "\t$(TCC_$(ARCH)) $(FLAGS_$(ARCH)) -c $(DIR_PKG_TST:%=-I%) $($(PN)_$(TN)_INCLUDE_PRIV:%=-I%) "
+		    "$($(PN)_$(TN)_INCLUDE:%=-I%) $(CFLAGS) $(CFLAGS_$(CONFIG)) -o $$@ $$<\n"
+		    "\n"
+		    "endef\n"
+		    "\n"
+		    "define test\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _test,$(a),$(c)))))\n"
+		    "endef\n"
+		    "\n"
+		    "include $(DIR_BUILD)pkg.mk\n"
+		    "\n"
+		    "define _cov\n"
+		    ".PHONY: cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
+		    "ifeq ($(CONFIG),Debug)\n"
+		    "cov_$(ARCH)_$(CONFIG):\n"
+		    "ifneq ($(GCDA_$(ARCH)_$(CONFIG)),)\n"
+		    "\tgenhtml -q -o $(DIR_TMP_COV) $$^\n"
+		    "ifeq ($(OPEN),1)\n"
+		    "\topen $(DIR_TMP_COV)index.html\n"
+		    "endif\n"
+		    "endif\n"
+		    "\n"
+		    "cov: cov_$(ARCH)_$(CONFIG)\n"
+		    "\n"
+		    "endif\n"
+		    "endef\n"
+		    "\n"
+		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
+		    "\n",
+		    tmp.len - 3701);
 
 	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
@@ -1166,6 +1169,31 @@ TEST(gen_make_pkg_exe)
 	END;
 }
 
+TEST(gen_make_pkg_exe_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_exe_inc_priv(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)src\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
+		    "$(eval $(call exe))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_make_pkg_exe_out)
 {
 	START;
@@ -1190,6 +1218,32 @@ TEST(gen_make_pkg_exe_out)
 	END;
 }
 
+TEST(gen_make_pkg_exe_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_exe_lib(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := exe\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_lib_INCLUDE)\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
+		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
+		    "$(eval $(call exe))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_make_pkg_exe_drv)
 {
 	START;
@@ -1200,38 +1254,14 @@ TEST(gen_make_pkg_exe_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := \n"
+		    "TN := exe\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_drv_INCLUDE)\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
-		    "$(eval $(call exe))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_exe_drv_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_exe_drv_inc(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := \n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
+		    "$(PN)_$(TN)_DRIVERS := $(_drv_DRIVERS)\n"
 		    "$(eval $(call exe))\n",
 		    tmp.len);
 
@@ -1255,6 +1285,57 @@ TEST(gen_make_pkg_lib)
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
 		    "TN := \n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_lib_inc)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_inc(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
+		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
+		    "$(eval $(call lib))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_lib_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_inc_priv(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)src\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
@@ -1288,33 +1369,6 @@ TEST(gen_make_pkg_lib_out)
 	END;
 }
 
-TEST(gen_make_pkg_lib_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_inc(&com, STRV("M")), 0);
-
-	char buf[256] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := \n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
 TEST(gen_make_pkg_lib_drv)
 {
 	START;
@@ -1325,38 +1379,12 @@ TEST(gen_make_pkg_lib_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
-		    "TN := \n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_lib_drv_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_drv_inc(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := \n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
+		    "TN := lib\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_drv_INCLUDE)\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
 		    "$(eval $(call lib))\n",
 		    tmp.len);
@@ -1391,6 +1419,57 @@ TEST(gen_make_pkg_drv)
 	END;
 }
 
+TEST(gen_make_pkg_drv_inc)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_drv_inc(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
+		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
+		    "$(eval $(call drv))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_drv_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_drv_inc_priv(&com, STRV("M")), 0);
+
+	char buf[256] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)drivers\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
+		    "$(eval $(call drv))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_make_pkg_drv_out)
 {
 	START;
@@ -1407,6 +1486,32 @@ TEST(gen_make_pkg_drv_out)
 		    "$(PN)_DIR :=\n"
 		    "TN := \n"
 		    "$(PN)_$(TN)_OUT = $(abspath libs)/\n"
+		    "$(eval $(call drv))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_drv_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_drv_lib(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("drv.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := drv\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_lib_INCLUDE)\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
+		    "$(PN)_$(TN)_LIBS := _lib\n"
 		    "$(eval $(call drv))\n",
 		    tmp.len);
 
@@ -1463,6 +1568,57 @@ TEST(gen_make_pkg_test_out)
 	END;
 }
 
+TEST(gen_make_pkg_test_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_test_inc_priv(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := \n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)test\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
+		    "$(eval $(call test))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_make_pkg_test_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_test_lib(&com, STRV("M")), 0);
+
+	char buf[512] = {0};
+	str_t tmp     = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "PN := \n"
+		    "$(PN)_DIR :=\n"
+		    "TN := test\n"
+		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_lib_INCLUDE)\n"
+		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
+		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
+		    "$(eval $(call test))\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_make_pkg_test_drv)
 {
 	START;
@@ -1478,296 +1634,9 @@ TEST(gen_make_pkg_test_drv)
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
 		    "TN := \n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)drivers\n"
 		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
-		    "$(PN)_$(TN)_DRIVERS := $(PKGDRV_C:$(DIR_PKG_DRV)%.c=$(PN)/%.o)\n"
+		    "$(PN)_$(TN)_DRIVERS := $(__DRIVERS)\n"
 		    "$(eval $(call test))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_lib_test)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := lib\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
-		    "$(eval $(call test))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_lib_test_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_inc(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := lib\n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_lib_INCLUDE)\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
-		    "$(eval $(call test))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_lib_test_inc_src)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_inc_src(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := lib\n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)src $(_lib_INCLUDE)\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
-		    "$(eval $(call test))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_lib_exe_drv)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_exe_drv(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := lib\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("drv.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := drv\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call drv))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := exe\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_BIN)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
-		    "$(PN)_$(TN)_DRIVERS := $(_drv_DRIVERS)\n"
-		    "$(eval $(call exe))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_lib_test_drv)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_drv(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := lib\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("drv.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := drv\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call drv))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
-		    "$(PN)_$(TN)_DRIVERS := $(_drv_DRIVERS)\n"
-		    "$(eval $(call test))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_lib_test_drv_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_drv_inc(&com, STRV("M")), 0);
-
-	char buf[1024] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := lib\n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("drv.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := drv\n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(DIR_PKG)include\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call drv))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := test\n"
-		    "$(PN)_$(TN)_HEADERS := $(PKGINC_H)\n"
-		    "$(PN)_$(TN)_INCLUDE_PRIV := $(_lib_INCLUDE) $(_drv_INCLUDE)\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_TST)\n"
-		    "$(PN)_$(TN)_LIBS_PRIV := _lib\n"
-		    "$(PN)_$(TN)_DRIVERS := $(_drv_DRIVERS)\n"
-		    "$(eval $(call test))\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_make_pkg_drv_lib)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_drv_lib(&com, STRV("M")), 0);
-
-	char buf[512] = {0};
-	str_t tmp     = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := lib\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(eval $(call lib))\n",
-		    tmp.len);
-
-	fs_read(&com.fs, STRV("drv.mk"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "PN := \n"
-		    "$(PN)_DIR :=\n"
-		    "TN := drv\n"
-		    "$(PN)_$(TN)_OUT = $(DIR_OUT_LIB)\n"
-		    "$(PN)_$(TN)_LIBS := _lib\n"
-		    "$(eval $(call drv))\n",
 		    tmp.len);
 
 	t_gen_free(&com);
@@ -2237,26 +2106,25 @@ STEST(gen_make)
 	RUN(gen_make_proj_test);
 	RUN(gen_make_pkg);
 	RUN(gen_make_pkg_exe);
+	RUN(gen_make_pkg_exe_inc_priv);
 	RUN(gen_make_pkg_exe_out);
+	RUN(gen_make_pkg_exe_lib);
 	RUN(gen_make_pkg_exe_drv);
-	RUN(gen_make_pkg_exe_drv_inc);
 	RUN(gen_make_pkg_lib);
-	RUN(gen_make_pkg_lib_out);
 	RUN(gen_make_pkg_lib_inc);
+	RUN(gen_make_pkg_lib_inc_priv);
+	RUN(gen_make_pkg_lib_out);
 	RUN(gen_make_pkg_lib_drv);
-	RUN(gen_make_pkg_lib_drv_inc);
 	RUN(gen_make_pkg_drv);
+	RUN(gen_make_pkg_drv_inc);
+	RUN(gen_make_pkg_drv_inc_priv);
 	RUN(gen_make_pkg_drv_out);
-	RUN(gen_make_pkg_test);
-	RUN(gen_make_pkg_test_out);
-	RUN(gen_make_pkg_test_drv);
-	RUN(gen_make_pkg_lib_test);
-	RUN(gen_make_pkg_lib_test_inc);
-	RUN(gen_make_pkg_lib_test_inc_src);
-	RUN(gen_make_pkg_lib_exe_drv);
-	RUN(gen_make_pkg_lib_test_drv);
-	RUN(gen_make_pkg_lib_test_drv_inc);
 	RUN(gen_make_pkg_drv_lib);
+	RUN(gen_make_pkg_test);
+	RUN(gen_make_pkg_test_inc_priv);
+	RUN(gen_make_pkg_test_out);
+	RUN(gen_make_pkg_test_lib);
+	RUN(gen_make_pkg_test_drv);
 	RUN(gen_make_pkg_multi);
 	RUN(gen_make_pkg_depends);
 	RUN(gen_make_pkg_rdepends);

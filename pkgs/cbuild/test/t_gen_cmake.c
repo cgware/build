@@ -849,7 +849,6 @@ TEST(gen_cmake_pkg_exe)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -863,6 +862,52 @@ TEST(gen_cmake_pkg_exe)
 		    "\tRUNTIME_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/bin/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_exe_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_exe_inc_priv(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
 		    ")\n",
 		    tmp.len);
 
@@ -916,6 +961,74 @@ TEST(gen_cmake_pkg_exe_out)
 	END;
 }
 
+TEST(gen_cmake_pkg_exe_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_exe_lib(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"exe\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
+		    ")\n"
+		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_cmake_pkg_exe_drv)
 {
 	START;
@@ -934,7 +1047,7 @@ TEST(gen_cmake_pkg_exe_drv)
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
 		    "\n"
-		    "set(TN \"\")\n"
+		    "set(TN \"exe\")\n"
 		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
 		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
@@ -948,74 +1061,14 @@ TEST(gen_cmake_pkg_exe_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _drv)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
 		    ")\n"
-		    "set(TN \"\")\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_exe_drv_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_exe_drv_inc(&com, STRV("C")), 0);
-
-	char buf[2048] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"\")\n"
-		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
-		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}include)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
-		    ")\n"
-		    "set(TN \"\")\n"
+		    "set(TN \"drv\")\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
@@ -1062,7 +1115,6 @@ TEST(gen_cmake_pkg_lib)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1076,52 +1128,6 @@ TEST(gen_cmake_pkg_lib)
 		    "\tARCHIVE_OUTPUT_DIRECTORY ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG ${DIR_PROJ}bin/${ARCH}-Debug/lib/\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE ${DIR_PROJ}bin/${ARCH}-Release/lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_out)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_out(&com, STRV("C")), 0);
-
-	char buf[2048] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"\")\n"
-		    "set(TGT_OUT libs)\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n",
 		    tmp.len);
@@ -1178,6 +1184,99 @@ TEST(gen_cmake_pkg_lib_inc)
 	END;
 }
 
+TEST(gen_cmake_pkg_lib_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_inc_priv(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_lib_out)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_lib_out(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_OUT libs)\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_cmake_pkg_lib_drv)
 {
 	START;
@@ -1196,7 +1295,7 @@ TEST(gen_cmake_pkg_lib_drv)
 		    "set(PKG_DIR ${${PN}_DIR})\n"
 		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
 		    "\n"
-		    "set(TN \"\")\n"
+		    "set(TN \"lib\")\n"
 		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
 		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
@@ -1210,6 +1309,7 @@ TEST(gen_cmake_pkg_lib_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC _drv)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
@@ -1217,69 +1317,7 @@ TEST(gen_cmake_pkg_lib_drv)
 		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
 		    "\tPREFIX \"\"\n"
 		    ")\n"
-		    "set(TN \"\")\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_drv_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_drv_inc(&com, STRV("C")), 0);
-
-	char buf[2048] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"\")\n"
+		    "set(TN \"drv\")\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
@@ -1323,6 +1361,87 @@ TEST(gen_cmake_pkg_drv)
 		    "set(TN \"\")\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}drivers/*.h ${DIR_PKG}drivers/*.c)\n"
+		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_drv_inc)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_drv_inc(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_drv_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_drv_inc_priv(&com, STRV("C")), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
 		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}drivers)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -1384,6 +1503,69 @@ TEST(gen_cmake_pkg_drv_out)
 	END;
 }
 
+TEST(gen_cmake_pkg_drv_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_drv_lib(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n"
+		    "set(TN \"drv\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC _lib)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_cmake_pkg_test)
 {
 	START;
@@ -1407,6 +1589,55 @@ TEST(gen_cmake_pkg_test)
 		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}test/*.h ${DIR_PKG}test/*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "add_test(\n"
+		    "\tNAME ${PN}_${TN}\n"
+		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_test_inc_priv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_test_inc_priv(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
 		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}test)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -1483,6 +1714,78 @@ TEST(gen_cmake_pkg_test_out)
 	END;
 }
 
+TEST(gen_cmake_pkg_test_lib)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	EXPECT_EQ(t_gen_pkg_test_lib(&com, STRV("C")), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n"
+		    "set(TN \"test\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
+		    "add_test(\n"
+		    "\tNAME ${PN}_${TN}\n"
+		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
 TEST(gen_cmake_pkg_test_drv)
 {
 	START;
@@ -1507,7 +1810,6 @@ TEST(gen_cmake_pkg_test_drv)
 		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}drivers)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -1516,6 +1818,7 @@ TEST(gen_cmake_pkg_test_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
@@ -1528,285 +1831,6 @@ TEST(gen_cmake_pkg_test_drv)
 		    ")\n"
 		    "set(TN \"\")\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}drivers/*.h ${DIR_PKG}drivers/*.c)\n"
-		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}drivers)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_test)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test(&com, STRV("C")), 0);
-
-	char buf[4096] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"lib\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"test\")\n"
-		    "set(TGT_OUT ${DIR_OUT_TST})\n"
-		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
-		    "add_test(\n"
-		    "\tNAME ${PN}_${TN}\n"
-		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
-		    ")\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_test_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_inc(&com, STRV("C")), 0);
-
-	char buf[4096] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"lib\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"test\")\n"
-		    "set(TGT_OUT ${DIR_OUT_TST})\n"
-		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
-		    "add_test(\n"
-		    "\tNAME ${PN}_${TN}\n"
-		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
-		    ")\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_test_inc_src)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_inc_src(&com, STRV("C")), 0);
-
-	char buf[4096] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"lib\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include PRIVATE ${DIR_PKG}src)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"test\")\n"
-		    "set(TGT_OUT ${DIR_OUT_TST})\n"
-		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
-		    "add_test(\n"
-		    "\tNAME ${PN}_${TN}\n"
-		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
-		    ")\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_exe_drv)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_exe_drv(&com, STRV("C")), 0);
-
-	char buf[4096] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"lib\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"drv\")\n"
-		    "\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
 		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -1817,264 +1841,6 @@ TEST(gen_cmake_pkg_lib_exe_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    ")\n"
-		    "set(TN \"exe\")\n"
-		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
-		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c)\n"
-		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PRIVATE ${DIR_PKG}src)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _lib _drv)\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_test_drv)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_drv(&com, STRV("C")), 0);
-
-	char buf[4096] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"lib\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"drv\")\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    ")\n"
-		    "set(TN \"test\")\n"
-		    "set(TGT_OUT ${DIR_OUT_TST})\n"
-		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _lib _drv)\n"
-		    "add_test(\n"
-		    "\tNAME ${PN}_${TN}\n"
-		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
-		    ")\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_lib_test_drv_inc)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_lib_test_drv_inc(&com, STRV("C")), 0);
-
-	char buf[4096] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"lib\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"drv\")\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
-		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    ")\n"
-		    "set(TN \"test\")\n"
-		    "set(TGT_OUT ${DIR_OUT_TST})\n"
-		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _lib _drv)\n"
-		    "add_test(\n"
-		    "\tNAME ${PN}_${TN}\n"
-		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
-		    ")\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
-		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
-		    ")\n",
-		    tmp.len);
-
-	t_gen_free(&com);
-
-	END;
-}
-
-TEST(gen_cmake_pkg_drv_lib)
-{
-	START;
-
-	t_gen_common_t com = {0};
-	EXPECT_EQ(t_gen_pkg_drv_lib(&com, STRV("C")), 0);
-
-	char buf[4096] = {0};
-	str_t tmp      = STRB(buf, 0);
-
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
-	EXPECT_STRN(tmp.data,
-		    "set(PN \"\")\n"
-		    "set(${PN}_DIR \"\")\n"
-		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
-		    "set(PKG_DIR ${${PN}_DIR})\n"
-		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
-		    "\n"
-		    "set(TN \"lib\")\n"
-		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
-		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
-		    "\tOUTPUT_NAME \"${PN}\"\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
-		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
-		    "\tPREFIX \"\"\n"
-		    ")\n"
-		    "set(TN \"drv\")\n"
-		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
-		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
-		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-		    "\t)\n"
-		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PUBLIC _lib)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
@@ -3133,26 +2899,25 @@ STEST(gen_cmake)
 	RUN(gen_cmake_proj_test);
 	RUN(gen_cmake_pkg);
 	RUN(gen_cmake_pkg_exe);
+	RUN(gen_cmake_pkg_exe_inc_priv);
 	RUN(gen_cmake_pkg_exe_out);
+	RUN(gen_cmake_pkg_exe_lib);
 	RUN(gen_cmake_pkg_exe_drv);
-	RUN(gen_cmake_pkg_exe_drv_inc);
 	RUN(gen_cmake_pkg_lib);
-	RUN(gen_cmake_pkg_lib_out);
 	RUN(gen_cmake_pkg_lib_inc);
+	RUN(gen_cmake_pkg_lib_inc_priv);
+	RUN(gen_cmake_pkg_lib_out);
 	RUN(gen_cmake_pkg_lib_drv);
-	RUN(gen_cmake_pkg_lib_drv_inc);
 	RUN(gen_cmake_pkg_drv);
+	RUN(gen_cmake_pkg_drv_inc);
+	RUN(gen_cmake_pkg_drv_inc_priv);
 	RUN(gen_cmake_pkg_drv_out);
+	RUN(gen_cmake_pkg_drv_lib);
 	RUN(gen_cmake_pkg_test);
+	RUN(gen_cmake_pkg_test_inc_priv);
 	RUN(gen_cmake_pkg_test_out);
 	RUN(gen_cmake_pkg_test_drv);
-	RUN(gen_cmake_pkg_lib_test);
-	RUN(gen_cmake_pkg_lib_test_inc);
-	RUN(gen_cmake_pkg_lib_test_inc_src);
-	RUN(gen_cmake_pkg_lib_exe_drv);
-	RUN(gen_cmake_pkg_lib_test_drv);
-	RUN(gen_cmake_pkg_lib_test_drv_inc);
-	RUN(gen_cmake_pkg_drv_lib);
+	RUN(gen_cmake_pkg_test_lib);
 	RUN(gen_cmake_pkg_multi);
 	RUN(gen_cmake_pkg_depends);
 	RUN(gen_cmake_pkg_rdepends);

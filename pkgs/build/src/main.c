@@ -2,6 +2,7 @@
 #include "config_fs.h"
 #include "log.h"
 #include "mem.h"
+#include "mod.h"
 #include "path.h"
 #include "platform.h"
 #include "proj_cfg.h"
@@ -36,21 +37,42 @@ static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t
 		pathv_rsplit(l, NULL, &name);
 	}
 
-	config_t config = {0};
-	config_init(&config, 4, 8, 16, ALLOC_STD);
-	if (config_fs(&config, &fs, proc, STRVS(proj_rel), STRV_NULL, name, buf, ALLOC_STD, DST_STD()) == NULL) {
-		ret = 1;
+	log_info("cbuild", "config", NULL, "loading project: '%.*s'", proj_abs.len, proj_abs.data);
+
+	registry_t registry = {0};
+	registry_init(&registry, 16, ALLOC_STD);
+
+	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
+		if (i->type != DRIVER_TYPE_MOD) {
+			continue;
+		}
+
+		mod_t *mod = i->data;
+		mod->init(mod, 2, ALLOC_STD);
 	}
-	config_print(&config, DST_STD());
-	proj_t proj = {0};
-	proj_init(&proj, 8, 16, ALLOC_STD);
-	proj_set_str(&proj, proj.name, name);
-	if (proj_cfg(&proj, &config)) {
+
+	config_t config = {0};
+	config_init(&config, 16, ALLOC_STD);
+	config_t tmp_config = {0};
+	config_init(&tmp_config, 16, ALLOC_STD);
+	if (config_fs(&config, &tmp_config, &registry, &fs, proc, STRVS(proj_rel), STRV_NULL, name, buf, ALLOC_STD, DST_STD())) {
 		ret = 1;
 	}
 
+	log_info("cbuild", "main", NULL, "config:");
+	config_print(&config, &registry, DST_STD());
+
+	proj_t proj = {0};
+	proj_init(&proj, registry.pkgs.cnt, registry.tgts.cnt, ALLOC_STD);
+	proj_set_str(&proj, proj.name, name);
+	if (proj_cfg(&proj, &config, &registry)) {
+		ret = 1;
+	}
+
+	config_free(&tmp_config);
 	config_free(&config);
 
+	log_info("cbuild", "main", NULL, "project:");
 	proj_print(&proj, DST_STD());
 
 	gen_driver->fs = &fs;
@@ -58,7 +80,17 @@ static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t
 		ret = 1;
 	}
 
+	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
+		if (i->type != DRIVER_TYPE_MOD) {
+			continue;
+		}
+
+		mod_t *mod = i->data;
+		mod->free(mod);
+	}
+
 	proj_free(&proj);
+	registry_free(&registry);
 	fs_free(&fs);
 
 	return ret;

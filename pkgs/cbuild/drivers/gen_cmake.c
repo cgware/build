@@ -60,7 +60,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 	};
 
 	fs_write(fs, f, STRV("set(TN \""));
-	strv_t name = proj_get_str(proj, target->strs + TARGET_NAME);
+	strv_t name = proj_get_str(proj, target->strs + TGT_STR_NAME);
 	if (name.len > 0) {
 		fs_write(fs, f, name);
 	}
@@ -88,7 +88,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			break;
 		}
 		case TGT_OUT: {
-			strv_t out = proj_get_str(proj, target->strs + TARGET_OUT);
+			strv_t out = proj_get_str(proj, target->strs + TGT_STR_OUT);
 			if (out.len > 0) {
 				resolve_var(vars, out, svalues, buf);
 				val = STRVS(*buf);
@@ -117,7 +117,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			if (target->type != TARGET_TYPE_EXT) {
 				continue;
 			}
-			strv_t prep = proj_get_str(proj, target->strs + TARGET_PREP);
+			strv_t prep = proj_get_str(proj, target->strs + TGT_STR_PREP);
 			resolve_var(vars, prep, svalues, buf);
 			val = STRVS(*buf);
 			break;
@@ -126,7 +126,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			if (target->type != TARGET_TYPE_EXT) {
 				continue;
 			}
-			strv_t conf = proj_get_str(proj, target->strs + TARGET_CONF);
+			strv_t conf = proj_get_str(proj, target->strs + TGT_STR_CONF);
 			resolve_var(vars, conf, svalues, buf);
 			val = STRVS(*buf);
 			break;
@@ -135,7 +135,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			if (target->type != TARGET_TYPE_EXT) {
 				continue;
 			}
-			strv_t comp = proj_get_str(proj, target->strs + TARGET_COMP);
+			strv_t comp = proj_get_str(proj, target->strs + TGT_STR_COMP);
 			resolve_var(vars, comp, svalues, buf);
 			val = STRVS(*buf);
 			break;
@@ -144,7 +144,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			if (target->type != TARGET_TYPE_EXT) {
 				continue;
 			}
-			strv_t inst = proj_get_str(proj, target->strs + TARGET_INST);
+			strv_t inst = proj_get_str(proj, target->strs + TGT_STR_INST);
 			resolve_var(vars, inst, svalues, buf);
 			val = STRVS(*buf);
 			break;
@@ -153,7 +153,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			if (target->type != TARGET_TYPE_EXT) {
 				continue;
 			}
-			strv_t tgt = proj_get_str(proj, target->strs + TARGET_TGT);
+			strv_t tgt = proj_get_str(proj, target->strs + TGT_STR_TGT);
 			resolve_var(vars, tgt, svalues, buf);
 			val = STRVS(*buf);
 			break;
@@ -202,11 +202,11 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 	}
 	fs_write(fs, f, STRV("\n"));
 
-	strv_t inc = proj_get_str(proj, pkg->strs + PKG_STR_INC);
+	strv_t inc = proj_get_str(proj, target->strs + TGT_STR_INC);
 
 	switch (target->type) {
 	case TARGET_TYPE_EXE: {
-		strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
 		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 		path_t tmp = {0};
@@ -225,17 +225,16 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		fs_write(fs, f, STRV(")\n"));
 
 		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-		if (inc.len > 0 || src.len > 0) {
+		if (target->has_incs_priv) {
 			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
-			if (inc.len > 0) {
+			const uint *inc_id;
+			list_node_t j = target->incs_priv;
+			list_foreach(&proj->lists, j, inc_id)
+			{
+				strv_t inc = proj_get_str(proj, *inc_id);
 				fs_write(fs, f, STRV(" ${DIR_PKG}"));
 				fs_write(fs, f, inc);
 			}
-			if (src.len > 0) {
-				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				fs_write(fs, f, src);
-			}
-
 			fs_write(fs, f, STRV(")\n"));
 		}
 
@@ -261,14 +260,14 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				fs_write(fs, f, STRV(" "));
 				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}
 		break;
 	}
 	case TARGET_TYPE_LIB: {
-		strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
+		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
 		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 		path_t tmp = {0};
@@ -287,15 +286,22 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		fs_write(fs, f, STRV(")\n"));
 
 		fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
-		if (inc.len > 0 || src.len > 0) {
+		if (inc.len > 0 || target->has_incs_priv) {
 			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
 			if (inc.len > 0) {
 				fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
 				fs_write(fs, f, inc);
 			}
-			if (src.len > 0) {
-				fs_write(fs, f, STRV(" PRIVATE ${DIR_PKG}"));
-				fs_write(fs, f, src);
+			if (target->has_incs_priv) {
+				fs_write(fs, f, STRV(" PRIVATE"));
+				const uint *inc_id;
+				list_node_t j = target->incs_priv;
+				list_foreach(&proj->lists, j, inc_id)
+				{
+					strv_t inc = proj_get_str(proj, *inc_id);
+					fs_write(fs, f, STRV(" ${DIR_PKG}"));
+					fs_write(fs, f, inc);
+				}
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}
@@ -322,19 +328,19 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				fs_write(fs, f, STRV(" "));
 				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}
 		break;
 	}
 	case TARGET_TYPE_DRV: {
-		strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
+		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
 		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 		path_t tmp = {0};
 
-		path_init_s(&tmp, drv, '/');
+		path_init_s(&tmp, src, '/');
 
 		size_t src_len = tmp.len;
 		path_push_s(&tmp, STRV("*.h"), '/');
@@ -348,15 +354,22 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		fs_write(fs, f, STRV(")\n"));
 
 		fs_write(fs, f, STRV("add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"));
-		if (inc.len > 0 || drv.len > 0) {
+		if (inc.len > 0 || target->has_incs_priv) {
 			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
 			if (inc.len > 0) {
 				fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
 				fs_write(fs, f, inc);
 			}
-			if (drv.len > 0) {
-				fs_write(fs, f, STRV(" PRIVATE ${DIR_PKG}"));
-				fs_write(fs, f, drv);
+			if (target->has_incs_priv) {
+				fs_write(fs, f, STRV(" PRIVATE"));
+				const uint *inc_id;
+				list_node_t j = target->incs_priv;
+				list_foreach(&proj->lists, j, inc_id)
+				{
+					strv_t inc = proj_get_str(proj, *inc_id);
+					fs_write(fs, f, STRV(" ${DIR_PKG}"));
+					fs_write(fs, f, inc);
+				}
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}
@@ -383,7 +396,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				fs_write(fs, f, STRV(" "));
 				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}
@@ -442,7 +455,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				fs_write(fs, f, STRV(" "));
 				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
 			if (header) {
 				fs_write(fs, f, STRV(")\n"));
@@ -479,7 +492,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 					fs_write(fs, f, STRV(" "));
 					fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 					fs_write(fs, f, STRV("_"));
-					fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+					fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 				}
 			}
 			if (header) {
@@ -490,14 +503,12 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		break;
 	}
 	case TARGET_TYPE_TST: {
-		strv_t src = proj_get_str(proj, pkg->strs + PKG_STR_SRC);
-		strv_t drv = proj_get_str(proj, pkg->strs + PKG_STR_DRV);
-		strv_t tst = proj_get_str(proj, pkg->strs + PKG_STR_TST);
+		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
 		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 		path_t tmp = {0};
 
-		path_init_s(&tmp, tst, '/');
+		path_init_s(&tmp, src, '/');
 
 		size_t src_len = tmp.len;
 		path_push_s(&tmp, STRV("*.h"), '/');
@@ -512,19 +523,15 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 
 		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 
-		if (src.len > 0 || drv.len > 0 || tst.len > 0) {
+		if (target->has_incs_priv) {
 			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
-			if (src.len > 0) {
+			const uint *inc_id;
+			list_node_t j = target->incs_priv;
+			list_foreach(&proj->lists, j, inc_id)
+			{
+				strv_t inc = proj_get_str(proj, *inc_id);
 				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				fs_write(fs, f, src);
-			}
-			if (drv.len > 0) {
-				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				fs_write(fs, f, drv);
-			}
-			if (tst.len > 0) {
-				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				fs_write(fs, f, tst);
+				fs_write(fs, f, inc);
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}
@@ -551,7 +558,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				fs_write(fs, f, STRV(" "));
 				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
 				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TARGET_NAME));
+				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
 			fs_write(fs, f, STRV(")\n"));
 		}

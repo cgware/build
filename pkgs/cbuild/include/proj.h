@@ -14,16 +14,18 @@ typedef enum target_type_s {
 	__TARGET_TYPE_MAX,
 } target_type_t;
 
-typedef enum target_str_e {
-	TARGET_NAME,
-	TARGET_PREP,
-	TARGET_CONF,
-	TARGET_COMP,
-	TARGET_INST,
-	TARGET_OUT,
-	TARGET_TGT,
+typedef enum tgt_str_e {
+	TGT_STR_NAME,
+	TGT_STR_SRC,
+	TGT_STR_INC,
+	TGT_STR_PREP,
+	TGT_STR_CONF,
+	TGT_STR_COMP,
+	TGT_STR_INST,
+	TGT_STR_OUT,
+	TGT_STR_TGT,
 	__TARGET_STR_CNT,
-} target_str_t;
+} tgt_str_t;
 
 typedef enum target_out_type_e {
 	TARGET_TGT_TYPE_UNKNOWN,
@@ -40,6 +42,8 @@ typedef struct target_s {
 	uint has_deps;
 	target_out_type_t out_type;
 	uint state;
+	list_node_t incs_priv;
+	int has_incs_priv;
 } target_t;
 
 typedef enum pkg_uri_proto_e {
@@ -64,10 +68,6 @@ typedef struct pkg_uri_s {
 typedef enum pkg_str_e {
 	PKG_STR_NAME,
 	PKG_STR_PATH,
-	PKG_STR_SRC,
-	PKG_STR_INC,
-	PKG_STR_DRV,
-	PKG_STR_TST,
 	PKG_STR_URI,
 	PKG_STR_URI_FILE,
 	PKG_STR_URI_NAME,
@@ -89,6 +89,7 @@ typedef struct proj_s {
 	arr_t pkgs;
 	list_t targets;
 	list_t deps;
+	list_t lists;
 	uint name;
 	uint outdir;
 } proj_t;
@@ -109,6 +110,8 @@ strv_t proj_get_str(const proj_t *proj, uint id);
 
 int proj_add_dep(proj_t *proj, uint target, uint dep);
 int proj_get_deps(const proj_t *proj, list_node_t target, arr_t *deps);
+
+int proj_add_inc_priv(proj_t *proj, uint target, strv_t inc);
 
 int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc);
 int proj_get_tgt_build_order(const proj_t *proj, arr_t *order, alloc_t alloc);

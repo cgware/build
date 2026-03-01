@@ -2,93 +2,84 @@
 #define CONFIG_H
 
 #include "list.h"
-#include "strbuf.h"
+#include "registry.h"
 
-typedef enum config_target_str_e {
-	CONFIG_TARGET_NAME,
-	CONFIG_TARGET_PREP,
-	CONFIG_TARGET_CONF,
-	CONFIG_TARGET_COMP,
-	CONFIG_TARGET_INST,
-	CONFIG_TARGET_OUT,
-	CONFIG_TARGET_TGT,
-	__CONFIG_TARGET_STR_CNT,
-} config_target_str_t;
+typedef enum config_mode_e {
+	CONFIG_MODE_UNKNOWN,
+	CONFIG_MODE_SET,
+	CONFIG_MODE_EN,
+	CONFIG_MODE_APP,
+	__CONFIG_MODE_CNT,
+} config_mode_t;
 
-typedef enum config_target_out_type_e {
-	CONFIG_TARGET_TGT_TYPE_UNKNOWN,
-	CONFIG_TARGET_TGT_TYPE_LIB,
-	CONFIG_TARGET_TGT_TYPE_EXE,
-	__CONFIG_TARGET_TYPE_CNT,
-} config_target_out_type_t;
+typedef enum config_op_type_s {
+	CONFIG_OP_TYPE_UNKNOWN,
+	CONFIG_OP_TYPE_PKG,
+	CONFIG_OP_TYPE_PKG_PATH,
+	CONFIG_OP_TYPE_PKG_INC,
+	CONFIG_OP_TYPE_PKG_URI,
+	CONFIG_OP_TYPE_PKG_DEPS,
+	CONFIG_OP_TYPE_TGT,
+	CONFIG_OP_TYPE_TGT_TYPE,
+	CONFIG_OP_TYPE_TGT_SRC,
+	CONFIG_OP_TYPE_TGT_INC,
+	CONFIG_OP_TYPE_TGT_INCS_PRIV,
+	CONFIG_OP_TYPE_TGT_DEPS,
+	CONFIG_OP_TYPE_TGT_PREP,
+	CONFIG_OP_TYPE_TGT_CONF,
+	CONFIG_OP_TYPE_TGT_COMP,
+	CONFIG_OP_TYPE_TGT_INST,
+	CONFIG_OP_TYPE_TGT_OUT,
+	CONFIG_OP_TYPE_TGT_LIB,
+	CONFIG_OP_TYPE_TGT_EXE,
+	__CONFIG_OP_TYPE_CNT,
+} config_op_type_t;
 
-typedef struct config_target_s {
-	uint strs;
-	list_node_t deps;
-	list_node_t tgt;
-	config_target_out_type_t out_type;
-	uint has_deps : 1;
-} config_target_t;
-
-typedef enum config_pkg_str_e {
-	CONFIG_PKG_NAME,
-	CONFIG_PKG_URI,
-	CONFIG_PKG_INC,
-	__CONFIG_PKG_STR_CNT,
-} config_pkg_str_t;
-
-typedef struct config_pkg_s {
-	uint strs;
-	list_node_t targets;
-	list_node_t deps;
+typedef struct config_op_s {
+	config_op_type_t type;
 	uint pkg;
-	uint has_targets : 1;
-	uint has_deps : 1;
-} config_pkg_t;
+	uint tgt;
+	config_mode_t mode;
 
-typedef enum config_dir_str_e {
-	CONFIG_DIR_NAME,
-	CONFIG_DIR_PATH,
-	CONFIG_DIR_SRC,
-	CONFIG_DIR_INC,
-	CONFIG_DIR_DRV,
-	CONFIG_DIR_TST,
-	__CONFIG_DIR_STR_CNT,
-} config_dir_str_t;
-
-typedef struct config_dir_s {
-	uint strs;
-	list_node_t pkgs;
-	uint has_pkgs : 1;
-	uint has_main : 1;
-} config_dir_t;
+	union {
+		size_t s;
+		int i;
+		list_node_t l;
+	} args;
+} config_op_t;
 
 typedef struct config_s {
-	strbuf_t strs;
-	arr_t dirs;
-	list_t pkgs;
-	list_t targets;
-	list_t deps;
+	arr_t ops;
+	list_t lists;
+	strvbuf_t strs;
+	int prio;
 } config_t;
 
-config_t *config_init(config_t *config, uint dirs_cap, uint pkgs_cap, uint targets_cap, alloc_t alloc);
+typedef struct config_state_s {
+	uint ops_cnt;
+	uint lists_cnt;
+	size_t strs_used;
+} config_state_t;
+
+config_t *config_init(config_t *config, uint cap, alloc_t alloc);
 void config_free(config_t *config);
 
-config_dir_t *config_add_dir(config_t *config, uint *id);
-config_dir_t *config_get_dir(config_t *config, uint id);
+int config_get_state(const config_t *config, config_state_t *state);
+int config_set_state(config_t *config, config_state_t state);
 
-config_pkg_t *config_add_pkg(config_t *config, list_node_t dir, list_node_t *id);
-config_pkg_t *config_get_pkg(config_t *config, list_node_t id);
+int config_str(config_t *config, config_op_type_t type, uint pkg, uint tgt, int mode, strv_t str);
+int config_str_list(config_t *config, config_op_type_t type, uint pkg, uint tgt, int mode, strv_t str, uint *id);
+int config_str_list_add(config_t *config, uint id, strv_t str);
 
-config_target_t *config_add_target(config_t *config, list_node_t pkg, list_node_t *id);
-config_target_t *config_get_target(config_t *config, list_node_t id);
+int config_pkg(config_t *config, uint pkg, config_mode_t mode);
 
-int config_pkg_add_dep(config_t *config, list_node_t pkg, strv_t dep);
-int config_tgt_add_dep(config_t *config, list_node_t tgt, strv_t dep);
+int config_tgt(config_t *config, uint pkg, uint tgt, config_mode_t mode);
+int config_tgt_type(config_t *config, uint pkg, uint tgt, config_mode_t mode, int type);
 
-int config_set_str(config_t *config, uint id, strv_t val);
-strv_t config_get_str(const config_t *config, uint id);
+int config_merge(config_t *config, const config_t *other, config_state_t start, const registry_t *registry);
 
-size_t config_print(const config_t *config, dst_t dst);
+size_t config_print(const config_t *config, const registry_t *registry, dst_t dst);
+
+#define CONFIG_STATE_NULL ((config_state_t){0})
 
 #endif

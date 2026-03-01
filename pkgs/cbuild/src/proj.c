@@ -11,7 +11,8 @@ proj_t *proj_init(proj_t *proj, uint pkgs_cap, uint targets_cap, alloc_t alloc)
 	if (strbuf_init(&proj->strs, 2 + __PKG_STR_CNT * pkgs_cap + __TARGET_STR_CNT * targets_cap, 16, alloc) == NULL ||
 	    arr_init(&proj->pkgs, pkgs_cap, sizeof(pkg_t), alloc) == NULL ||
 	    list_init(&proj->targets, targets_cap, sizeof(target_t), alloc) == NULL ||
-	    list_init(&proj->deps, targets_cap, sizeof(list_node_t), alloc) == NULL) {
+	    list_init(&proj->deps, targets_cap, sizeof(list_node_t), alloc) == NULL ||
+	    list_init(&proj->lists, targets_cap, sizeof(uint), alloc) == NULL) {
 		return NULL;
 	}
 
@@ -27,6 +28,7 @@ void proj_free(proj_t *proj)
 		return;
 	}
 
+	list_free(&proj->lists);
 	list_free(&proj->deps);
 	list_free(&proj->targets);
 	arr_free(&proj->pkgs);
@@ -144,6 +146,8 @@ target_t *proj_add_target(proj_t *proj, uint pkg, list_node_t *id)
 	target->pkg	 = pkg;
 	target->out_type = TARGET_TGT_TYPE_UNKNOWN;
 
+	target->has_incs_priv = 0;
+
 	id ? *id = tmp : (uint)0;
 
 	return target;
@@ -184,7 +188,7 @@ target_t *proj_find_target(const proj_t *proj, uint pkg, strv_t name, list_node_
 	list_node_t i = p->targets;
 	list_foreach(&proj->targets, i, target)
 	{
-		if (strv_eq(proj_get_str(proj, target->strs + TARGET_NAME), name)) {
+		if (strv_eq(proj_get_str(proj, target->strs + TGT_STR_NAME), name)) {
 			id ? *id = i : (uint)0;
 			return target;
 		}
@@ -330,6 +334,44 @@ int proj_get_deps(const proj_t *proj, list_node_t target, arr_t *deps)
 	return 0;
 }
 
+int proj_add_inc_priv(proj_t *proj, uint tgt, strv_t inc)
+{
+	if (proj == NULL) {
+		return 1;
+	}
+
+	target_t *t = proj_get_target(proj, tgt);
+	if (t == NULL) {
+		log_error("cbuild", "proj", NULL, "failed to add private include");
+		return 1;
+	}
+
+	uint strs_cnt;
+	if (strbuf_add(&proj->strs, inc, &strs_cnt)) {
+		log_error("cbuild", "proj", NULL, "failed to add private include");
+		return 1;
+	}
+
+	list_node_t node;
+	uint *data = list_node(&proj->lists, &node);
+	if (data == NULL) {
+		log_error("cbuild", "proj", NULL, "failed to add private include");
+		strbuf_reset(&proj->strs, strs_cnt);
+		return 1;
+	}
+
+	*data = strs_cnt;
+
+	if (t->has_incs_priv) {
+		list_app(&proj->lists, t->incs_priv, node);
+	} else {
+		t->incs_priv	 = node;
+		t->has_incs_priv = 1;
+	}
+
+	return 0;
+}
+
 int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 {
 	if (proj == NULL || order == NULL) {
@@ -466,8 +508,8 @@ int proj_get_tgt_build_order(const proj_t *proj, arr_t *order, alloc_t alloc)
 
 			switch (dep_tgt->state) {
 			case VISITING: {
-				strv_t tgt_name	    = proj_get_str(proj, tgt->strs + TARGET_NAME);
-				strv_t dep_tgt_name = proj_get_str(proj, dep_tgt->strs + TARGET_NAME);
+				strv_t tgt_name	    = proj_get_str(proj, tgt->strs + TGT_STR_NAME);
+				strv_t dep_tgt_name = proj_get_str(proj, dep_tgt->strs + TGT_STR_NAME);
 				log_error("cbuild",
 					  "proj",
 					  NULL,
@@ -529,9 +571,6 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 
 		strv_t pkg_name = proj_get_str(proj, pkg->strs + PKG_STR_NAME);
 		strv_t path	= proj_get_str(proj, pkg->strs + PKG_STR_PATH);
-		strv_t src	= proj_get_str(proj, pkg->strs + PKG_STR_SRC);
-		strv_t inc	= proj_get_str(proj, pkg->strs + PKG_STR_INC);
-		strv_t test	= proj_get_str(proj, pkg->strs + PKG_STR_TST);
 		strv_t uri	= proj_get_str(proj, pkg->strs + PKG_STR_URI);
 		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_STR_URI_FILE);
 		strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_STR_URI_NAME);
@@ -541,9 +580,6 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 		dst.off += dputf(dst,
 				 "NAME: %.*s\n"
 				 "PATH: %.*s\n"
-				 "SRC: %.*s\n"
-				 "INC: %.*s\n"
-				 "TEST: %.*s\n"
 				 "URI: %.*s\n"
 				 "URI_FILE: %.*s\n"
 				 "URI_NAME: %.*s\n"
@@ -553,12 +589,6 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 				 pkg_name.data,
 				 path.len,
 				 path.data,
-				 src.len,
-				 src.data,
-				 inc.len,
-				 inc.data,
-				 test.len,
-				 test.data,
 				 uri.len,
 				 uri.data,
 				 uri_file.len,
@@ -576,16 +606,20 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 			list_foreach(&proj->targets, j, target)
 			{
 				dst.off += dputf(dst, "\n[target]\n");
-				strv_t tgt_name = proj_get_str(proj, target->strs + TARGET_NAME);
-				strv_t prep	= proj_get_str(proj, target->strs + TARGET_PREP);
-				strv_t conf	= proj_get_str(proj, target->strs + TARGET_CONF);
-				strv_t comp	= proj_get_str(proj, target->strs + TARGET_COMP);
-				strv_t inst	= proj_get_str(proj, target->strs + TARGET_INST);
-				strv_t tgt_out	= proj_get_str(proj, target->strs + TARGET_OUT);
-				strv_t tgt_tgt	= proj_get_str(proj, target->strs + TARGET_TGT);
+				strv_t tgt_name = proj_get_str(proj, target->strs + TGT_STR_NAME);
+				strv_t src	= proj_get_str(proj, target->strs + TGT_STR_SRC);
+				strv_t inc	= proj_get_str(proj, target->strs + TGT_STR_INC);
+				strv_t prep	= proj_get_str(proj, target->strs + TGT_STR_PREP);
+				strv_t conf	= proj_get_str(proj, target->strs + TGT_STR_CONF);
+				strv_t comp	= proj_get_str(proj, target->strs + TGT_STR_COMP);
+				strv_t inst	= proj_get_str(proj, target->strs + TGT_STR_INST);
+				strv_t tgt_out	= proj_get_str(proj, target->strs + TGT_STR_OUT);
+				strv_t tgt_tgt	= proj_get_str(proj, target->strs + TGT_STR_TGT);
 				dst.off += dputf(dst,
 						 "NAME: %.*s\n"
 						 "TYPE: %s\n"
+						 "SRC: %.*s\n"
+						 "INC: %.*s\n"
 						 "PREP: %.*s\n"
 						 "CONF: %.*s\n"
 						 "COMP: %.*s\n"
@@ -596,6 +630,10 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 						 tgt_name.len,
 						 tgt_name.data,
 						 target_type_str[target->type],
+						 src.len,
+						 src.data,
+						 inc.len,
+						 inc.data,
 						 prep.len,
 						 prep.data,
 						 conf.len,
@@ -609,8 +647,23 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 						 tgt_tgt.len,
 						 tgt_tgt.data,
 						 target->out_type);
-				dst.off += dputf(dst, "DEPS:");
 
+				dst.off += dputf(dst, "INCS PRIV:");
+				if (target->has_incs_priv) {
+					const uint *inc_id;
+					list_node_t j = target->incs_priv;
+					list_foreach(&proj->lists, j, inc_id)
+					{
+						strv_t inc = proj_get_str(proj, *inc_id);
+						if (j == target->incs_priv) {
+							dst.off += dputf(dst, " %.*s", inc.len, inc.data);
+						} else {
+							dst.off += dputf(dst, ", %.*s", inc.len, inc.data);
+						}
+					}
+				}
+
+				dst.off += dputf(dst, "\nDEPS:");
 				if (target->has_deps) {
 					const list_node_t *dep_target_id;
 					list_node_t j = target->deps;
@@ -620,7 +673,7 @@ size_t proj_print(const proj_t *proj, dst_t dst)
 						const pkg_t *dep_pkg	= arr_get(&proj->pkgs, dep_tgt->pkg);
 
 						strv_t dep_tgt_name = proj_get_str(proj, dep_tgt->strs + PKG_STR_NAME);
-						strv_t dep_pkg_name = proj_get_str(proj, dep_pkg->strs + TARGET_NAME);
+						strv_t dep_pkg_name = proj_get_str(proj, dep_pkg->strs + TGT_STR_NAME);
 						dst.off += dputf(dst,
 								 " %.*s:%.*s",
 								 dep_pkg_name.len,

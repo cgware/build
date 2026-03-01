@@ -440,6 +440,43 @@ TEST(proj_get_pkg_build_order_no_target)
 	END;
 }
 
+TEST(proj_add_inc_priv)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 2, 2, ALLOC_STD);
+
+	uint pkg;
+	proj_add_pkg(&proj, &pkg);
+
+	uint target;
+	proj_add_target(&proj, pkg, &target);
+
+	EXPECT_EQ(proj_add_inc_priv(NULL, proj.targets.cnt, STRV_NULL), 1);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(proj_add_inc_priv(&proj, proj.targets.cnt, STRV_NULL), 1);
+	log_set_quiet(0, 0);
+
+	mem_oom(1);
+	uint strs_cnt	  = proj.strs.off.cnt;
+	proj.strs.off.cnt = proj.strs.off.cap;
+	EXPECT_EQ(proj_add_inc_priv(&proj, target, STRV_NULL), 1);
+	proj.strs.off.cnt = strs_cnt;
+
+	uint lists_cnt = proj.lists.cnt;
+	proj.lists.cnt = proj.lists.cap;
+	EXPECT_EQ(proj_add_inc_priv(&proj, target, STRV_NULL), 1);
+	proj.lists.cnt = lists_cnt;
+	mem_oom(0);
+
+	EXPECT_EQ(proj_add_inc_priv(&proj, target, STRV_NULL), 0);
+
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_get_pkg_build_order)
 {
 	START;
@@ -547,10 +584,12 @@ TEST(proj_print)
 	proj_add_target(&proj, p2, &t2);
 
 	proj_add_dep(&proj, t1, t2);
+	proj_add_inc_priv(&proj, t1, STRV("inc1"));
+	proj_add_inc_priv(&proj, t1, STRV("inc2"));
 
 	char buf[512] = {0};
 	EXPECT_EQ(proj_print(NULL, DST_BUF(buf)), 0);
-	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 374);
+	EXPECT_EQ(proj_print(&proj, DST_BUF(buf)), 393);
 	EXPECT_STR(buf,
 		   "[project]\n"
 		   "NAME: \n"
@@ -559,9 +598,6 @@ TEST(proj_print)
 		   "[pkg]\n"
 		   "NAME: \n"
 		   "PATH: \n"
-		   "SRC: \n"
-		   "INC: \n"
-		   "TEST: \n"
 		   "URI: \n"
 		   "URI_FILE: \n"
 		   "URI_NAME: \n"
@@ -571,6 +607,8 @@ TEST(proj_print)
 		   "[target]\n"
 		   "NAME: \n"
 		   "TYPE: UNKNOWN\n"
+		   "SRC: \n"
+		   "INC: \n"
 		   "PREP: \n"
 		   "CONF: \n"
 		   "COMP: \n"
@@ -578,14 +616,12 @@ TEST(proj_print)
 		   "OUT: \n"
 		   "TGT: \n"
 		   "TYPE: 0\n"
+		   "INCS PRIV: inc1, inc2\n"
 		   "DEPS: :\n"
 		   "\n"
 		   "[pkg]\n"
 		   "NAME: \n"
 		   "PATH: \n"
-		   "SRC: \n"
-		   "INC: \n"
-		   "TEST: \n"
 		   "URI: \n"
 		   "URI_FILE: \n"
 		   "URI_NAME: \n"
@@ -595,6 +631,8 @@ TEST(proj_print)
 		   "[target]\n"
 		   "NAME: \n"
 		   "TYPE: UNKNOWN\n"
+		   "SRC: \n"
+		   "INC: \n"
 		   "PREP: \n"
 		   "CONF: \n"
 		   "COMP: \n"
@@ -602,6 +640,7 @@ TEST(proj_print)
 		   "OUT: \n"
 		   "TGT: \n"
 		   "TYPE: 0\n"
+		   "INCS PRIV:\n"
 		   "DEPS:\n")
 
 	proj_free(&proj);
@@ -628,6 +667,7 @@ STEST(proj)
 	RUN(proj_get_deps);
 	RUN(proj_get_pdeps);
 	RUN(proj_get_rdeps);
+	RUN(proj_add_inc_priv);
 	RUN(proj_get_pkg_build_order_no_target);
 	RUN(proj_get_pkg_build_order);
 	RUN(proj_get_tgt_build_order);
