@@ -2,6 +2,11 @@
 
 #include "log.h"
 
+typedef struct reg_tgt_s {
+	uint pkg;
+	size_t name;
+} reg_tgt_t;
+
 registry_t *registry_init(registry_t *registry, uint cap, alloc_t alloc)
 {
 	if (registry == NULL) {
@@ -9,7 +14,7 @@ registry_t *registry_init(registry_t *registry, uint cap, alloc_t alloc)
 	}
 
 	if (arr_init(&registry->pkgs, cap, sizeof(size_t), alloc) == NULL ||
-	    arr_init(&registry->tgts, cap, sizeof(size_t), alloc) == NULL || strvbuf_init(&registry->strs, cap * 2, 16, alloc) == NULL) {
+	    arr_init(&registry->tgts, cap, sizeof(reg_tgt_t), alloc) == NULL || strvbuf_init(&registry->strs, cap * 2, 16, alloc) == NULL) {
 		return NULL;
 	}
 
@@ -97,13 +102,13 @@ int registry_find_pkg(const registry_t *registry, strv_t name, uint *id)
 	return 1;
 }
 
-int registry_add_tgt(registry_t *registry, strv_t name, uint *id)
+int registry_add_tgt(registry_t *registry, uint pkg, strv_t name, uint *id)
 {
 	if (registry == NULL) {
 		return 1;
 	}
 
-	if (registry_find_tgt(registry, name, id) == 0) {
+	if (registry_find_tgt(registry, pkg, name, id) == 0) {
 		return 0;
 	}
 
@@ -114,14 +119,15 @@ int registry_add_tgt(registry_t *registry, strv_t name, uint *id)
 	}
 
 	uint tgts_cnt;
-	size_t *tgt = arr_add(&registry->tgts, &tgts_cnt);
+	reg_tgt_t *tgt = arr_add(&registry->tgts, &tgts_cnt);
 	if (tgt == NULL) {
 		log_error("cbuild", "registry", NULL, "failed to add target");
 		strvbuf_reset(&registry->strs, off);
 		return 1;
 	}
 
-	*tgt = off;
+	tgt->pkg  = pkg;
+	tgt->name = off;
 
 	if (id) {
 		*id = tgts_cnt;
@@ -136,26 +142,30 @@ strv_t registry_get_tgt(const registry_t *registry, uint id)
 		return STRV_NULL;
 	}
 
-	size_t *off = arr_get(&registry->tgts, id);
-	if (off == NULL) {
+	reg_tgt_t *tgt = arr_get(&registry->tgts, id);
+	if (tgt == NULL) {
 		log_error("cbuild", "registry", NULL, "invalid target id: %d", id);
 		return STRV_NULL;
 	}
 
-	return strvbuf_get(&registry->strs, *off);
+	return strvbuf_get(&registry->strs, tgt->name);
 }
 
-int registry_find_tgt(const registry_t *registry, strv_t name, uint *id)
+int registry_find_tgt(const registry_t *registry, uint pkg, strv_t name, uint *id)
 {
 	if (registry == NULL) {
 		return 1;
 	}
 
 	uint i = 0;
-	size_t *tgt;
+	reg_tgt_t *tgt;
 	arr_foreach(&registry->tgts, i, tgt)
 	{
-		strv_t tgt_name = strvbuf_get(&registry->strs, *tgt);
+		if (tgt->pkg != pkg) {
+			continue;
+		}
+
+		strv_t tgt_name = strvbuf_get(&registry->strs, tgt->name);
 		if (strv_eq(tgt_name, name)) {
 			if (id) {
 				*id = i;

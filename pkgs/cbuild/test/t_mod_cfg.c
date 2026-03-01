@@ -843,7 +843,7 @@ TESTP(config_cfg_tgt_deps, mod_t *mod)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_tgt(&registry, STRV(""), NULL);
+	registry_add_tgt(&registry, 0, STRV(""), NULL);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -895,7 +895,7 @@ TESTP(config_cfg_tgt_deps_oom, mod_t *mod)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_tgt(&registry, STRV(""), NULL);
+	registry_add_tgt(&registry, 0, STRV(""), NULL);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);

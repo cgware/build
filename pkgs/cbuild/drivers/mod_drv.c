@@ -27,12 +27,8 @@ static int mod_drv_config_fs(mod_t *mod, config_t *config, config_t *tmp, regist
 		registry_add_pkg(registry, name, &pkg);
 		config_pkg(tmp, pkg, CONFIG_MODE_EN);
 		config_str(tmp, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_EN, cur_path);
-		str_t tgt_name = strz(64);
-		str_cat(&tgt_name, name);
-		str_cat(&tgt_name, STRV("_drv"));
 		uint tgt;
-		registry_add_tgt(registry, STRVS(tgt_name), &tgt);
-		str_free(&tgt_name);
+		registry_add_tgt(registry, pkg, STRV("drivers"), &tgt);
 		config_tgt(tmp, pkg, tgt, CONFIG_MODE_APP);
 		config_tgt_type(tmp, pkg, tgt, CONFIG_MODE_SET, TARGET_TYPE_DRV);
 		config_str(tmp, CONFIG_OP_TYPE_TGT_SRC, pkg, tgt, CONFIG_MODE_SET, STRV("drivers"));

@@ -29,7 +29,7 @@ static int mod_exe_config_fs(mod_t *mod, config_t *config, config_t *tmp, regist
 			config_pkg(tmp, pkg, CONFIG_MODE_EN);
 			config_str(tmp, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_EN, cur_path);
 			uint tgt;
-			registry_add_tgt(registry, name, &tgt);
+			registry_add_tgt(registry, pkg, name, &tgt);
 			config_tgt(tmp, pkg, tgt, CONFIG_MODE_APP);
 			config_tgt_type(tmp, pkg, tgt, CONFIG_MODE_SET, TARGET_TYPE_EXE);
 			config_str(tmp, CONFIG_OP_TYPE_TGT_SRC, pkg, tgt, CONFIG_MODE_SET, STRV("src"));

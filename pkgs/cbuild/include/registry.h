@@ -17,8 +17,8 @@ int registry_add_pkg(registry_t *registry, strv_t name, uint *id);
 strv_t registry_get_pkg(const registry_t *registry, uint id);
 int registry_find_pkg(const registry_t *registry, strv_t name, uint *id);
 
-int registry_add_tgt(registry_t *registry, strv_t name, uint *id);
+int registry_add_tgt(registry_t *registry, uint pkg, strv_t name, uint *id);
 strv_t registry_get_tgt(const registry_t *registry, uint id);
-int registry_find_tgt(const registry_t *registry, strv_t name, uint *id);
+int registry_find_tgt(const registry_t *registry, uint pkg, strv_t name, uint *id);
 
 #endif

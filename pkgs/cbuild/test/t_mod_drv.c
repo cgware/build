@@ -59,11 +59,11 @@ TESTP(mod_drv_config_fs, mod_t *mod)
 		   "pkgs ?= \n"
 		   "::path ?= \n"
 		   "\n"
-		   ":tgts += _drv\n"
-		   ":_drv:type = 3\n"
-		   ":_drv:src = drivers\n"
-		   ":_drv:incs_priv = drivers\n"
-		   ":_drv:inc = include\n");
+		   ":tgts += drivers\n"
+		   ":drivers:type = 3\n"
+		   ":drivers:src = drivers\n"
+		   ":drivers:incs_priv = drivers\n"
+		   ":drivers:inc = include\n");
 
 	proc_free(&proc);
 	fs_free(&fs);

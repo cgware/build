@@ -27,13 +27,9 @@ static int mod_test_config_fs(mod_t *mod, config_t *config, config_t *tmp, regis
 		registry_add_pkg(registry, name, &pkg);
 		config_pkg(tmp, pkg, CONFIG_MODE_EN);
 		config_str(tmp, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_EN, cur_path);
-		str_t tgt_name = strz(64);
-		str_cat(&tgt_name, name);
-		str_cat(&tgt_name, STRV("_test"));
 		uint tgt;
-		registry_add_tgt(registry, STRVS(tgt_name), &tgt);
+		registry_add_tgt(registry, pkg, STRV("test"), &tgt);
 		config_tgt(tmp, pkg, tgt, CONFIG_MODE_APP);
-		str_free(&tgt_name);
 		config_tgt_type(tmp, pkg, tgt, CONFIG_MODE_SET, TARGET_TYPE_TST);
 		config_str(tmp, CONFIG_OP_TYPE_TGT_SRC, pkg, tgt, CONFIG_MODE_SET, STRV("test"));
 

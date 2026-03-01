@@ -24,8 +24,7 @@ int proj_cfg(proj_t *proj, const config_t *config, const registry_t *registry)
 				break;
 			}
 
-			size_t *off = arr_get(&registry->pkgs, op->pkg);
-			strv_t name = strvbuf_get(&registry->strs, *off);
+			strv_t name = registry_get_pkg(registry, op->pkg);
 
 			if (proj_find_pkg(proj, name, NULL)) {
 				if (op->mode == CONFIG_MODE_APP) {
@@ -50,8 +49,7 @@ int proj_cfg(proj_t *proj, const config_t *config, const registry_t *registry)
 				break;
 			}
 
-			size_t *off = arr_get(&registry->tgts, op->tgt);
-			strv_t name = strvbuf_get(&registry->strs, *off);
+			strv_t name = registry_get_tgt(registry, op->tgt);
 
 			if (proj_find_target(proj, op->pkg, name, NULL)) {
 				if (op->mode == CONFIG_MODE_APP) {

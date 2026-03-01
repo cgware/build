@@ -599,17 +599,15 @@ size_t config_print(const config_t *config, const registry_t *registry, dst_t ds
 		case OP_TYPE_SEL: {
 			const char *mode = config_mode_str(op->mode);
 			if (op->type == CONFIG_OP_TYPE_PKG) {
-				size_t *name_off = arr_get(&registry->pkgs, op->pkg);
-				strv_t name	 = strvbuf_get(&registry->strs, *name_off);
+				strv_t pkg = registry_get_pkg(registry, op->pkg);
 				if (i == 0) {
-					dst.off += dputf(dst, "%s %s= %.*s\n", op_type_str(op->type), mode, name.len, name.data);
+					dst.off += dputf(dst, "%s %s= %.*s\n", op_type_str(op->type), mode, pkg.len, pkg.data);
 				} else {
-					dst.off += dputf(dst, "\n%s %s= %.*s\n", op_type_str(op->type), mode, name.len, name.data);
+					dst.off += dputf(dst, "\n%s %s= %.*s\n", op_type_str(op->type), mode, pkg.len, pkg.data);
 				}
 			} else {
-				strv_t pkg	 = registry_get_pkg(registry, op->pkg);
-				size_t *name_off = arr_get(&registry->tgts, op->tgt);
-				strv_t name	 = strvbuf_get(&registry->strs, *name_off);
+				strv_t pkg = registry_get_pkg(registry, op->pkg);
+				strv_t tgt = registry_get_tgt(registry, op->tgt);
 				if (i == 0) {
 					dst.off += dputf(dst,
 							 "%.*s:%s %s= %.*s\n",
@@ -617,8 +615,8 @@ size_t config_print(const config_t *config, const registry_t *registry, dst_t ds
 							 pkg.data,
 							 op_type_str(op->type),
 							 mode,
-							 name.len,
-							 name.data);
+							 tgt.len,
+							 tgt.data);
 				} else {
 					dst.off += dputf(dst,
 							 "\n%.*s:%s %s= %.*s\n",
@@ -626,8 +624,8 @@ size_t config_print(const config_t *config, const registry_t *registry, dst_t ds
 							 pkg.data,
 							 op_type_str(op->type),
 							 mode,
-							 name.len,
-							 name.data);
+							 tgt.len,
+							 tgt.data);
 				}
 			}
 

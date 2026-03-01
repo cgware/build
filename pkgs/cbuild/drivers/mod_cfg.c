@@ -260,13 +260,13 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 
 				uint tgt;
 				if (mode == CONFIG_MODE_SET) {
-					if (registry_find_tgt(registry, name, &tgt)) {
+					if (registry_find_tgt(registry, pkg, name, &tgt)) {
 						log_error("cbuild", "mod_cfg", NULL, "target does not exist: %.*s", name.len, name.data);
 						ret = 1;
 						continue;
 					}
 				} else {
-					registry_add_tgt(registry, name, &tgt);
+					registry_add_tgt(registry, pkg, name, &tgt);
 					config_tgt(config, pkg, tgt, mode);
 				}
 

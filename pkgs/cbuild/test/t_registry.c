@@ -103,17 +103,17 @@ TEST(registry_add_tgt)
 	registry_init(&registry, 1, ALLOC_STD);
 
 	uint id;
-	EXPECT_EQ(registry_add_tgt(NULL, STRV_NULL, NULL), 1);
+	EXPECT_EQ(registry_add_tgt(NULL, -1, STRV_NULL, NULL), 1);
 	mem_oom(1);
 	registry.strs.used = registry.strs.size;
-	EXPECT_EQ(registry_add_tgt(&registry, STRV(""), NULL), 1);
+	EXPECT_EQ(registry_add_tgt(&registry, -1, STRV(""), NULL), 1);
 	registry.strs.used = 0;
 	registry.tgts.cnt  = registry.tgts.cap;
-	EXPECT_EQ(registry_add_tgt(&registry, STRV(""), NULL), 1);
+	EXPECT_EQ(registry_add_tgt(&registry, -1, STRV(""), NULL), 1);
 	registry.tgts.cnt = 0;
 	mem_oom(0);
-	EXPECT_EQ(registry_add_tgt(&registry, STRV(""), &id), 0);
-	EXPECT_EQ(registry_add_tgt(&registry, STRV(""), &id), 0);
+	EXPECT_EQ(registry_add_tgt(&registry, -1, STRV(""), &id), 0);
+	EXPECT_EQ(registry_add_tgt(&registry, -1, STRV(""), &id), 0);
 	EXPECT_EQ(id, 0);
 
 	registry_free(&registry);
@@ -128,8 +128,9 @@ TEST(registry_get_tgt)
 	registry_t registry = {0};
 
 	registry_init(&registry, 1, ALLOC_STD);
-	uint id;
-	registry_add_tgt(&registry, STRV("tgt"), &id);
+	uint pkg, id;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &id);
 
 	EXPECT_EQ(registry_get_tgt(NULL, 0).data, NULL);
 	log_set_quiet(0, 1);
@@ -150,13 +151,14 @@ TEST(registry_find_tgt)
 	registry_t registry = {0};
 
 	registry_init(&registry, 1, ALLOC_STD);
-	uint id;
-	registry_add_tgt(&registry, STRV("tgt"), &id);
+	uint pkg, id;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &id);
 
 	uint tgt;
-	EXPECT_EQ(registry_find_tgt(NULL, STRV_NULL, NULL), 1);
-	EXPECT_EQ(registry_find_tgt(&registry, STRV_NULL, NULL), 1);
-	EXPECT_EQ(registry_find_tgt(&registry, STRV("tgt"), &tgt), 0);
+	EXPECT_EQ(registry_find_tgt(NULL, -1, STRV_NULL, NULL), 1);
+	EXPECT_EQ(registry_find_tgt(&registry, pkg, STRV_NULL, NULL), 1);
+	EXPECT_EQ(registry_find_tgt(&registry, pkg, STRV("tgt"), &tgt), 0);
 	EXPECT_EQ(tgt, id);
 
 	registry_free(&registry);

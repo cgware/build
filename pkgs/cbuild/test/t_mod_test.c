@@ -60,10 +60,10 @@ TESTP(mod_test_config_fs, mod_t *mod)
 		   "pkgs ?= \n"
 		   "::path ?= \n"
 		   "\n"
-		   ":tgts += _test\n"
-		   ":_test:type = 5\n"
-		   ":_test:src = test\n"
-		   ":_test:incs_priv = test, src, drivers\n");
+		   ":tgts += test\n"
+		   ":test:type = 5\n"
+		   ":test:src = test\n"
+		   ":test:incs_priv = test, src, drivers\n");
 
 	proc_free(&proc);
 	fs_free(&fs);

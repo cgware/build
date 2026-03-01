@@ -366,7 +366,7 @@ TEST(config_merge_same_tgt)
 	registry_init(&registry, 2, ALLOC_STD);
 	uint pkg, tgt;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt"), &tgt);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -397,7 +397,7 @@ TEST(config_merge_same_tgt_type)
 	registry_init(&registry, 2, ALLOC_STD);
 	uint pkg, tgt;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt"), &tgt);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -610,8 +610,8 @@ TEST(config_merge_diff_tgt)
 	registry_init(&registry, 3, ALLOC_STD);
 	uint pkg, tgt1, tgt2;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt1"), &tgt1);
-	registry_add_tgt(&registry, STRV("tgt2"), &tgt2);
+	registry_add_tgt(&registry, pkg, STRV("tgt1"), &tgt1);
+	registry_add_tgt(&registry, pkg, STRV("tgt2"), &tgt2);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -645,7 +645,7 @@ TEST(config_merge_diff_tgt_type)
 	registry_init(&registry, 2, ALLOC_STD);
 	uint pkg, tgt;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt"), &tgt);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -802,7 +802,7 @@ TEST(config_merge_tgt)
 	registry_init(&registry, 2, ALLOC_STD);
 	uint pkg, tgt;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt"), &tgt);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -832,7 +832,7 @@ TEST(config_merge_tgt_type)
 	registry_init(&registry, 2, ALLOC_STD);
 	uint pkg, tgt;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt"), &tgt);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -1031,7 +1031,7 @@ TEST(config_print_tgt)
 
 	uint pkg, tgt;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt"), &tgt);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
 	config_tgt(&config, pkg, tgt, CONFIG_MODE_APP);
 
 	char buf[256] = {0};
@@ -1055,7 +1055,7 @@ TEST(config_print_tgt_type)
 
 	uint pkg, tgt;
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, STRV("tgt"), &tgt);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
 
 	config_tgt_type(&config, pkg, tgt, CONFIG_MODE_SET, 0);
 

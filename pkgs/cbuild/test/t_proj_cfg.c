@@ -147,8 +147,9 @@ TEST(proj_cfg_tgt_crt)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("name"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("name"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -181,8 +182,9 @@ TEST(proj_cfg_tgt_oom)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("name"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("name"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -211,8 +213,9 @@ TEST(proj_cfg_tgt_crt_exists)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("name"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("name"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -240,8 +243,9 @@ TEST(proj_cfg_tgt_en)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("name"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("name"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -387,8 +391,9 @@ TEST(proj_cfg_pkg_inc)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -469,10 +474,11 @@ TEST(proj_cfg_pkg_dep_pkg)
 
 	registry_t registry = {0};
 	registry_init(&registry, 2, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("dep"), NULL);
-	registry_add_tgt(&registry, STRV("dep_tgt"), NULL);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint dep, pkg;
+	registry_add_pkg(&registry, STRV("dep"), &dep);
+	registry_add_tgt(&registry, dep, STRV("dep_tgt"), NULL);
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -507,10 +513,11 @@ TEST(proj_cfg_pkg_dep_tgt)
 
 	registry_t registry = {0};
 	registry_init(&registry, 2, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("dep"), NULL);
-	registry_add_tgt(&registry, STRV("dep_tgt"), NULL);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint dep, pkg;
+	registry_add_pkg(&registry, STRV("dep"), &dep);
+	registry_add_tgt(&registry, dep, STRV("dep_tgt"), NULL);
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -545,10 +552,11 @@ TEST(proj_cfg_pkg_dep_not_test)
 
 	registry_t registry = {0};
 	registry_init(&registry, 4, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("dep"), NULL);
-	registry_add_tgt(&registry, STRV("test"), NULL);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint dep, pkg;
+	registry_add_pkg(&registry, STRV("dep"), &dep);
+	registry_add_tgt(&registry, dep, STRV("test"), NULL);
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -639,8 +647,9 @@ TEST(proj_cfg_tgt_type_exe)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -695,8 +704,9 @@ TEST(proj_cfg_tgt_type_drv)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -725,8 +735,9 @@ TEST(proj_cfg_tgt_type_tst)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -756,8 +767,9 @@ TEST(proj_cfg_tgt_src)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -813,8 +825,9 @@ TEST(proj_cfg_tgt_inc)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -870,8 +883,9 @@ TEST(proj_cfg_tgt_inc_priv)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -952,10 +966,11 @@ TEST(proj_cfg_tgt_dep_pkg)
 
 	registry_t registry = {0};
 	registry_init(&registry, 2, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("dep"), NULL);
-	registry_add_tgt(&registry, STRV("dep_tgt"), NULL);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint dep, pkg;
+	registry_add_pkg(&registry, STRV("dep"), &dep);
+	registry_add_tgt(&registry, dep, STRV("dep_tgt"), NULL);
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -990,10 +1005,11 @@ TEST(proj_cfg_tgt_dep_tgt)
 
 	registry_t registry = {0};
 	registry_init(&registry, 2, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("dep"), NULL);
-	registry_add_tgt(&registry, STRV("dep_tgt"), NULL);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint dep, pkg;
+	registry_add_pkg(&registry, STRV("dep"), &dep);
+	registry_add_tgt(&registry, dep, STRV("dep_tgt"), NULL);
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1028,10 +1044,11 @@ TEST(proj_cfg_tgt_dep_pkg_not_test)
 
 	registry_t registry = {0};
 	registry_init(&registry, 4, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("dep"), NULL);
-	registry_add_tgt(&registry, STRV("test"), NULL);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint dep, pkg;
+	registry_add_pkg(&registry, STRV("dep"), &dep);
+	registry_add_tgt(&registry, dep, STRV("test"), NULL);
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1066,8 +1083,9 @@ TEST(proj_cfg_tgt_dep_pkg_not_found)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1096,8 +1114,9 @@ TEST(proj_cfg_tgt_dep_tgt_not_found)
 	registry_t registry = {0};
 	registry_init(&registry, 2, ALLOC_STD);
 	registry_add_pkg(&registry, STRV("dep"), NULL);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1126,8 +1145,9 @@ TEST(proj_cfg_tgt_prep)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1183,8 +1203,9 @@ TEST(proj_cfg_tgt_conf)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1240,8 +1261,9 @@ TEST(proj_cfg_tgt_comp)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1297,8 +1319,9 @@ TEST(proj_cfg_tgt_inst)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1354,9 +1377,9 @@ TEST(proj_cfg_tgt_out)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
-
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
 
@@ -1411,8 +1434,9 @@ TEST(proj_cfg_tgt_lib)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
@@ -1469,8 +1493,9 @@ TEST(proj_cfg_tgt_exe)
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_pkg(&registry, STRV("pkg"), NULL);
-	registry_add_tgt(&registry, STRV("tgt"), NULL);
+	uint pkg;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), NULL);
 
 	proj_t proj = {0};
 	proj_init(&proj, 1, 1, ALLOC_STD);
