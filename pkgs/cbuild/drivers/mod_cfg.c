@@ -4,12 +4,26 @@
 #include "file/cfg_prs.h"
 #include "log.h"
 #include "mem.h"
+#include "mod_base.h"
 #include "path.h"
+#include "proj_utils.h"
 
 typedef struct mod_cfg_priv_s {
 	cfg_prs_t prs;
 	cfg_t cfg;
 } mod_cfg_priv_t;
+
+enum {
+	CONFIG_PKG_URI,
+	CONFIG_PKG_INC,
+	CONFIG_TGT_PREP,
+	CONFIG_TGT_CONF,
+	CONFIG_TGT_COMP,
+	CONFIG_TGT_INST,
+	CONFIG_TGT_OUT_PATH,
+	CONFIG_TGT_OUT_NAME,
+	CONFIG_TGT_OUT_TYPE,
+};
 
 static int create_tmp(fs_t *fs, strv_t dir)
 {
@@ -36,8 +50,7 @@ static int parse_pkg_deps(config_t *config, uint pkg, const cfg_t *cfg, cfg_var_
 {
 	int ret = 0;
 	cfg_var_t dep_str;
-	int first = 1;
-	uint deps;
+	uint deps = -1;
 	void *data;
 	cfg_foreach(cfg, var, data, &dep_str)
 	{
@@ -48,17 +61,9 @@ static int parse_pkg_deps(config_t *config, uint pkg, const cfg_t *cfg, cfg_var_
 			continue;
 		}
 
-		if (first) {
-			if (config_str_list(config, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_SET, val, &deps)) {
-				log_error("cbuild", "mod_cfg", NULL, "failed to set package dependency: %.*s", val.len, val.data);
-				ret = 1;
-			}
-			first = 0;
-		} else {
-			if (config_str_list_add(config, deps, val)) {
-				log_error("cbuild", "mod_cfg", NULL, "failed to add package dependency: %.*s", val.len, val.data);
-				ret = 1;
-			}
+		if (config_str_list(config, CONFIG_PKG_DEPS, pkg, -1, CONFIG_ACT_SET, val, &deps)) {
+			log_error("cbuild", "mod_cfg", NULL, "failed to set package dependency: %.*s", val.len, val.data);
+			ret = 1;
 		}
 	}
 	return ret;
@@ -68,8 +73,7 @@ static int parse_tgt_deps(config_t *config, uint pkg, uint tgt, const cfg_t *cfg
 {
 	int ret = 0;
 	cfg_var_t dep_str;
-	int first = 1;
-	uint deps;
+	uint deps = -1;
 	void *data;
 	cfg_foreach(cfg, var, data, &dep_str)
 	{
@@ -80,24 +84,16 @@ static int parse_tgt_deps(config_t *config, uint pkg, uint tgt, const cfg_t *cfg
 			continue;
 		}
 
-		if (first) {
-			if (config_str_list(config, CONFIG_OP_TYPE_TGT_DEPS, pkg, tgt, CONFIG_MODE_SET, val, &deps)) {
-				log_error("cbuild", "mod_cfg", NULL, "failed to set target dependency: %.*s", val.len, val.data);
-				ret = 1;
-			}
-			first = 0;
-		} else {
-			if (config_str_list_add(config, deps, val)) {
-				log_error("cbuild", "mod_cfg", NULL, "failed to add target dependency: %.*s", val.len, val.data);
-				ret = 1;
-			}
+		if (config_str_list(config, CONFIG_TGT_DEPS, pkg, tgt, CONFIG_ACT_SET, val, &deps)) {
+			log_error("cbuild", "mod_cfg", NULL, "failed to set target dependency: %.*s", val.len, val.data);
+			ret = 1;
 		}
 	}
 	return ret;
 }
 
-static int parse_cfg_ext(config_t *config, config_t *tmp, registry_t *registry, const cfg_t *cfg, cfg_var_t root, fs_t *fs, proc_t *proc,
-			 strv_t proj_path, str_t *buf, alloc_t alloc, dst_t dst)
+static int parse_cfg_ext(config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, const cfg_t *cfg,
+			 cfg_var_t root, fs_t *fs, proc_t *proc, strv_t proj_path, str_t *buf, alloc_t alloc, dst_t dst)
 {
 	int ret = 0;
 
@@ -157,7 +153,7 @@ static int parse_cfg_ext(config_t *config, config_t *tmp, registry_t *registry, 
 					}
 				}
 
-				ret |= config_fs(config, tmp, registry, fs, proc, proj_path, STRVS(dir), name, buf, alloc, dst);
+				ret |= config_fs(config, tmp, schema, registry, fs, proc, proj_path, STRVS(dir), name, buf, alloc, dst);
 			}
 		}
 	}
@@ -165,7 +161,7 @@ static int parse_cfg_ext(config_t *config, config_t *tmp, registry_t *registry, 
 	return ret;
 }
 
-static int parse_pkg_uri(config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t var)
+static int parse_pkg_uri(mod_t *mod, config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t var)
 {
 	int ret = 0;
 	strv_t val;
@@ -173,11 +169,11 @@ static int parse_pkg_uri(config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t
 		log_error("cbuild", "config_cfg", NULL, "invalid uri");
 		return 1;
 	}
-	config_str(config, CONFIG_OP_TYPE_PKG_URI, pkg, -1, CONFIG_MODE_SET, val);
+	config_str(config, mod->ops + CONFIG_PKG_URI, pkg, -1, CONFIG_ACT_SET, val);
 	return ret;
 }
 
-static int parse_pkg_inc(config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t var)
+static int parse_pkg_inc(mod_t *mod, config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t var)
 {
 	int ret = 0;
 	strv_t val;
@@ -185,11 +181,11 @@ static int parse_pkg_inc(config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t
 		log_error("cbuild", "config_cfg", NULL, "invalid include");
 		return 1;
 	}
-	config_str(config, CONFIG_OP_TYPE_PKG_INC, pkg, -1, CONFIG_MODE_SET, val);
+	config_str(config, mod->ops + CONFIG_PKG_INC, pkg, -1, CONFIG_ACT_SET, val);
 	return ret;
 }
 
-static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const cfg_t *cfg, cfg_var_t root)
+static int parse_cfg_com(mod_t *mod, config_t *config, registry_t *registry, uint pkg, const cfg_t *cfg, cfg_var_t root)
 {
 	int ret = 0;
 
@@ -202,12 +198,12 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 		if (data->type == CFG_VAR_TBL) {
 			strv_t type, filters;
 			strv_lsplit(key, ':', &type, &filters);
-			config_mode_t mode = CONFIG_MODE_SET;
+			config_act_t act = CONFIG_ACT_SET;
 			if (type.len > 0 && type.data[0] == '+') {
-				mode = CONFIG_MODE_APP;
+				act  = CONFIG_ACT_APP;
 				type = STRVN(&type.data[1], type.len - 1);
 			} else if (type.len > 0 && type.data[0] == '?') {
-				mode = CONFIG_MODE_EN;
+				act  = CONFIG_ACT_EN;
 				type = STRVN(&type.data[1], type.len - 1);
 			}
 
@@ -224,7 +220,7 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 					name = filter;
 				}
 
-				if (mode == CONFIG_MODE_SET) {
+				if (act == CONFIG_ACT_SET) {
 					if (registry_find_pkg(registry, name, &pkg)) {
 						log_error("cbuild", "mod_cfg", NULL, "package does not exist: %.*s", name.len, name.data);
 						ret = 1;
@@ -232,7 +228,7 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 					}
 				} else {
 					registry_add_pkg(registry, name, &pkg);
-					config_pkg(config, pkg, mode);
+					config_str_list(config, CONFIG_PKGS, pkg, -1, act, name, NULL);
 				}
 
 				cfg_var_t var;
@@ -240,10 +236,10 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 					ret |= parse_pkg_deps(config, pkg, cfg, var);
 				}
 				if (cfg_has_var(cfg, tbl, STRV("uri"), &var)) {
-					ret |= parse_pkg_uri(config, pkg, cfg, var);
+					ret |= parse_pkg_uri(mod, config, pkg, cfg, var);
 				}
 				if (cfg_has_var(cfg, tbl, STRV("include"), &var)) {
-					ret |= parse_pkg_inc(config, pkg, cfg, var);
+					ret |= parse_pkg_inc(mod, config, pkg, cfg, var);
 				}
 			} else if (strv_eq(type, STRV("tgt"))) {
 				if (filters.data == NULL) {
@@ -259,7 +255,7 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 				}
 
 				uint tgt;
-				if (mode == CONFIG_MODE_SET) {
+				if (act == CONFIG_ACT_SET) {
 					if (registry_find_tgt(registry, pkg, name, &tgt)) {
 						log_error("cbuild", "mod_cfg", NULL, "target does not exist: %.*s", name.len, name.data);
 						ret = 1;
@@ -267,7 +263,7 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 					}
 				} else {
 					registry_add_tgt(registry, pkg, name, &tgt);
-					config_tgt(config, pkg, tgt, mode);
+					config_str_list(config, CONFIG_TGTS, pkg, tgt, act, name, NULL);
 				}
 
 				cfg_var_t var;
@@ -275,22 +271,22 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 
 				if (cfg_has_var(cfg, tbl, STRV("prep"), &var)) {
 					cfg_get_str(cfg, var, &val);
-					config_str(config, CONFIG_OP_TYPE_TGT_PREP, pkg, tgt, CONFIG_MODE_SET, val);
+					config_str(config, mod->ops + CONFIG_TGT_PREP, pkg, tgt, CONFIG_ACT_SET, val);
 				}
 
 				if (cfg_has_var(cfg, tbl, STRV("conf"), &var)) {
 					cfg_get_str(cfg, var, &val);
-					config_str(config, CONFIG_OP_TYPE_TGT_CONF, pkg, tgt, CONFIG_MODE_SET, val);
+					config_str(config, mod->ops + CONFIG_TGT_CONF, pkg, tgt, CONFIG_ACT_SET, val);
 				}
 
 				if (cfg_has_var(cfg, tbl, STRV("comp"), &var)) {
 					cfg_get_str(cfg, var, &val);
-					config_str(config, CONFIG_OP_TYPE_TGT_COMP, pkg, tgt, CONFIG_MODE_SET, val);
+					config_str(config, mod->ops + CONFIG_TGT_COMP, pkg, tgt, CONFIG_ACT_SET, val);
 				}
 
 				if (cfg_has_var(cfg, tbl, STRV("inst"), &var)) {
 					cfg_get_str(cfg, var, &val);
-					config_str(config, CONFIG_OP_TYPE_TGT_INST, pkg, tgt, CONFIG_MODE_SET, val);
+					config_str(config, mod->ops + CONFIG_TGT_INST, pkg, tgt, CONFIG_ACT_SET, val);
 				}
 
 				if (cfg_has_var(cfg, tbl, STRV("deps"), &var)) {
@@ -299,26 +295,28 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 
 				if (cfg_has_var(cfg, tbl, STRV("out"), &var)) {
 					cfg_get_str(cfg, var, &val);
-					config_str(config, CONFIG_OP_TYPE_TGT_OUT, pkg, tgt, CONFIG_MODE_SET, val);
+					config_str(config, mod->ops + CONFIG_TGT_OUT_PATH, pkg, tgt, CONFIG_ACT_SET, val);
 				}
 
 				if (cfg_has_var(cfg, tbl, STRV("lib"), &var)) {
 					cfg_get_str(cfg, var, &val);
-					config_str(config, CONFIG_OP_TYPE_TGT_LIB, pkg, tgt, CONFIG_MODE_SET, val);
+					config_str(config, mod->ops + CONFIG_TGT_OUT_NAME, pkg, tgt, CONFIG_ACT_SET, val);
+					config_int(config, mod->ops + CONFIG_TGT_OUT_TYPE, pkg, tgt, CONFIG_ACT_SET, TARGET_TGT_TYPE_LIB);
 				}
 
 				if (cfg_has_var(cfg, tbl, STRV("exe"), &var)) {
 					cfg_get_str(cfg, var, &val);
-					config_str(config, CONFIG_OP_TYPE_TGT_EXE, pkg, tgt, CONFIG_MODE_SET, val);
+					config_str(config, mod->ops + CONFIG_TGT_OUT_NAME, pkg, tgt, CONFIG_ACT_SET, val);
+					config_int(config, mod->ops + CONFIG_TGT_OUT_TYPE, pkg, tgt, CONFIG_ACT_SET, TARGET_TGT_TYPE_EXE);
 				}
 			}
 		} else {
 			if (strv_eq(key, STRV("deps"))) {
 				ret |= parse_pkg_deps(config, pkg, cfg, tbl);
 			} else if (strv_eq(key, STRV("uri"))) {
-				ret |= parse_pkg_uri(config, pkg, cfg, tbl);
+				ret |= parse_pkg_uri(mod, config, pkg, cfg, tbl);
 			} else if (strv_eq(key, STRV("include"))) {
-				ret |= parse_pkg_inc(config, pkg, cfg, tbl);
+				ret |= parse_pkg_inc(mod, config, pkg, cfg, tbl);
 			}
 		}
 	}
@@ -326,11 +324,9 @@ static int parse_cfg_com(config_t *config, registry_t *registry, uint pkg, const
 	return ret;
 }
 
-int config_cfg(mod_t *mod, config_t *config, config_t *tmp, registry_t *registry, cfg_var_t root, fs_t *fs, proc_t *proc, strv_t proj_path,
-	       strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+int config_cfg(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, cfg_var_t root, fs_t *fs,
+	       proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
 {
-	(void)mod;
-
 	if (config == NULL) {
 		return 1;
 	}
@@ -339,7 +335,7 @@ int config_cfg(mod_t *mod, config_t *config, config_t *tmp, registry_t *registry
 
 	mod_cfg_priv_t *priv = mod->priv;
 
-	ret |= parse_cfg_ext(config, tmp, registry, &priv->cfg, root, fs, proc, proj_path, buf, alloc, dst);
+	ret |= parse_cfg_ext(config, tmp, schema, registry, &priv->cfg, root, fs, proc, proj_path, buf, alloc, dst);
 
 	uint pkg;
 	if (registry_add_pkg(registry, name, &pkg)) {
@@ -348,19 +344,19 @@ int config_cfg(mod_t *mod, config_t *config, config_t *tmp, registry_t *registry
 
 	config_state_t state;
 	config_get_state(tmp, &state);
-	ret |= config_pkg(tmp, pkg, CONFIG_MODE_EN);
-	ret |= config_str(tmp, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_EN, cur_path);
-	ret |= parse_cfg_com(tmp, registry, pkg, &priv->cfg, root);
+	ret |= config_str_list(tmp, CONFIG_PKGS, pkg, -1, CONFIG_ACT_EN, name, NULL);
+	ret |= config_str(tmp, CONFIG_PKG_PATH, pkg, -1, CONFIG_ACT_EN, cur_path);
+	ret |= parse_cfg_com(mod, tmp, registry, pkg, &priv->cfg, root);
 	tmp->prio = config->prio + 1;
-	ret |= config_merge(config, tmp, state, registry);
+	ret |= config_merge(config, tmp, state, schema, registry);
 	tmp->prio = config->prio;
 	config_set_state(tmp, state);
 
 	return ret;
 }
 
-static int mod_cfg_config_fs(mod_t *mod, config_t *config, config_t *tmp, registry_t *registry, fs_t *fs, proc_t *proc, strv_t proj_path,
-			     strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+static int mod_cfg_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, fs_t *fs,
+			     proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
 {
 	int ret = 0;
 
@@ -376,12 +372,104 @@ static int mod_cfg_config_fs(mod_t *mod, config_t *config, config_t *tmp, regist
 		size_t strs_cnt	     = priv->cfg.strs.used;
 		fs_read(fs, STRVS(path), 0, buf);
 		ret |= cfg_prs_parse(&priv->prs, STRVS(*buf), &priv->cfg, &root, dst);
-		ret |= config_cfg(mod, config, tmp, registry, root, fs, proc, proj_path, cur_path, name, buf, alloc, dst);
+		ret |= config_cfg(mod, config, tmp, schema, registry, root, fs, proc, proj_path, cur_path, name, buf, alloc, dst);
 		priv->cfg.vars.cnt  = vars_cnt;
 		priv->cfg.strs.used = strs_cnt;
 	}
 
 	return ret;
+}
+
+static int mod_cfg_apply_val(mod_t *mod, const config_schema_t *schema, const config_t *config, const config_val_t *v, proj_t *proj)
+
+{
+	config_schema_op_t *op = config_schema_get_op(schema, v->op);
+	if (op == NULL) {
+		log_error("cbuild", "config", NULL, "invalid op: %d", v->op);
+		return 1;
+	}
+
+	pkg_t *pkg    = NULL;
+	target_t *tgt = NULL;
+
+	switch (op->scope) {
+	case CONFIG_SCOPE_PKG: {
+		pkg = proj_get_pkg(proj, v->pkg);
+		if (pkg == NULL) {
+			log_error("cbuild", "proj_cfg", NULL, "package does not exist: %d", v->pkg);
+			return 1;
+		}
+		break;
+	}
+	case CONFIG_SCOPE_TGT: {
+		tgt = proj_get_target(proj, v->tgt);
+		if (tgt == NULL) {
+			log_error("cbuild", "proj_cfg", NULL, "target does not exist: %d", v->tgt);
+			return 1;
+		}
+		break;
+	}
+	default: {
+		log_error("cbuild", "mod_cfg", NULL, "invalid op scope: %d", op->scope);
+		return 1;
+	}
+	}
+
+	switch (v->op - mod->ops) {
+	case CONFIG_PKG_URI: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		proj_set_uri(proj, pkg, val);
+		break;
+	}
+	case CONFIG_PKG_INC: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		if (pkg->has_targets) {
+			target_t *target;
+			list_node_t k = pkg->targets;
+			list_foreach(&proj->targets, k, target)
+			{
+				proj_set_str(proj, target->strs + TGT_STR_INC, val);
+			}
+		}
+		break;
+	}
+	case CONFIG_TGT_PREP: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		proj_set_str(proj, tgt->strs + TGT_STR_PREP, val);
+		break;
+	}
+	case CONFIG_TGT_CONF: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		proj_set_str(proj, tgt->strs + TGT_STR_CONF, val);
+		break;
+	}
+	case CONFIG_TGT_COMP: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		proj_set_str(proj, tgt->strs + TGT_STR_COMP, val);
+		break;
+	}
+	case CONFIG_TGT_INST: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		proj_set_str(proj, tgt->strs + TGT_STR_INST, val);
+		break;
+	}
+	case CONFIG_TGT_OUT_PATH: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		proj_set_str(proj, tgt->strs + TGT_STR_OUT, val);
+		break;
+	}
+	case CONFIG_TGT_OUT_NAME: {
+		strv_t val = strvbuf_get(&config->strs, v->args.s);
+		proj_set_str(proj, tgt->strs + TGT_STR_TGT, val);
+		break;
+	}
+	case CONFIG_TGT_OUT_TYPE: {
+		tgt->out_type = v->args.i;
+		break;
+	}
+	}
+
+	return 0;
 }
 
 static int mod_cfg_proj_cfg(mod_t *mod, proj_t *proj)
@@ -408,11 +496,29 @@ static int mod_cfg_proj_cfg(mod_t *mod, proj_t *proj)
 	return 0;
 }
 
-static int mod_cfg_init(mod_t *mod, uint cap, alloc_t alloc)
+static int mod_cfg_init(mod_t *mod, uint cap, config_schema_t *config_schema, alloc_t alloc)
 {
 	mod_cfg_priv_t *priv = mod->priv = mem_alloc(sizeof(mod_cfg_priv_t));
 	cfg_prs_init(&priv->prs, alloc);
 	cfg_init(&priv->cfg, cap * 4, cap * 4, alloc);
+
+	mod->ops = config_schema->ops.cnt;
+
+	config_schema_op_desc_t ops[] = {
+		{.name = STRV("uri"), .scope = CONFIG_SCOPE_PKG, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("inc"), .scope = CONFIG_SCOPE_PKG, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("prep"), .scope = CONFIG_SCOPE_TGT, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("conf"), .scope = CONFIG_SCOPE_TGT, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("comp"), .scope = CONFIG_SCOPE_TGT, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("inst"), .scope = CONFIG_SCOPE_TGT, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("path"), .scope = CONFIG_SCOPE_TGT, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("name"), .scope = CONFIG_SCOPE_TGT, .type = CONFIG_TYPE_STR, .priv = mod},
+		{.name = STRV("type"), .scope = CONFIG_SCOPE_TGT, .type = CONFIG_TYPE_INT, .priv = mod},
+
+	};
+
+	config_schema_add_ops(config_schema, ops, sizeof(ops));
+
 	return 0;
 }
 
@@ -430,6 +536,7 @@ static mod_t mod_cfg = {
 	.init	   = mod_cfg_init,
 	.free	   = mod_cfg_free,
 	.config_fs = mod_cfg_config_fs,
+	.apply_val = mod_cfg_apply_val,
 	.proj_cfg  = mod_cfg_proj_cfg,
 };
 

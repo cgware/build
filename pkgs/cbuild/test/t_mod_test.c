@@ -1,5 +1,6 @@
 #include "mod.h"
 
+#include "mod_base.h"
 #include "test.h"
 
 static mod_t *mod_test_init()
@@ -14,19 +15,13 @@ static mod_t *mod_test_init()
 			continue;
 		}
 
-		mod->init(mod, 0, ALLOC_STD);
 		return mod;
 	}
 
 	return NULL;
 }
 
-static void mod_test_free(mod_t *mod)
-{
-	mod->free(mod);
-}
-
-TESTP(mod_test_config_fs, mod_t *mod)
+TESTP(mod_test_config_fs, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
@@ -52,14 +47,15 @@ TESTP(mod_test_config_fs, mod_t *mod)
 	char tmp[128] = {0};
 	str_t buf     = STRB(tmp, 0);
 
-	EXPECT_EQ(mod->config_fs(mod, &config, &tc, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()), 0);
+	EXPECT_EQ(mod->config_fs(
+			  mod, &config, &tc, schema, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()),
+		  0);
 
 	char out[256] = {0};
-	config_print(&config, &registry, DST_BUF(out));
+	config_print(&config, schema, &registry, DST_BUF(out));
 	EXPECT_STR(out,
 		   "pkgs ?= \n"
-		   "::path ?= \n"
-		   "\n"
+		   ":path ?= \n"
 		   ":tgts += test\n"
 		   ":test:type = 5\n"
 		   ":test:src = test\n"
@@ -109,9 +105,13 @@ STEST(mod_test)
 {
 	SSTART;
 
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 8, ALLOC_STD);
+	mod_base_init(0, &schema, ALLOC_STD);
 	mod_t *mod = mod_test_init();
-	RUNP(mod_test_config_fs, mod);
+	RUNP(mod_test_config_fs, mod, &schema);
 	RUNP(mod_test_proj_cfg, mod);
-	mod_test_free(mod);
+	config_schema_free(&schema);
+
 	SEND;
 }

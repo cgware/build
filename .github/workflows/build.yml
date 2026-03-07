@@ -75,6 +75,12 @@ jobs:
       - name: Build
         run: ./scripts/build.sh -g ${{ matrix.gen }} -a ${{ matrix.arch }} -c ${{ matrix.conf }} -t "all test"
 
+      - name: Log
+        if: always() && matrix.gen == 'C'
+        run: |
+          cat build/Testing/Temporary/LastTest.log
+          cat build/${{ matrix.arch }}-${{ matrix.conf }}/Testing/Temporary/LastTest.log
+
       - name: Upload
         if: matrix.gen == 'M' && matrix.conf == 'Release'
         uses: actions/upload-artifact@v4

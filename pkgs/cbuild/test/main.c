@@ -4,10 +4,12 @@
 
 STEST(config);
 STEST(config_fs);
+STEST(config_schema);
 STEST(gen);
 STEST(gen_cmake);
 STEST(gen_make);
 STEST(gen_none);
+STEST(mod_base);
 STEST(mod_cfg);
 STEST(mod_drv);
 STEST(mod_exe);
@@ -26,10 +28,12 @@ TEST(cbuild)
 	SSTART;
 	RUN(config);
 	RUN(config_fs);
+	RUN(config_schema);
 	RUN(gen);
+	RUN(gen_cmake);
 	RUN(gen_make);
 	RUN(gen_none);
-	RUN(gen_cmake);
+	RUN(mod_base);
 	RUN(mod_cfg);
 	RUN(mod_drv);
 	RUN(mod_exe);

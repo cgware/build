@@ -1,6 +1,7 @@
 #include "mod.h"
 
 #include "mem.h"
+#include "mod_base.h"
 #include "path.h"
 #include "test.h"
 
@@ -16,19 +17,13 @@ static mod_t *mod_pkgs_init()
 			continue;
 		}
 
-		mod->init(mod, 2, ALLOC_STD);
 		return mod;
 	}
 
 	return NULL;
 }
 
-static void mod_pkgs_free(mod_t *mod)
-{
-	mod->free(mod);
-}
-
-TESTP(mod_pkgs_config_fs, mod_t *mod)
+TESTP(mod_pkgs_config_fs, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
@@ -56,23 +51,22 @@ TESTP(mod_pkgs_config_fs, mod_t *mod)
 	char tmp[128] = {0};
 	str_t buf     = STRB(tmp, 0);
 
-	EXPECT_EQ(mod->config_fs(mod, &config, &tc, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()), 0);
+	EXPECT_EQ(mod->config_fs(
+			  mod, &config, &tc, schema, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()),
+		  0);
 
 	char out[256] = {0};
-	config_print(&config, &registry, DST_BUF(out));
+	config_print(&config, schema, &registry, DST_BUF(out));
 	EXPECT_STR(out,
 		   "pkgs ?= p1\n"
-		   "p1::path ?= pkgs" SEP "p1\n"
-		   "\n"
+		   "p1:path ?= pkgs" SEP "p1\n"
 		   "p1:tgts += p1\n"
 		   "p1:p1:type = 2\n"
 		   "p1:p1:src = src\n"
 		   "p1:p1:inc = include\n"
 		   "p1:p1:incs_priv = src\n"
-		   "\n"
 		   "pkgs ?= p2\n"
-		   "p2::path ?= pkgs" SEP "p2\n"
-		   "\n"
+		   "p2:path ?= pkgs" SEP "p2\n"
 		   "p2:tgts += p2\n"
 		   "p2:p2:type = 2\n"
 		   "p2:p2:src = src\n"
@@ -88,27 +82,16 @@ TESTP(mod_pkgs_config_fs, mod_t *mod)
 	END;
 }
 
-TESTP(mod_pkgs_proj_cfg, mod_t *mod)
-{
-	START;
-
-	proj_t proj = {0};
-	proj_init(&proj, 1, 1, ALLOC_STD);
-
-	EXPECT_EQ(mod->proj_cfg(mod, &proj), 0);
-
-	proj_free(&proj);
-
-	END;
-}
-
 STEST(mod_pkgs)
 {
 	SSTART;
 
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 8, ALLOC_STD);
+	mod_base_init(0, &schema, ALLOC_STD);
 	mod_t *mod = mod_pkgs_init();
-	RUNP(mod_pkgs_config_fs, mod);
-	RUNP(mod_pkgs_proj_cfg, mod);
-	mod_pkgs_free(mod);
+	RUNP(mod_pkgs_config_fs, mod, &schema);
+	config_schema_free(&schema);
+
 	SEND;
 }

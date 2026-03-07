@@ -3,6 +3,7 @@
 #include "log.h"
 #include "mem.h"
 #include "mod.h"
+#include "mod_base.h"
 #include "path.h"
 #include "platform.h"
 #include "proj_cfg.h"
@@ -42,30 +43,37 @@ static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t
 	registry_t registry = {0};
 	registry_init(&registry, 16, ALLOC_STD);
 
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 16, ALLOC_STD);
+
+	mod_base_init(0, &schema, ALLOC_STD);
+
 	for (driver_t *i = DRIVER_START; i < DRIVER_END; i++) {
 		if (i->type != DRIVER_TYPE_MOD) {
 			continue;
 		}
 
 		mod_t *mod = i->data;
-		mod->init(mod, 2, ALLOC_STD);
+		if (mod->init) {
+			mod->init(mod, 2, &schema, ALLOC_STD);
+		}
 	}
 
 	config_t config = {0};
 	config_init(&config, 16, ALLOC_STD);
 	config_t tmp_config = {0};
 	config_init(&tmp_config, 16, ALLOC_STD);
-	if (config_fs(&config, &tmp_config, &registry, &fs, proc, STRVS(proj_rel), STRV_NULL, name, buf, ALLOC_STD, DST_STD())) {
+	if (config_fs(&config, &tmp_config, &schema, &registry, &fs, proc, STRVS(proj_rel), STRV_NULL, name, buf, ALLOC_STD, DST_STD())) {
 		ret = 1;
 	}
 
 	log_info("cbuild", "main", NULL, "config:");
-	config_print(&config, &registry, DST_STD());
+	config_print(&config, &schema, &registry, DST_STD());
 
 	proj_t proj = {0};
 	proj_init(&proj, registry.pkgs.cnt, registry.tgts.cnt, ALLOC_STD);
 	proj_set_str(&proj, proj.name, name);
-	if (proj_cfg(&proj, &config, &registry)) {
+	if (proj_cfg(&proj, &config, &schema, &registry)) {
 		ret = 1;
 	}
 
@@ -86,10 +94,13 @@ static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t
 		}
 
 		mod_t *mod = i->data;
-		mod->free(mod);
+		if (mod->free) {
+			mod->free(mod);
+		}
 	}
 
 	proj_free(&proj);
+	config_schema_free(&schema);
 	registry_free(&registry);
 	fs_free(&fs);
 

@@ -35,11 +35,11 @@ TEST(config_state)
 	config_get_state(NULL, NULL);
 	config_get_state(&config, &state);
 
-	config_pkg(&config, 0, 0);
+	config_int(&config, 0, 0, 0, 0, 0);
 
 	config_set_state(NULL, state);
 	config_set_state(&config, state);
-	EXPECT_EQ(config.ops.cnt, 0);
+	EXPECT_EQ(config.vals.cnt, 0);
 	EXPECT_EQ(config.strs.used, 0);
 	EXPECT_EQ(config.lists.cnt, 0);
 
@@ -48,20 +48,20 @@ TEST(config_state)
 	END;
 }
 
-TEST(config_pkg)
+TEST(config_int)
 {
 	START;
 
 	config_t config = {0};
-	log_set_quiet(0, 1);
-	config_init(&config, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
+	config_init(&config, 1, ALLOC_STD);
 
-	EXPECT_EQ(config_pkg(NULL, 0, 0), 1);
+	EXPECT_EQ(config_int(NULL, 0, 0, 0, CONFIG_ACT_UNKNOWN, 0), 1);
 	mem_oom(1);
-	EXPECT_EQ(config_pkg(&config, 0, 0), 1);
+	config.vals.cnt = config.vals.cap;
+	EXPECT_EQ(config_int(&config, 0, 0, 0, CONFIG_ACT_UNKNOWN, 0), 1);
+	config.vals.cnt = 0;
 	mem_oom(0);
-	EXPECT_EQ(config_pkg(&config, 0, 0), 0);
+	EXPECT_EQ(config_int(&config, 0, 0, 0, CONFIG_ACT_UNKNOWN, 0), 0);
 
 	config_free(&config);
 
@@ -78,14 +78,13 @@ TEST(config_str)
 	EXPECT_EQ(config_str(NULL, 0, 0, 0, 0, STRV_NULL), 1);
 	mem_oom(1);
 	config.strs.used = config.strs.size;
-	EXPECT_EQ(config_str(&config, CONFIG_OP_TYPE_PKG_PATH, 0, -1, 0, STRV_NULL), 1);
+	EXPECT_EQ(config_str(&config, 0, 0, 0, 0, STRV_NULL), 1);
 	config.strs.used = 0;
-	config.ops.cnt	 = config.ops.cap;
-	EXPECT_EQ(config_str(&config, CONFIG_OP_TYPE_PKG_PATH, 0, -1, 0, STRV_NULL), 1);
-	EXPECT_EQ(config_str(&config, __CONFIG_OP_TYPE_CNT, 0, -1, 0, STRV_NULL), 1);
-	config.ops.cnt = 0;
+	config.vals.cnt	 = config.vals.cap;
+	EXPECT_EQ(config_str(&config, 0, 0, 0, 0, STRV_NULL), 1);
+	config.vals.cnt = 0;
 	mem_oom(0);
-	EXPECT_EQ(config_str(&config, CONFIG_OP_TYPE_PKG_PATH, 0, -1, 0, STRV_NULL), 0);
+	EXPECT_EQ(config_str(&config, 0, 0, 0, 0, STRV_NULL), 0);
 
 	config_free(&config);
 
@@ -97,108 +96,38 @@ TEST(config_str_list)
 	START;
 
 	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
+	config_init(&config, 2, ALLOC_STD);
 
-	uint deps;
-
-	EXPECT_EQ(config_str_list(NULL, 0, 0, -1, 0, STRV_NULL, NULL), 1);
+	EXPECT_EQ(config_str_list(NULL, 0, 0, 0, 0, STRV_NULL, NULL), 1);
 	mem_oom(1);
 	config.strs.used = config.strs.size;
-	EXPECT_EQ(config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, 0, -1, 0, STRV_NULL, NULL), 1);
+	EXPECT_EQ(config_str_list(&config, 0, 0, 0, 0, STRV_NULL, NULL), 1);
 	config.strs.used = 0;
 	config.lists.cnt = config.lists.cap;
-	EXPECT_EQ(config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, 0, -1, 0, STRV_NULL, NULL), 1);
+	EXPECT_EQ(config_str_list(&config, 0, 0, 0, 0, STRV_NULL, NULL), 1);
 	config.lists.cnt = 0;
-	config.ops.cnt	 = config.ops.cap;
-	EXPECT_EQ(config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, 0, -1, 0, STRV_NULL, NULL), 1);
-	config.ops.cnt = 0;
+	config.vals.cnt	 = config.vals.cap;
+	EXPECT_EQ(config_str_list(&config, 0, 0, 0, 0, STRV_NULL, NULL), 1);
+	config.vals.cnt = 0;
 	mem_oom(0);
-	EXPECT_EQ(config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, 0, -1, 0, STRV_NULL, &deps), 0);
+
+	log_set_quiet(0, 1);
+	uint deps = config.vals.cnt;
+	EXPECT_EQ(config_str_list(&config, 0, 0, 0, 0, STRV_NULL, &deps), 1);
+	deps = -1;
+	log_set_quiet(0, 0);
+
+	EXPECT_EQ(config_str_list(&config, 0, 0, 0, 0, STRV_NULL, &deps), 0);
 	EXPECT_EQ(deps, 0);
 
-	config_free(&config);
-
-	END;
-}
-
-TEST(config_str_list_add)
-{
-	START;
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	uint deps;
-	config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, 0, -1, 0, STRV_NULL, &deps);
-
-	EXPECT_EQ(config_str_list_add(NULL, deps, STRV_NULL), 1);
-	log_set_quiet(0, 1);
-	EXPECT_EQ(config_str_list_add(&config, config.lists.cnt, STRV_NULL), 1);
-	log_set_quiet(0, 0);
-
 	mem_oom(1);
-	size_t used	 = config.strs.used;
-	config.strs.used = config.strs.size;
-	EXPECT_EQ(config_str_list_add(&config, deps, STRV_NULL), 1);
-	config.strs.used = used;
-
-	uint cnt	 = config.lists.cnt;
-	config.lists.cnt = config.lists.cap;
-	EXPECT_EQ(config_str_list_add(&config, deps, STRV_NULL), 1);
-	config.lists.cnt = cnt;
+	config_val_t *v	 = arr_get(&config.vals, deps);
+	list_node_t list = v->args.l;
+	v->args.l	 = config.lists.cnt;
+	EXPECT_EQ(config_str_list(&config, 0, 0, 0, 0, STRV_NULL, &deps), 1);
+	v	  = arr_get(&config.vals, deps);
+	v->args.l = list;
 	mem_oom(0);
-
-	config_op_t *op	 = arr_get(&config.ops, deps);
-	list_node_t list = op->args.l;
-	op->args.l	 = config.lists.cnt;
-	log_set_quiet(0, 1);
-	EXPECT_EQ(config_str_list_add(&config, deps, STRV_NULL), 1);
-	log_set_quiet(0, 0);
-	op	   = arr_get(&config.ops, deps);
-	op->args.l = list;
-
-	EXPECT_EQ(config_str_list_add(&config, deps, STRV_NULL), 0);
-	EXPECT_EQ(deps, 0);
-
-	config_free(&config);
-
-	END;
-}
-
-TEST(config_tgt)
-{
-	START;
-
-	config_t config = {0};
-	log_set_quiet(0, 1);
-	config_init(&config, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	EXPECT_EQ(config_tgt(NULL, 0, 0, 0), 1);
-	mem_oom(1);
-	EXPECT_EQ(config_tgt(&config, 0, 0, 0), 1);
-	mem_oom(0);
-	EXPECT_EQ(config_tgt(&config, 0, 0, 0), 0);
-
-	config_free(&config);
-
-	END;
-}
-
-TEST(config_tgt_type)
-{
-	START;
-
-	config_t config = {0};
-	log_set_quiet(0, 1);
-	config_init(&config, 0, ALLOC_STD);
-	log_set_quiet(0, 0);
-
-	EXPECT_EQ(config_tgt_type(NULL, 0, 0, 0, 0), 1);
-	mem_oom(1);
-	EXPECT_EQ(config_tgt_type(&config, 0, 0, 0, 0), 1);
-	mem_oom(0);
-	EXPECT_EQ(config_tgt_type(&config, 0, 0, 0, 0), 0);
 
 	config_free(&config);
 
@@ -209,8 +138,12 @@ TEST(config_merge)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc[] = {
+		{CONFIG_TYPE_UNKNOWN, CONFIG_SCOPE_GLOBAL, STRV(""), NULL},
+	};
+	config_schema_add_ops(&schema, desc, sizeof(desc));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
@@ -218,13 +151,19 @@ TEST(config_merge)
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
 
-	EXPECT_EQ(config_merge(NULL, NULL, CONFIG_STATE_NULL, NULL), 1);
+	EXPECT_EQ(config_merge(NULL, NULL, CONFIG_STATE_NULL, NULL, NULL), 1);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	log_set_quiet(0, 1);
+	config_int(&other, 0, 0, 0, CONFIG_ACT_SET, 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
+	config_int(&config, 0, 0, 0, CONFIG_ACT_SET, 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
+	log_set_quiet(0, 0);
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -233,64 +172,62 @@ TEST(config_merge_same_unknown)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	config_op_t *op = arr_add(&config.ops, NULL);
-	op->type	= CONFIG_OP_TYPE_UNKNOWN;
-	op->mode	= __CONFIG_MODE_CNT;
+	config_val_t *v = arr_add(&config.vals, NULL);
+	v->op		= 0;
+	v->act		= __CONFIG_ACT_CNT;
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	op	 = arr_add(&other.ops, NULL);
-	op->type = CONFIG_OP_TYPE_UNKNOWN;
-	op->mode = __CONFIG_MODE_CNT;
+	v      = arr_add(&other.vals, NULL);
+	v->op  = 0;
+	v->act = __CONFIG_ACT_CNT;
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
+	config_print(&config, &schema, NULL, DST_BUF(buf));
 	EXPECT_STR(buf, "");
 	log_set_quiet(0, 0);
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
 
-TEST(config_merge_same_pkg)
+TEST(config_merge_same_int)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_INT, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(desc));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	config_pkg(&config, pkg, CONFIG_MODE_APP);
+	config_int(&config, 0, 0, 0, CONFIG_ACT_SET, 0);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_pkg(&other, pkg, CONFIG_MODE_APP);
+	config_int(&other, 0, 0, 0, CONFIG_ACT_SET, 0);
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkgs += pkg\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = 0\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -299,28 +236,28 @@ TEST(config_merge_same_str)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	config_str(&config, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_SET, STRV("path"));
+	config_str(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("path"));
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_str(&other, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_SET, STRV("path"));
+	config_str(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("path"));
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg::path = path\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = path\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -329,93 +266,32 @@ TEST(config_merge_same_str_list)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR_LIST, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	uint deps;
-	config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_SET, STRV("dep1"), &deps);
-	config_str_list_add(&config, deps, STRV("dep2"));
+	uint deps = -1;
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("dep1"), &deps);
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("dep2"), &deps);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_str_list(&other, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_SET, STRV("dep1"), &deps);
-	config_str_list_add(&other, deps, STRV("dep2"));
+	deps = -1;
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("dep1"), &deps);
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("dep2"), &deps);
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg::deps = dep1, dep2\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = dep1, dep2\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_merge_same_tgt)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 2, ALLOC_STD);
-	uint pkg, tgt;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-	config_tgt(&config, pkg, tgt, CONFIG_MODE_APP);
-
-	config_t other = {0};
-	config_init(&other, 1, ALLOC_STD);
-	config_tgt(&other, pkg, tgt, CONFIG_MODE_APP);
-
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
-
-	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg:tgts += tgt\n");
-
-	config_free(&config);
-	config_free(&other);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_merge_same_tgt_type)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 2, ALLOC_STD);
-	uint pkg, tgt;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-	config_tgt_type(&config, pkg, tgt, CONFIG_MODE_SET, 0);
-
-	config_t other = {0};
-	config_init(&other, 1, ALLOC_STD);
-	config_tgt_type(&other, pkg, tgt, CONFIG_MODE_SET, 0);
-
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
-
-	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg:tgt:type = 0\n");
-
-	config_free(&config);
-	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -424,62 +300,63 @@ TEST(config_merge_diff_mode)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_INT, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	config_pkg(&config, pkg, CONFIG_MODE_EN);
+	config_int(&config, 0, 0, 0, CONFIG_ACT_EN, 0);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_pkg(&other, pkg, CONFIG_MODE_APP);
+	config_int(&other, 0, 0, 0, CONFIG_ACT_APP, 0);
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkgs += pkg\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " += 0\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
 
-TEST(config_merge_diff_pkg)
+TEST(config_merge_diff_int)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 2, ALLOC_STD);
-	uint pkg1, pkg2;
-	registry_add_pkg(&registry, STRV("pkg1"), &pkg1);
-	registry_add_pkg(&registry, STRV("pkg2"), &pkg2);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_INT, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	config_pkg(&config, pkg1, CONFIG_MODE_APP);
+	config_int(&config, 0, 0, 0, CONFIG_ACT_SET, 0);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_pkg(&other, pkg2, CONFIG_MODE_APP);
+	config_int(&other, 0, 0, 0, CONFIG_ACT_SET, 1);
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	log_set_quiet(0, 1);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
+	log_set_quiet(0, 0);
+
+	other.prio = 1;
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf,
-		   "pkgs += pkg1\n"
-		   "\n"
-		   "pkgs += pkg2\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = 1\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -488,187 +365,116 @@ TEST(config_merge_diff_str)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	config_str(&config, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_SET, STRV("path1"));
+	config_str(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("path1"));
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_str(&other, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_SET, STRV("path2"));
+	config_str(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("path2"));
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 1);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
 	log_set_quiet(0, 0);
 
 	other.prio = 1;
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg::path = path2\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = path2\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
 
-TEST(config_merge_diff_str_list)
+TEST(config_merge_diff_str_list_set)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR_LIST, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 10, ALLOC_STD);
-	uint deps;
-	config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_SET, STRV("dep1"), &deps);
-	config_str_list_add(&config, deps, STRV("dep2"));
+	uint deps = -1;
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("dep1"), &deps);
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("dep2"), &deps);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_str_list(&other, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_SET, STRV("dep1"), &deps);
-	config_str_list_add(&other, deps, STRV("dep3"));
+	deps = -1;
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("dep1"), &deps);
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("dep3"), &deps);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 1);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
 	log_set_quiet(0, 0);
 
 	other.prio = 1;
 	mem_oom(1);
 	size_t cnt	 = config.strs.used;
 	config.strs.used = config.strs.size;
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 1);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
 	config.strs.used = cnt;
 	cnt		 = config.lists.cnt;
 	config.lists.cnt = config.lists.cap;
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 1);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
 	config.lists.cnt = cnt;
 	mem_oom(0);
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg::deps = dep1, dep3\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = dep1, dep3\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
 
-TEST(config_merge_diff_str_list_add)
+TEST(config_merge_diff_str_list_app)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR_LIST, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-	uint deps;
-	config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_APP, STRV("dep1"), &deps);
-	config_str_list_add(&config, deps, STRV("dep2"));
+	config_init(&config, 10, ALLOC_STD);
+	uint deps = -1;
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("dep1"), &deps);
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_SET, STRV("dep2"), &deps);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_str_list(&other, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_APP, STRV("dep1"), &deps);
-	config_str_list_add(&other, deps, STRV("dep3"));
+	deps = -1;
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_APP, STRV("dep1"), &deps);
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_APP, STRV("dep3"), &deps);
 
-	log_set_quiet(0, 1);
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
-	log_set_quiet(0, 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg::deps += dep1, dep2, dep3\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = dep1, dep2, dep3\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_merge_diff_tgt)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 3, ALLOC_STD);
-	uint pkg, tgt1, tgt2;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt1"), &tgt1);
-	registry_add_tgt(&registry, pkg, STRV("tgt2"), &tgt2);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-	config_tgt(&config, pkg, tgt1, CONFIG_MODE_APP);
-
-	config_t other = {0};
-	config_init(&other, 1, ALLOC_STD);
-	config_tgt(&other, pkg, tgt2, CONFIG_MODE_APP);
-
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
-
-	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf,
-		   "pkg:tgts += tgt1\n"
-		   "\n"
-		   "pkg:tgts += tgt2\n");
-
-	config_free(&config);
-	config_free(&other);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_merge_diff_tgt_type)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 2, ALLOC_STD);
-	uint pkg, tgt;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-	config_tgt_type(&config, pkg, tgt, CONFIG_MODE_SET, 0);
-
-	config_t other = {0};
-	config_init(&other, 1, ALLOC_STD);
-	config_tgt_type(&other, pkg, tgt, CONFIG_MODE_SET, 1);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 1);
-	log_set_quiet(0, 0);
-
-	other.prio = 1;
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
-
-	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg:tgt:type = 1\n");
-
-	config_free(&config);
-	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -677,59 +483,57 @@ TEST(config_merge_unknown)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_op_t *op = arr_add(&other.ops, NULL);
-	op->type	= 0;
+	config_val_t *v = arr_add(&other.vals, NULL);
+	v->op		= 0;
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 	log_set_quiet(0, 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
+	config_print(&config, &schema, NULL, DST_BUF(buf));
 	EXPECT_STR(buf, "");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
 
-TEST(config_merge_pkg)
+TEST(config_merge_int)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_INT, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_pkg(&other, pkg, CONFIG_MODE_APP);
+	config_int(&other, 0, 0, 0, CONFIG_ACT_SET, 0);
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkgs += pkg\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = 0\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -738,27 +542,27 @@ TEST(config_merge_str)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	config_str(&other, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_SET, STRV("path"));
+	config_str(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("path"));
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg::path = path\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = path\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -767,89 +571,29 @@ TEST(config_merge_str_list)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR_LIST, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
 	config_t other = {0};
 	config_init(&other, 1, ALLOC_STD);
-	uint deps;
-	config_str_list(&other, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_SET, STRV("dep1"), &deps);
-	config_str_list_add(&other, deps, STRV("dep2"));
+	uint deps = -1;
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("dep1"), &deps);
+	config_str_list(&other, 0, 0, 0, CONFIG_ACT_SET, STRV("dep2"), &deps);
 
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
+	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 
 	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg::deps = dep1, dep2\n");
+	config_print(&config, &schema, NULL, DST_BUF(buf));
+	EXPECT_STR(buf, " = dep1, dep2\n");
 
 	config_free(&config);
 	config_free(&other);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_merge_tgt)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 2, ALLOC_STD);
-	uint pkg, tgt;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t other = {0};
-	config_init(&other, 1, ALLOC_STD);
-	config_tgt(&other, pkg, tgt, CONFIG_MODE_APP);
-
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
-
-	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg:tgts += tgt\n");
-
-	config_free(&config);
-	config_free(&other);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_merge_tgt_type)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 2, ALLOC_STD);
-	uint pkg, tgt;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t other = {0};
-	config_init(&other, 1, ALLOC_STD);
-	config_tgt_type(&other, pkg, tgt, CONFIG_MODE_SET, 0);
-
-	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &registry), 0);
-
-	char buf[256] = {0};
-	config_print(&config, &registry, DST_BUF(buf));
-	EXPECT_STR(buf, "pkg:tgt:type = 0\n");
-
-	config_free(&config);
-	config_free(&other);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -863,10 +607,10 @@ TEST(config_print)
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
-	EXPECT_EQ(config_print(NULL, NULL, DST_NONE()), 0);
+	EXPECT_EQ(config_print(NULL, NULL, NULL, DST_NONE()), 0);
 
 	char buf[256] = {0};
-	EXPECT_EQ(config_print(&config, &registry, DST_BUF(buf)), 0);
+	EXPECT_EQ(config_print(&config, NULL, &registry, DST_BUF(buf)), 0);
 	EXPECT_STR(buf, "");
 
 	config_free(&config);
@@ -875,7 +619,7 @@ TEST(config_print)
 	END;
 }
 
-TEST(config_print_unknown)
+TEST(config_print_invalid_op)
 {
 	START;
 
@@ -883,12 +627,12 @@ TEST(config_print_unknown)
 	registry_init(&registry, 1, ALLOC_STD);
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
-	config_op_t *op = arr_add(&config.ops, NULL);
-	op->type	= 0;
+	config_val_t *v = arr_add(&config.vals, NULL);
+	v->op		= 0;
 
 	char buf[256] = {0};
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_print(&config, &registry, DST_BUF(buf)), 0);
+	EXPECT_EQ(config_print(&config, NULL, &registry, DST_BUF(buf)), 0);
 	log_set_quiet(0, 0);
 	EXPECT_STR(buf, "");
 
@@ -898,50 +642,149 @@ TEST(config_print_unknown)
 	END;
 }
 
-TEST(config_print_pkg)
+TEST(config_print_invalid_type)
 {
 	START;
 
 	registry_t registry = {0};
 	registry_init(&registry, 1, ALLOC_STD);
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_UNKNOWN, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
+
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	config_pkg(&config, pkg, CONFIG_MODE_APP);
+	config_val_t *v = arr_add(&config.vals, NULL);
+	v->op		= 0;
 
 	char buf[256] = {0};
-	EXPECT_NE(config_print(&config, &registry, DST_BUF(buf)), 0);
-	EXPECT_STR(buf, "pkgs += pkg\n");
+	log_set_quiet(0, 1);
+	EXPECT_EQ(config_print(&config, &schema, &registry, DST_BUF(buf)), 3);
+	log_set_quiet(0, 0);
+	EXPECT_STR(buf, " = ");
 
 	config_free(&config);
+	config_schema_free(&schema);
 	registry_free(&registry);
 
 	END;
 }
 
-TEST(config_print_pkg_invalid)
+TEST(config_print_invalid_mode)
+{
+	START;
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
+
+	config_t config = {0};
+	config_init(&config, 1, ALLOC_STD);
+
+	config_str(&config, 0, 0, 0, __CONFIG_ACT_CNT, STRV("path"));
+
+	char buf[256] = {0};
+	log_set_quiet(0, 1);
+	EXPECT_NE(config_print(&config, &schema, NULL, DST_BUF(buf)), 0);
+	log_set_quiet(0, 0);
+	EXPECT_STR(buf, " = path\n");
+
+	config_free(&config);
+	config_schema_free(&schema);
+
+	END;
+}
+
+TEST(config_print_invalid_scope)
+{
+	START;
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR, CONFIG_SCOPE_UNKNOWN, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
+
+	config_t config = {0};
+	config_init(&config, 1, ALLOC_STD);
+
+	config_str(&config, 0, 0, 0, __CONFIG_ACT_CNT, STRV("path"));
+
+	char buf[256] = {0};
+	log_set_quiet(0, 1);
+	EXPECT_NE(config_print(&config, &schema, NULL, DST_BUF(buf)), 0);
+	log_set_quiet(0, 0);
+	EXPECT_STR(buf, "path\n");
+
+	config_free(&config);
+	config_schema_free(&schema);
+
+	END;
+}
+
+TEST(config_print_scope)
 {
 	START;
 
 	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	registry_init(&registry, 3, ALLOC_STD);
+	uint pkg, tgt;
+	registry_add_pkg(&registry, STRV("pkg"), &pkg);
+	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc[] = {
+		{CONFIG_TYPE_INT, CONFIG_SCOPE_GLOBAL, STRV("g"), NULL},
+		{CONFIG_TYPE_INT, CONFIG_SCOPE_PKG, STRV("p"), NULL},
+		{CONFIG_TYPE_INT, CONFIG_SCOPE_TGT, STRV("t"), NULL},
+	};
+	config_schema_add_ops(&schema, desc, sizeof(desc));
+
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	config_pkg(&config, pkg, __CONFIG_MODE_CNT);
+	config_int(&config, 0, pkg, tgt, CONFIG_ACT_SET, 0);
+	config_int(&config, 1, pkg, tgt, CONFIG_ACT_SET, 0);
+	config_int(&config, 2, pkg, tgt, CONFIG_ACT_SET, 0);
 
 	char buf[256] = {0};
-	log_set_quiet(0, 1);
-	EXPECT_NE(config_print(&config, &registry, DST_BUF(buf)), 0);
-	log_set_quiet(0, 0);
-	EXPECT_STR(buf, "pkgs = pkg\n");
+	EXPECT_NE(config_print(&config, &schema, &registry, DST_BUF(buf)), 24);
+	EXPECT_STR(buf,
+		   "g = 0\n"
+		   "pkg:p = 0\n"
+		   "pkg:tgt:t = 0\n");
 
 	config_free(&config);
+	config_schema_free(&schema);
 	registry_free(&registry);
+
+	END;
+}
+
+TEST(config_print_int)
+{
+	START;
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_INT, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
+
+	config_t config = {0};
+	config_init(&config, 1, ALLOC_STD);
+
+	config_int(&config, 0, 0, 0, CONFIG_ACT_SET, 0);
+
+	char buf[256] = {0};
+	EXPECT_NE(config_print(&config, &schema, NULL, DST_BUF(buf)), 0);
+	EXPECT_STR(buf, " = 0\n");
+
+	config_free(&config);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -950,46 +793,22 @@ TEST(config_print_str)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
 
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-
-	config_str(&config, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_EN, STRV("path"));
+	config_str(&config, 0, 0, 0, CONFIG_ACT_EN, STRV("path"));
 
 	char buf[256] = {0};
-	EXPECT_NE(config_print(&config, &registry, DST_BUF(buf)), 0);
-	EXPECT_STR(buf, "pkg::path ?= path\n");
+	EXPECT_NE(config_print(&config, &schema, NULL, DST_BUF(buf)), 0);
+	EXPECT_STR(buf, " ?= path\n");
 
 	config_free(&config);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_print_str_invalid)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_str(&config, CONFIG_OP_TYPE_PKG_PATH, 0, -1, __CONFIG_MODE_CNT, STRV("path"));
-
-	char buf[256] = {0};
-	log_set_quiet(0, 1);
-	EXPECT_NE(config_print(&config, &registry, DST_BUF(buf)), 0);
-	log_set_quiet(0, 0);
-	EXPECT_STR(buf, "::path = path\n");
-
-	config_free(&config);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -998,73 +817,24 @@ TEST(config_print_str_list)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 1, ALLOC_STD);
+	config_schema_op_desc_t desc = {CONFIG_TYPE_STR_LIST, CONFIG_SCOPE_GLOBAL, STRV(""), NULL};
+	config_schema_add_ops(&schema, &desc, sizeof(config_schema_op_desc_t));
+
 	config_t config = {0};
 	config_init(&config, 1, ALLOC_STD);
 
-	uint pkg;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-
-	uint deps;
-	config_str_list(&config, CONFIG_OP_TYPE_PKG_DEPS, pkg, -1, CONFIG_MODE_EN, STRV("dep1"), &deps);
-	config_str_list_add(&config, deps, STRV("dep2"));
+	uint deps = -1;
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_EN, STRV("dep1"), &deps);
+	config_str_list(&config, 0, 0, 0, CONFIG_ACT_EN, STRV("dep2"), &deps);
 
 	char buf[256] = {0};
-	EXPECT_NE(config_print(&config, &registry, DST_BUF(buf)), 0);
-	EXPECT_STR(buf, "pkg::deps ?= dep1, dep2\n");
+	EXPECT_NE(config_print(&config, &schema, NULL, DST_BUF(buf)), 0);
+	EXPECT_STR(buf, " ?= dep1, dep2\n");
 
 	config_free(&config);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_print_tgt)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	uint pkg, tgt;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
-	config_tgt(&config, pkg, tgt, CONFIG_MODE_APP);
-
-	char buf[256] = {0};
-	EXPECT_NE(config_print(&config, &registry, DST_BUF(buf)), 0);
-	EXPECT_STR(buf, "pkg:tgts += tgt\n");
-
-	config_free(&config);
-	registry_free(&registry);
-
-	END;
-}
-
-TEST(config_print_tgt_type)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	uint pkg, tgt;
-	registry_add_pkg(&registry, STRV("pkg"), &pkg);
-	registry_add_tgt(&registry, pkg, STRV("tgt"), &tgt);
-
-	config_tgt_type(&config, pkg, tgt, CONFIG_MODE_SET, 0);
-
-	char buf[256] = {0};
-	EXPECT_NE(config_print(&config, &registry, DST_BUF(buf)), 0);
-	EXPECT_STR(buf, "pkg:tgt:type = 0\n");
-
-	config_free(&config);
-	registry_free(&registry);
+	config_schema_free(&schema);
 
 	END;
 }
@@ -1075,41 +845,32 @@ STEST(config)
 
 	RUN(config_init_free);
 	RUN(config_state);
-	RUN(config_pkg);
+	RUN(config_int);
 	RUN(config_str);
 	RUN(config_str_list);
-	RUN(config_str_list_add);
-	RUN(config_tgt);
-	RUN(config_tgt_type);
 	RUN(config_merge);
 	RUN(config_merge_same_unknown);
-	RUN(config_merge_same_pkg);
+	RUN(config_merge_same_int);
 	RUN(config_merge_same_str);
 	RUN(config_merge_same_str_list);
-	RUN(config_merge_same_tgt);
-	RUN(config_merge_same_tgt_type);
 	RUN(config_merge_diff_mode);
-	RUN(config_merge_diff_pkg);
+	RUN(config_merge_diff_int);
 	RUN(config_merge_diff_str);
-	RUN(config_merge_diff_str_list);
-	RUN(config_merge_diff_str_list_add);
-	RUN(config_merge_diff_tgt);
-	RUN(config_merge_diff_tgt_type);
+	RUN(config_merge_diff_str_list_set);
+	RUN(config_merge_diff_str_list_app);
 	RUN(config_merge_unknown);
-	RUN(config_merge_pkg);
+	RUN(config_merge_int);
 	RUN(config_merge_str);
 	RUN(config_merge_str_list);
-	RUN(config_merge_tgt);
-	RUN(config_merge_tgt_type);
 	RUN(config_print);
-	RUN(config_print_unknown);
-	RUN(config_print_pkg);
-	RUN(config_print_pkg_invalid);
+	RUN(config_print_invalid_op);
+	RUN(config_print_invalid_mode);
+	RUN(config_print_invalid_type);
+	RUN(config_print_invalid_scope);
+	RUN(config_print_scope);
+	RUN(config_print_int);
 	RUN(config_print_str);
-	RUN(config_print_str_invalid);
 	RUN(config_print_str_list);
-	RUN(config_print_tgt);
-	RUN(config_print_tgt_type);
 
 	SEND;
 }

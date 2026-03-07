@@ -4,8 +4,8 @@
 #include "mem.h"
 #include "path.h"
 
-static int mod_pkgs_config_fs(mod_t *mod, config_t *config, config_t *tmp, registry_t *registry, fs_t *fs, proc_t *proc, strv_t proj_path,
-			      strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+static int mod_pkgs_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, fs_t *fs,
+			      proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
 {
 	(void)mod;
 	(void)name;
@@ -32,6 +32,7 @@ static int mod_pkgs_config_fs(mod_t *mod, config_t *config, config_t *tmp, regis
 			path_push(&path, subdir);
 			ret |= config_fs(config,
 					 tmp,
+					 schema,
 					 registry,
 					 fs,
 					 proc,
@@ -50,34 +51,9 @@ static int mod_pkgs_config_fs(mod_t *mod, config_t *config, config_t *tmp, regis
 	return ret;
 }
 
-static int mod_pkgs_proj_cfg(mod_t *mod, proj_t *proj)
-{
-	(void)mod;
-	(void)proj;
-
-	return 0;
-}
-
-static int mod_pkgs_init(mod_t *mod, uint cap, alloc_t alloc)
-{
-	(void)mod;
-	(void)cap;
-	(void)alloc;
-	return 0;
-}
-
-static int mod_pkgs_free(mod_t *mod)
-{
-	(void)mod;
-	return 0;
-}
-
 static mod_t mod_pkgs = {
 	.name	   = STRVT("mod_pkgs"),
-	.init	   = mod_pkgs_init,
-	.free	   = mod_pkgs_free,
 	.config_fs = mod_pkgs_config_fs,
-	.proj_cfg  = mod_pkgs_proj_cfg,
 };
 
 MOD(mod_pkgs, &mod_pkgs);

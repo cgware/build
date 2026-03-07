@@ -1,12 +1,13 @@
 #include "proj_cfg.h"
 
 #include "log.h"
-#include "mod.h"
-#include "proj_utils.h"
+#include "mod_base.h"
 
-int proj_cfg(proj_t *proj, const config_t *config, const registry_t *registry)
+int proj_cfg(proj_t *proj, const config_t *config, const config_schema_t *schema, const registry_t *registry)
 {
-	if (proj == NULL) {
+	(void)registry;
+
+	if (proj == NULL || config == NULL) {
 		return 1;
 	}
 
@@ -15,365 +16,111 @@ int proj_cfg(proj_t *proj, const config_t *config, const registry_t *registry)
 	proj_set_str(proj, proj->outdir, STRV("bin/${ARCH}-${CONFIG}/"));
 
 	uint i = 0;
-	config_op_t *op;
-	arr_foreach(&config->ops, i, op)
+	config_val_t *v;
+	arr_foreach(&config->vals, i, v)
 	{
-		switch (op->type) {
-		case CONFIG_OP_TYPE_PKG: {
-			if (op->mode != CONFIG_MODE_APP && op->mode != CONFIG_MODE_EN) {
+		config_schema_op_t *op = config_schema_get_op(schema, v->op);
+		if (op == NULL) {
+			log_error("cbuild", "config", NULL, "invalid op: %d", v->op);
+			ret = 1;
+			continue;
+		}
+
+		switch (v->op) {
+		case CONFIG_PKGS: {
+			if (v->act != CONFIG_ACT_APP && v->act != CONFIG_ACT_EN) {
 				break;
 			}
 
-			strv_t name = registry_get_pkg(registry, op->pkg);
-
-			if (proj_find_pkg(proj, name, NULL)) {
-				if (op->mode == CONFIG_MODE_APP) {
-					log_error("cbuild", "proj_cfg", NULL, "package already exists: %.*s", name.len, name.data);
-					ret = 1;
+			const size_t *str;
+			list_node_t it = v->args.l;
+			list_foreach(&config->lists, it, str)
+			{
+				strv_t name = strvbuf_get(&config->strs, *str);
+				if (proj_find_pkg(proj, name, NULL)) {
+					if (v->act == CONFIG_ACT_APP) {
+						log_error("cbuild", "proj_cfg", NULL, "package already exists: %.*s", name.len, name.data);
+						ret = 1;
+					}
+					break;
 				}
-				break;
-			}
 
-			pkg_t *pkg = proj_add_pkg(proj, NULL);
-			if (pkg == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "failed to create package: %.*s", name.len, name.data);
-				return 1;
-			}
+				pkg_t *pkg = proj_add_pkg(proj, NULL);
+				if (pkg == NULL) {
+					log_error("cbuild", "proj_cfg", NULL, "failed to create package: %.*s", name.len, name.data);
+					return 1;
+				}
 
-			proj_set_str(proj, pkg->strs + PKG_STR_NAME, name);
+				proj_set_str(proj, pkg->strs + PKG_STR_NAME, name);
+			}
 
 			break;
 		}
-		case CONFIG_OP_TYPE_TGT: {
-			if (op->mode != CONFIG_MODE_APP && op->mode != CONFIG_MODE_EN) {
+		case CONFIG_TGTS: {
+			if (v->act != CONFIG_ACT_APP && v->act != CONFIG_ACT_EN) {
 				break;
 			}
 
-			strv_t name = registry_get_tgt(registry, op->tgt);
+			const size_t *str;
+			list_node_t it = v->args.l;
+			list_foreach(&config->lists, it, str)
+			{
+				strv_t name = strvbuf_get(&config->strs, *str);
 
-			if (proj_find_target(proj, op->pkg, name, NULL)) {
-				if (op->mode == CONFIG_MODE_APP) {
-					log_error("cbuild", "proj_cfg", NULL, "target already exists: %.*s", name.len, name.data);
-					ret = 1;
+				if (proj_find_target(proj, v->pkg, name, NULL)) {
+					if (v->act == CONFIG_ACT_APP) {
+						log_error("cbuild", "proj_cfg", NULL, "target already exists: %.*s", name.len, name.data);
+						ret = 1;
+					}
+					break;
 				}
-				break;
-			}
 
-			target_t *tgt = proj_add_target(proj, op->pkg, NULL);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "failed to create target");
-				return 1;
-			}
+				target_t *tgt = proj_add_target(proj, v->pkg, NULL);
+				if (tgt == NULL) {
+					log_error("cbuild", "proj_cfg", NULL, "failed to create target");
+					return 1;
+				}
 
-			proj_set_str(proj, tgt->strs + TGT_STR_NAME, name);
+				proj_set_str(proj, tgt->strs + TGT_STR_NAME, name);
+			}
 
 			break;
 		}
-		case CONFIG_OP_TYPE_TGT_TYPE: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
+		case CONFIG_TGT_TYPE: {
+			target_t *tgt = proj_get_target(proj, v->tgt);
 			if (tgt == NULL) {
 				log_error("cbuild", "proj_cfg", NULL, "target type specified before target name");
 				ret = 1;
 				break;
 			}
-			tgt->type = op->args.i;
+			tgt->type = v->args.i;
 			break;
 		}
-		default:
-			break;
 		}
 	}
 
 	i = 0;
-	arr_foreach(&config->ops, i, op)
+
+	arr_foreach(&config->vals, i, v)
 	{
-		switch (op->type) {
-		case CONFIG_OP_TYPE_PKG_PATH: {
-			pkg_t *pkg = proj_get_pkg(proj, op->pkg);
-			if (pkg == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "package does not exist: %d", op->pkg);
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, pkg->strs + PKG_STR_PATH, val);
-			break;
+		config_schema_op_t *op = config_schema_get_op(schema, v->op);
+		if (op == NULL) {
+			log_error("cbuild", "config", NULL, "invalid op: %d", v->op);
+			continue;
 		}
-		case CONFIG_OP_TYPE_PKG_INC: {
-			pkg_t *pkg = proj_get_pkg(proj, op->pkg);
-			if (pkg == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "package does not exist: %d", op->pkg);
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			if (pkg->has_targets) {
-				target_t *target;
-				list_node_t k = pkg->targets;
-				list_foreach(&proj->targets, k, target)
-				{
-					proj_set_str(proj, target->strs + TGT_STR_INC, val);
-				}
-			}
-			break;
-		}
-		case CONFIG_OP_TYPE_PKG_URI: {
-			pkg_t *pkg = proj_get_pkg(proj, op->pkg);
-			if (pkg == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "package does not exist: %d", op->pkg);
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			ret |= proj_set_uri(proj, pkg, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_PKG_DEPS: {
-			pkg_t *pkg = proj_get_pkg(proj, op->pkg);
-			if (pkg == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "package does not exist: %d", op->pkg);
-				ret = 1;
-				break;
-			}
-			const size_t *str;
-			list_node_t it = op->args.l;
-			list_foreach(&config->lists, it, str)
-			{
-				strv_t dep_pkg_name, dep_target_name;
-				strv_lsplit(strvbuf_get(&config->strs, *str), ':', &dep_pkg_name, &dep_target_name);
 
-				uint dep_pkg_id;
-				pkg_t *dep_pkg = proj_find_pkg(proj, dep_pkg_name, &dep_pkg_id);
-				if (dep_pkg == NULL) {
-					log_error(
-						"cbuild", "proj_cfg", NULL, "package not found: %.*s", dep_pkg_name.len, dep_pkg_name.data);
-					ret = 1;
-					continue;
-				}
-
-				if (dep_target_name.len > 0) {
-					uint dep_target_id;
-					target_t *target = proj_find_target(proj, dep_pkg_id, dep_target_name, &dep_target_id);
-					if (target == NULL) {
-						log_error("cbuild",
-							  "proj_cfg",
-							  NULL,
-							  "target not found: %.*s:%.*s",
-							  dep_pkg_name.len,
-							  dep_pkg_name.data,
-							  dep_target_name.len,
-							  dep_target_name.data);
-						ret = 1;
-						continue;
-					}
-					if (pkg->has_targets) {
-						target_t *target;
-						list_node_t k = pkg->targets;
-						list_foreach(&proj->targets, k, target)
-						{
-							proj_add_dep(proj, k, dep_target_id);
-						}
-					}
-				} else {
-					if (dep_pkg->has_targets) {
-						target_t *target;
-						list_node_t j = dep_pkg->targets;
-						list_foreach(&proj->targets, j, target)
-						{
-							if (target->type == TARGET_TYPE_TST) {
-								continue;
-							}
-
-							if (pkg->has_targets) {
-								target_t *target;
-								list_node_t k = pkg->targets;
-								list_foreach(&proj->targets, k, target)
-								{
-									proj_add_dep(proj, k, j);
-								}
-							}
-						}
-					}
-				}
+		switch (v->op) {
+		case CONFIG_PKGS:
+		case CONFIG_TGTS:
+		case CONFIG_TGT_TYPE:
+			break;
+		default: {
+			mod_t *mod = op->priv;
+			if (mod && mod->apply_val) {
+				ret |= mod->apply_val(mod, schema, config, v, proj);
 			}
 			break;
 		}
-		case CONFIG_OP_TYPE_TGT_SRC: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target does not exist: %d", op->tgt);
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_SRC, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_INC: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target include specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_INC, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_INCS_PRIV: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target include specified before target name");
-				ret = 1;
-				break;
-			}
-			const size_t *str;
-			list_node_t it = op->args.l;
-			list_foreach(&config->lists, it, str)
-			{
-				strv_t val = strvbuf_get(&config->strs, *str);
-				ret |= proj_add_inc_priv(proj, op->tgt, val);
-			}
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_DEPS: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target include specified before target name");
-				ret = 1;
-				break;
-			}
-
-			const size_t *str;
-			list_node_t it = op->args.l;
-			list_foreach(&config->lists, it, str)
-			{
-				strv_t dep_pkg_name, dep_target_name;
-				strv_lsplit(strvbuf_get(&config->strs, *str), ':', &dep_pkg_name, &dep_target_name);
-
-				uint dep_pkg_id;
-				pkg_t *dep_pkg = proj_find_pkg(proj, dep_pkg_name, &dep_pkg_id);
-				if (dep_pkg == NULL) {
-					log_error(
-						"cbuild", "proj_cfg", NULL, "package not found: %.*s", dep_pkg_name.len, dep_pkg_name.data);
-					ret = 1;
-					continue;
-				}
-
-				if (dep_target_name.len > 0) {
-					uint dep_target_id;
-					target_t *target = proj_find_target(proj, dep_pkg_id, dep_target_name, &dep_target_id);
-					if (target == NULL) {
-						log_error("cbuild",
-							  "proj_cfg",
-							  NULL,
-							  "target not found: %.*s:%.*s",
-							  dep_pkg_name.len,
-							  dep_pkg_name.data,
-							  dep_target_name.len,
-							  dep_target_name.data);
-						ret = 1;
-						continue;
-					}
-					proj_add_dep(proj, op->tgt, dep_target_id);
-				} else {
-					if (dep_pkg->has_targets) {
-						target_t *target;
-						list_node_t j = dep_pkg->targets;
-						list_foreach(&proj->targets, j, target)
-						{
-							if (target->type == TARGET_TYPE_TST) {
-								continue;
-							}
-
-							proj_add_dep(proj, op->tgt, j);
-						}
-					}
-				}
-			}
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_PREP: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target lib specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_PREP, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_CONF: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target lib specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_CONF, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_COMP: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target lib specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_COMP, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_INST: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target lib specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_INST, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_OUT: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target lib specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_OUT, val);
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_LIB: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target lib specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_TGT, val);
-			tgt->out_type = TARGET_TGT_TYPE_LIB;
-			break;
-		}
-		case CONFIG_OP_TYPE_TGT_EXE: {
-			target_t *tgt = proj_get_target(proj, op->tgt);
-			if (tgt == NULL) {
-				log_error("cbuild", "proj_cfg", NULL, "target exe specified before target name");
-				ret = 1;
-				break;
-			}
-			strv_t val = strvbuf_get(&config->strs, op->args.s);
-			proj_set_str(proj, tgt->strs + TGT_STR_TGT, val);
-			tgt->out_type = TARGET_TGT_TYPE_EXE;
-			break;
-		}
-		default:
-			break;
 		}
 	}
 
@@ -383,7 +130,9 @@ int proj_cfg(proj_t *proj, const config_t *config, const registry_t *registry)
 		}
 
 		mod_t *mod = i->data;
-		mod->proj_cfg(mod, proj);
+		if (mod->proj_cfg) {
+			ret |= mod->proj_cfg(mod, proj);
+		}
 	}
 
 	return ret;

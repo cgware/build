@@ -1,9 +1,10 @@
 #include "mod.h"
 
+#include "mod_base.h"
 #include "path.h"
 
-static int mod_test_config_fs(mod_t *mod, config_t *config, config_t *tmp, registry_t *registry, fs_t *fs, proc_t *proc, strv_t proj_path,
-			      strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+static int mod_test_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, fs_t *fs,
+			      proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
 {
 	(void)mod;
 	(void)proc;
@@ -25,30 +26,30 @@ static int mod_test_config_fs(mod_t *mod, config_t *config, config_t *tmp, regis
 
 		uint pkg;
 		registry_add_pkg(registry, name, &pkg);
-		config_pkg(tmp, pkg, CONFIG_MODE_EN);
-		config_str(tmp, CONFIG_OP_TYPE_PKG_PATH, pkg, -1, CONFIG_MODE_EN, cur_path);
+		config_str_list(tmp, CONFIG_PKGS, pkg, -1, CONFIG_ACT_EN, name, NULL);
+		config_str(tmp, CONFIG_PKG_PATH, pkg, -1, CONFIG_ACT_EN, cur_path);
 		uint tgt;
 		registry_add_tgt(registry, pkg, STRV("test"), &tgt);
-		config_tgt(tmp, pkg, tgt, CONFIG_MODE_APP);
-		config_tgt_type(tmp, pkg, tgt, CONFIG_MODE_SET, TARGET_TYPE_TST);
-		config_str(tmp, CONFIG_OP_TYPE_TGT_SRC, pkg, tgt, CONFIG_MODE_SET, STRV("test"));
+		config_str_list(tmp, CONFIG_TGTS, pkg, tgt, CONFIG_ACT_APP, STRV("test"), NULL);
+		config_int(tmp, CONFIG_TGT_TYPE, pkg, tgt, CONFIG_ACT_SET, TARGET_TYPE_TST);
+		config_str(tmp, CONFIG_TGT_SRC, pkg, tgt, CONFIG_ACT_SET, STRV("test"));
 
-		uint incs;
-		config_str_list(tmp, CONFIG_OP_TYPE_TGT_INCS_PRIV, pkg, tgt, CONFIG_MODE_SET, STRV("test"), &incs);
+		uint incs = -1;
+		config_str_list(tmp, CONFIG_TGT_INCS_PRIV, pkg, tgt, CONFIG_ACT_SET, STRV("test"), &incs);
 
 		path.len = path_len;
 		path_push(&path, STRV("src"));
 		if (fs_isdir(fs, STRVS(path))) {
-			config_str_list_add(tmp, incs, STRV("src"));
+			config_str_list(tmp, CONFIG_TGT_INCS_PRIV, pkg, tgt, CONFIG_ACT_SET, STRV("src"), &incs);
 		}
 
 		path.len = path_len;
 		path_push(&path, STRV("drivers"));
 		if (fs_isdir(fs, STRVS(path))) {
-			config_str_list_add(tmp, incs, STRV("drivers"));
+			config_str_list(tmp, CONFIG_TGT_INCS_PRIV, pkg, tgt, CONFIG_ACT_SET, STRV("drivers"), &incs);
 		}
 
-		ret |= config_merge(config, tmp, state, registry);
+		ret |= config_merge(config, tmp, state, schema, registry);
 		config_set_state(tmp, state);
 	}
 
@@ -90,24 +91,8 @@ static int mod_test_proj_cfg(mod_t *mod, proj_t *proj)
 	return 0;
 }
 
-static int mod_test_init(mod_t *mod, uint cap, alloc_t alloc)
-{
-	(void)mod;
-	(void)cap;
-	(void)alloc;
-	return 0;
-}
-
-static int mod_test_free(mod_t *mod)
-{
-	(void)mod;
-	return 0;
-}
-
 static mod_t mod_test = {
 	.name	   = STRVT("mod_test"),
-	.init	   = mod_test_init,
-	.free	   = mod_test_free,
 	.config_fs = mod_test_config_fs,
 	.proj_cfg  = mod_test_proj_cfg,
 };

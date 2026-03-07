@@ -7,6 +7,7 @@
 typedef struct registry_s {
 	arr_t pkgs;
 	arr_t tgts;
+	arr_t ops;
 	strvbuf_t strs;
 } registry_t;
 
