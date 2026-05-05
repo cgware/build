@@ -120,7 +120,7 @@ static int cmake_build(proc_t *proc, strv_t build_path, strv_t target, strv_t co
 			if (i == target.len || target.data[i] == ' ') {
 				strv_t tgt = STRVN(&target.data[start], i - start);
 				start	   = i + 1;
-				if (strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
+				if (strv_eq(gen_gen, STRV("Visual Studio 18 2026"))) {
 					if (strv_eq(tgt, STRV("all"))) {
 						tgt = STRV("all_build");
 					} else if (strv_eq(tgt, STRV("test"))) {
@@ -132,7 +132,7 @@ static int cmake_build(proc_t *proc, strv_t build_path, strv_t target, strv_t co
 			}
 		}
 	}
-	if (config.len > 0 && strv_eq(gen_gen, STRV("Visual Studio 17 2022"))) {
+	if (config.len > 0 && strv_eq(gen_gen, STRV("Visual Studio 18 2026"))) {
 		str_cat(buf, STRV(" --config "));
 		str_cat(buf, config);
 	}
@@ -262,7 +262,7 @@ int main(int argc, const char **argv)
 	strv_t conf	 = STRV("Debug");
 	strv_t gen_build = STRV("build");
 #ifdef C_WIN
-	strv_t gen_gen = STRV("Visual Studio 17 2022");
+	strv_t gen_gen = STRV("Visual Studio 18 2026");
 #else
 	strv_t gen_gen = STRV("Unix Makefiles");
 #endif
