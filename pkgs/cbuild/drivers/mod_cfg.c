@@ -370,7 +370,7 @@ static int mod_cfg_config_fs(mod_t *mod, config_t *config, config_t *tmp, const 
 		cfg_var_t root	     = -1;
 		uint vars_cnt	     = priv->cfg.vars.cnt;
 		size_t strs_cnt	     = priv->cfg.strs.used;
-		fs_read(fs, STRVS(path), 0, buf);
+		fs_reads(fs, STRVS(path), buf);
 		ret |= cfg_prs_parse(&priv->prs, STRVS(*buf), &priv->cfg, &root, dst);
 		ret |= config_cfg(mod, config, tmp, schema, registry, root, fs, proc, proj_path, cur_path, name, buf, alloc, dst);
 		priv->cfg.vars.cnt  = vars_cnt;

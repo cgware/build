@@ -26,7 +26,7 @@ TEST(gen_cmake_proj_build_dir)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("tmp/build/CMakeLists.txt"), 0, &tmp);
+	fs_reads(&com.fs, STRV("tmp/build/CMakeLists.txt"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "cmake_minimum_required(VERSION 3.10)\n"
 		    "\n"
@@ -164,7 +164,7 @@ TEST(gen_cmake_proj_empty)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
+	fs_reads(&com.fs, STRV("CMakeLists.txt"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "cmake_minimum_required(VERSION 3.10)\n"
 		    "\n"
@@ -302,7 +302,7 @@ TEST(gen_cmake_proj_name)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
+	fs_reads(&com.fs, STRV("CMakeLists.txt"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "cmake_minimum_required(VERSION 3.10)\n"
 		    "\n"
@@ -440,7 +440,7 @@ TEST(gen_cmake_proj_unknown)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("CMakeLists.txt"), 0, &tmp);
+	fs_reads(&com.fs, STRV("CMakeLists.txt"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "cmake_minimum_required(VERSION 3.10)\n"
 		    "\n"
@@ -565,7 +565,7 @@ TEST(gen_cmake_proj_unknown)
 		    "endif()\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -595,7 +595,7 @@ TEST(gen_cmake_proj_exe)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -640,7 +640,7 @@ TEST(gen_cmake_proj_lib)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -686,7 +686,7 @@ TEST(gen_cmake_proj_ext)
 	char buf[3072] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -761,7 +761,7 @@ TEST(gen_cmake_proj_test)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -810,7 +810,7 @@ TEST(gen_cmake_pkg)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"pkg\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -835,7 +835,7 @@ TEST(gen_cmake_pkg_exe)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -880,7 +880,7 @@ TEST(gen_cmake_pkg_exe_inc_priv)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -926,7 +926,7 @@ TEST(gen_cmake_pkg_exe_out)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -971,7 +971,7 @@ TEST(gen_cmake_pkg_exe_lib)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1039,7 +1039,7 @@ TEST(gen_cmake_pkg_exe_drv)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1101,7 +1101,7 @@ TEST(gen_cmake_pkg_lib)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1147,7 +1147,7 @@ TEST(gen_cmake_pkg_lib_inc)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1194,7 +1194,7 @@ TEST(gen_cmake_pkg_lib_inc_priv)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1241,7 +1241,7 @@ TEST(gen_cmake_pkg_lib_out)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1287,7 +1287,7 @@ TEST(gen_cmake_pkg_lib_drv)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1350,7 +1350,7 @@ TEST(gen_cmake_pkg_drv)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1390,7 +1390,7 @@ TEST(gen_cmake_pkg_drv_inc)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1431,7 +1431,7 @@ TEST(gen_cmake_pkg_drv_inc_priv)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1472,7 +1472,7 @@ TEST(gen_cmake_pkg_drv_out)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1513,7 +1513,7 @@ TEST(gen_cmake_pkg_drv_lib)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1576,7 +1576,7 @@ TEST(gen_cmake_pkg_test)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1625,7 +1625,7 @@ TEST(gen_cmake_pkg_test_inc_priv)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1675,7 +1675,7 @@ TEST(gen_cmake_pkg_test_out)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1724,7 +1724,7 @@ TEST(gen_cmake_pkg_test_lib)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1796,7 +1796,7 @@ TEST(gen_cmake_pkg_test_drv)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -1861,7 +1861,7 @@ TEST(gen_cmake_pkg_multi)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./a/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./a/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"a\")\n"
 		    "set(${PN}_DIR \"a/\")\n"
@@ -1891,7 +1891,7 @@ TEST(gen_cmake_pkg_multi)
 		    ")\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./b/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./b/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"b\")\n"
 		    "set(${PN}_DIR \"b/\")\n"
@@ -1936,7 +1936,7 @@ TEST(gen_cmake_pkg_depends)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./lib/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./lib/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib\")\n"
 		    "set(${PN}_DIR \"lib/\")\n"
@@ -1967,7 +1967,7 @@ TEST(gen_cmake_pkg_depends)
 		    ")\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./exe/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./exe/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"exe\")\n"
 		    "set(${PN}_DIR \"exe/\")\n"
@@ -2013,7 +2013,7 @@ TEST(gen_cmake_pkg_rdepends)
 	char buf[2048] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./base/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./base/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"base\")\n"
 		    "set(${PN}_DIR \"base/\")\n"
@@ -2044,7 +2044,7 @@ TEST(gen_cmake_pkg_rdepends)
 		    ")\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./lib1/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./lib1/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib1\")\n"
 		    "set(${PN}_DIR \"lib1/\")\n"
@@ -2076,7 +2076,7 @@ TEST(gen_cmake_pkg_rdepends)
 		    ")\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./lib2/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./lib2/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"lib2\")\n"
 		    "set(${PN}_DIR \"lib2/\")\n"
@@ -2108,7 +2108,7 @@ TEST(gen_cmake_pkg_rdepends)
 		    ")\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./exe/pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./exe/pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"exe\")\n"
 		    "set(${PN}_DIR \"exe/\")\n"
@@ -2154,7 +2154,7 @@ TEST(gen_cmake_pkg_ext_unknown)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2212,7 +2212,7 @@ TEST(gen_cmake_pkg_ext_uri)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2288,7 +2288,7 @@ TEST(gen_cmake_pkg_ext_cmd)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2346,7 +2346,7 @@ TEST(gen_cmake_pkg_ext_out)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2405,7 +2405,7 @@ TEST(gen_cmake_pkg_ext_inc)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2465,7 +2465,7 @@ TEST(gen_cmake_pkg_ext_lib)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2524,7 +2524,7 @@ TEST(gen_cmake_pkg_ext_exe)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2583,7 +2583,7 @@ TEST(gen_cmake_pkg_ext_zip)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2659,7 +2659,7 @@ TEST(gen_cmake_pkg_ext_tar)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2735,7 +2735,7 @@ TEST(gen_cmake_pkg_ext_dep_lib)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"
@@ -2815,7 +2815,7 @@ TEST(gen_cmake_pkg_ext_dep_exe)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("pkg.cmake"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "set(PN \"\")\n"
 		    "set(${PN}_DIR \"\")\n"

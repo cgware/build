@@ -26,7 +26,7 @@ TEST(gen_make_proj_build_dir)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("tmp/build/Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("tmp/build/Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -137,7 +137,7 @@ TEST(gen_make_proj_empty)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -248,7 +248,7 @@ TEST(gen_make_proj_name)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -359,7 +359,7 @@ TEST(gen_make_proj_unknown)
 	char buf[4096] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -457,7 +457,7 @@ TEST(gen_make_proj_unknown)
 		    "\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -479,7 +479,7 @@ TEST(gen_make_proj_exe)
 	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -605,7 +605,7 @@ TEST(gen_make_proj_exe)
 		    "\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -629,7 +629,7 @@ TEST(gen_make_proj_lib)
 	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -754,7 +754,7 @@ TEST(gen_make_proj_lib)
 		    "\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -778,7 +778,7 @@ TEST(gen_make_proj_ext)
 	char buf[5120] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -912,7 +912,7 @@ TEST(gen_make_proj_ext)
 		    "\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -943,7 +943,7 @@ TEST(gen_make_proj_test)
 	char buf[5632] = {0};
 	str_t tmp      = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("Makefile"), 0, &tmp);
+	fs_reads(&com.fs, STRV("Makefile"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "ARCHS := host\n"
 		    "CONFIGS := Debug\n"
@@ -1119,7 +1119,7 @@ TEST(gen_make_proj_test)
 		    "\n",
 		    tmp.len - 3701);
 
-	fs_read(&com.fs, STRV("pkg.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("pkg.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1155,7 +1155,7 @@ TEST(gen_make_pkg_exe)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1179,7 +1179,7 @@ TEST(gen_make_pkg_exe_inc_priv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1204,7 +1204,7 @@ TEST(gen_make_pkg_exe_out)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1228,7 +1228,7 @@ TEST(gen_make_pkg_exe_lib)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("exe.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1254,7 +1254,7 @@ TEST(gen_make_pkg_exe_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("exe.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1280,7 +1280,7 @@ TEST(gen_make_pkg_lib)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1304,7 +1304,7 @@ TEST(gen_make_pkg_lib_inc)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1330,7 +1330,7 @@ TEST(gen_make_pkg_lib_inc_priv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1355,7 +1355,7 @@ TEST(gen_make_pkg_lib_out)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1379,7 +1379,7 @@ TEST(gen_make_pkg_lib_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("lib.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1404,7 +1404,7 @@ TEST(gen_make_pkg_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1429,7 +1429,7 @@ TEST(gen_make_pkg_drv_inc)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1455,7 +1455,7 @@ TEST(gen_make_pkg_drv_inc_priv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1480,7 +1480,7 @@ TEST(gen_make_pkg_drv_out)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1504,7 +1504,7 @@ TEST(gen_make_pkg_drv_lib)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("drv.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("drv.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1530,7 +1530,7 @@ TEST(gen_make_pkg_test)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1554,7 +1554,7 @@ TEST(gen_make_pkg_test_out)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1578,7 +1578,7 @@ TEST(gen_make_pkg_test_inc_priv)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1603,7 +1603,7 @@ TEST(gen_make_pkg_test_lib)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("test.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("test.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1629,7 +1629,7 @@ TEST(gen_make_pkg_test_drv)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1654,7 +1654,7 @@ TEST(gen_make_pkg_multi)
 	char buf[256] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./a/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./a/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := a\n"
 		    "$(PN)_DIR := a" SEP "\n"
@@ -1663,7 +1663,7 @@ TEST(gen_make_pkg_multi)
 		    "$(eval $(call exe))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./b/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./b/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := b\n"
 		    "$(PN)_DIR := b" SEP "\n"
@@ -1687,7 +1687,7 @@ TEST(gen_make_pkg_depends)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./lib/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./lib/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib\n"
 		    "$(PN)_DIR := lib" SEP "\n"
@@ -1696,7 +1696,7 @@ TEST(gen_make_pkg_depends)
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./exe/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./exe/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := exe\n"
 		    "$(PN)_DIR := exe" SEP "\n"
@@ -1721,7 +1721,7 @@ TEST(gen_make_pkg_rdepends)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("./base/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./base/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := base\n"
 		    "$(PN)_DIR := base" SEP "\n"
@@ -1730,7 +1730,7 @@ TEST(gen_make_pkg_rdepends)
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./lib1/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./lib1/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib1\n"
 		    "$(PN)_DIR := lib1" SEP "\n"
@@ -1740,7 +1740,7 @@ TEST(gen_make_pkg_rdepends)
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./lib2/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./lib2/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := lib2\n"
 		    "$(PN)_DIR := lib2" SEP "\n"
@@ -1750,7 +1750,7 @@ TEST(gen_make_pkg_rdepends)
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("./exe/.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("./exe/.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := exe\n"
 		    "$(PN)_DIR := exe" SEP "\n"
@@ -1775,7 +1775,7 @@ TEST(gen_make_pkg_ext_unknown)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1801,7 +1801,7 @@ TEST(gen_make_pkg_ext_uri)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1831,7 +1831,7 @@ TEST(gen_make_pkg_ext_cmd)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1862,7 +1862,7 @@ TEST(gen_make_pkg_ext_out)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1888,7 +1888,7 @@ TEST(gen_make_pkg_ext_inc)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1915,7 +1915,7 @@ TEST(gen_make_pkg_ext_lib)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1941,7 +1941,7 @@ TEST(gen_make_pkg_ext_exe)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1967,7 +1967,7 @@ TEST(gen_make_pkg_ext_zip)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -1999,7 +1999,7 @@ TEST(gen_make_pkg_ext_tar)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV(".mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV(".mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2031,7 +2031,7 @@ TEST(gen_make_pkg_ext_dep_lib)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("lib.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("lib.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2040,7 +2040,7 @@ TEST(gen_make_pkg_ext_dep_lib)
 		    "$(eval $(call lib))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("ext.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("ext.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2066,7 +2066,7 @@ TEST(gen_make_pkg_ext_dep_exe)
 	char buf[512] = {0};
 	str_t tmp     = STRB(buf, 0);
 
-	fs_read(&com.fs, STRV("exe.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("exe.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
@@ -2075,7 +2075,7 @@ TEST(gen_make_pkg_ext_dep_exe)
 		    "$(eval $(call exe))\n",
 		    tmp.len);
 
-	fs_read(&com.fs, STRV("ext.mk"), 0, &tmp);
+	fs_reads(&com.fs, STRV("ext.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
 		    "PN := \n"
 		    "$(PN)_DIR :=\n"
