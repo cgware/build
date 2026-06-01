@@ -51,6 +51,22 @@ static int next_char(strv_t str, size_t *i, char c)
 	return 1;
 }
 
+static int is_hash(strv_t str)
+{
+	if (str.len != 40) {
+		return 0;
+	}
+
+	for (size_t i = 0; i < str.len; i++) {
+		char c = str.data[i];
+		if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 {
 	if (proj == NULL || pkg == NULL) {
@@ -191,8 +207,13 @@ int proj_set_uri(proj_t *proj, pkg_t *pkg, strv_t uri)
 		}
 	}
 
+	strv_t uri_ver = ver;
+	if (is_hash(uri_ver)) {
+		uri_ver = STRVN(uri_ver.data, 8);
+	}
+
 	proj_set_str(proj, pkg->strs + PKG_STR_URI_NAME, name);
-	proj_set_str(proj, pkg->strs + PKG_STR_URI_VER, ver);
+	proj_set_str(proj, pkg->strs + PKG_STR_URI_VER, uri_ver);
 
 	str_t buf = strz(16);
 	str_cat(&buf, name);

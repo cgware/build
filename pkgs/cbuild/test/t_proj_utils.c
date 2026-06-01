@@ -235,6 +235,35 @@ TEST(proj_set_uri_github_tag_tar_gz)
 	END;
 }
 
+TEST(proj_set_uri_github_name_zip)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	pkg_t *pkg = proj_add_pkg(&proj, NULL);
+	strv_t val;
+
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/name.zip")), 0);
+	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_ZIP);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
+	EXPECT_STRN(val.data, "https://github.com/user/repo/archive/name.zip", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
+	EXPECT_STRN(val.data, "repo-name.zip", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_NAME);
+	EXPECT_STRN(val.data, "repo", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_VER);
+	EXPECT_STRN(val.data, "name", val.len);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_DIR);
+	EXPECT_STRN(val.data, "repo-name" SEP, val.len);
+
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_set_uri_github_hash_zip)
 {
 	START;
@@ -245,19 +274,19 @@ TEST(proj_set_uri_github_hash_zip)
 	pkg_t *pkg = proj_add_pkg(&proj, NULL);
 	strv_t val;
 
-	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/hash.zip")), 0);
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/0123456789abcdef0123456789abcdef01234567.zip")), 0);
 	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
 	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_ZIP);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI);
-	EXPECT_STRN(val.data, "https://github.com/user/repo/archive/hash.zip", val.len);
+	EXPECT_STRN(val.data, "https://github.com/user/repo/archive/0123456789abcdef0123456789abcdef01234567.zip", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_FILE);
-	EXPECT_STRN(val.data, "repo-hash.zip", val.len);
+	EXPECT_STRN(val.data, "repo-0123456789abcdef0123456789abcdef01234567.zip", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_NAME);
 	EXPECT_STRN(val.data, "repo", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_VER);
-	EXPECT_STRN(val.data, "hash", val.len);
+	EXPECT_STRN(val.data, "01234567", val.len);
 	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_DIR);
-	EXPECT_STRN(val.data, "repo-hash" SEP, val.len);
+	EXPECT_STRN(val.data, "repo-0123456789abcdef0123456789abcdef01234567" SEP, val.len);
 
 	proj_free(&proj);
 
@@ -526,6 +555,7 @@ STEST(proj_utils)
 	RUN(proj_set_uri_github_vtag);
 	RUN(proj_set_uri_github_branch_tar_gz);
 	RUN(proj_set_uri_github_tag_tar_gz);
+	RUN(proj_set_uri_github_name_zip);
 	RUN(proj_set_uri_github_hash_zip);
 	RUN(proj_set_uri_github_hash_tar_gz);
 	RUN(proj_set_uri_github_release_tag_tar_gz);
