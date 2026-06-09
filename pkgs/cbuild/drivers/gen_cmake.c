@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "path.h"
+#include "proj_graph.h"
 #include "vars.h"
 
 static void resolve_var(const vars_t *vars, strv_t var, const strv_t *values, str_t *buf)
@@ -1018,7 +1019,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	if (proj->pkgs.cnt > 0) {
 		arr_t order = {0};
 		arr_init(&order, proj->pkgs.cnt, sizeof(uint), ALLOC_STD);
-		ret |= proj_get_pkg_build_order(proj, &order, ALLOC_STD);
+		ret |= proj_graph_toposort_packages(proj, &order, ALLOC_STD);
 
 		uint i = 0;
 		const uint *id;

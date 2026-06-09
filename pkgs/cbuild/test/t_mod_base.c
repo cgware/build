@@ -3,6 +3,7 @@
 #include "log.h"
 #include "mem.h"
 #include "mod_base.h"
+#include "proj_graph.h"
 #include "test.h"
 
 TESTP(mod_base_apply_val, mod_t *mod, const config_schema_t *schema)
@@ -87,7 +88,7 @@ TESTP(mod_base_apply_val_pkg_dep_pkg, mod_t *mod, const config_schema_t *schema)
 
 	arr_t deps = {0};
 	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
-	proj_get_deps(&proj, 1, &deps);
+	proj_graph_transitive_deps(&proj, 1, &deps, ALLOC_STD);
 	EXPECT_EQ(deps.cnt, 1);
 	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 0);
 	arr_free(&deps);
@@ -122,7 +123,7 @@ TESTP(mod_base_apply_val_pkg_dep_tgt, mod_t *mod, const config_schema_t *schema)
 
 	arr_t deps = {0};
 	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
-	proj_get_deps(&proj, 1, &deps);
+	proj_graph_transitive_deps(&proj, 1, &deps, ALLOC_STD);
 	EXPECT_EQ(deps.cnt, 1);
 	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 0);
 	arr_free(&deps);
@@ -158,7 +159,7 @@ TESTP(mod_base_apply_val_pkg_dep_not_test, mod_t *mod, const config_schema_t *sc
 
 	arr_t deps = {0};
 	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
-	proj_get_deps(&proj, 1, &deps);
+	proj_graph_transitive_deps(&proj, 1, &deps, ALLOC_STD);
 	EXPECT_EQ(deps.cnt, 0);
 	arr_free(&deps);
 
@@ -334,7 +335,7 @@ TESTP(mod_base_apply_val_tgt_dep_pkg, mod_t *mod, const config_schema_t *schema)
 
 	arr_t deps = {0};
 	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
-	proj_get_deps(&proj, 1, &deps);
+	proj_graph_transitive_deps(&proj, 1, &deps, ALLOC_STD);
 	EXPECT_EQ(deps.cnt, 1);
 	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 0);
 	arr_free(&deps);
@@ -369,7 +370,7 @@ TESTP(mod_base_apply_val_tgt_dep_tgt, mod_t *mod, const config_schema_t *schema)
 
 	arr_t deps = {0};
 	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
-	proj_get_deps(&proj, 1, &deps);
+	proj_graph_transitive_deps(&proj, 1, &deps, ALLOC_STD);
 	EXPECT_EQ(deps.cnt, 1);
 	EXPECT_EQ(*(list_node_t *)arr_get(&deps, 0), 0);
 	arr_free(&deps);
@@ -405,7 +406,7 @@ TESTP(mod_base_apply_val_tgt_dep_pkg_not_test, mod_t *mod, const config_schema_t
 
 	arr_t deps = {0};
 	arr_init(&deps, 1, sizeof(list_node_t), ALLOC_STD);
-	proj_get_deps(&proj, 1, &deps);
+	proj_graph_transitive_deps(&proj, 1, &deps, ALLOC_STD);
 	EXPECT_EQ(deps.cnt, 0);
 	arr_free(&deps);
 

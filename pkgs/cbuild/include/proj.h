@@ -41,7 +41,6 @@ typedef struct target_s {
 	list_node_t deps;
 	uint has_deps;
 	target_out_type_t out_type;
-	uint state;
 	list_node_t incs_priv;
 	int has_incs_priv;
 } target_t;
@@ -81,7 +80,6 @@ typedef struct pkg_s {
 	pkg_uri_t uri;
 	list_node_t targets;
 	uint has_targets;
-	uint state;
 } pkg_t;
 
 typedef struct proj_s {
@@ -109,12 +107,8 @@ int proj_set_str(proj_t *proj, uint id, strv_t val);
 strv_t proj_get_str(const proj_t *proj, uint id);
 
 int proj_add_dep(proj_t *proj, uint target, uint dep);
-int proj_get_deps(const proj_t *proj, list_node_t target, arr_t *deps);
 
 int proj_add_inc_priv(proj_t *proj, uint target, strv_t inc);
-
-int proj_get_pkg_build_order(const proj_t *proj, arr_t *order, alloc_t alloc);
-int proj_get_tgt_build_order(const proj_t *proj, arr_t *order, alloc_t alloc);
 
 size_t proj_print(const proj_t *proj, dst_t dst);
 

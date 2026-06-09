@@ -19,6 +19,7 @@ STEST(mod_test);
 STEST(proj);
 STEST(proj_cfg);
 STEST(proj_gen);
+STEST(proj_graph);
 STEST(proj_utils);
 STEST(registry);
 STEST(vars);
@@ -43,6 +44,7 @@ TEST(cbuild)
 	RUN(proj);
 	RUN(proj_cfg);
 	RUN(proj_gen);
+	RUN(proj_graph);
 	RUN(proj_utils);
 	RUN(registry);
 	RUN(vars);

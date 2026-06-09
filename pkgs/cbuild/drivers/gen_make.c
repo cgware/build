@@ -4,6 +4,7 @@
 #include "log.h"
 #include "mem.h"
 #include "path.h"
+#include "proj_graph.h"
 #include "vars.h"
 
 typedef struct defines_s {
@@ -57,7 +58,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint tg
 
 	if (target->type != TARGET_TYPE_EXT) {
 		deps->cnt = 0;
-		proj_get_deps(proj, tgt_id, deps);
+		proj_graph_transitive_deps(proj, tgt_id, deps, ALLOC_STD);
 
 		int include_priv = 0;
 		if (target->has_incs_priv) {
@@ -1316,7 +1317,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 		arr_t order = {0};
 		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
-		ret |= proj_get_tgt_build_order(proj, &order, ALLOC_STD);
+		ret |= proj_graph_toposort_targets(proj, &order, ALLOC_STD);
 
 		arr_t deps = {0};
 		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
