@@ -13,6 +13,19 @@ typedef struct mod_cfg_priv_s {
 	cfg_t cfg;
 } mod_cfg_priv_t;
 
+typedef struct mod_cfg_ext_s {
+	strv_t uri;
+	strv_t name;
+} mod_cfg_ext_t;
+
+typedef struct mod_cfg_parsed_s {
+	const cfg_t *cfg;
+	cfg_var_t root;
+	uint vars_cnt;
+	size_t strs_cnt;
+	arr_t exts;
+} mod_cfg_parsed_t;
+
 enum {
 	CONFIG_PKG_URI,
 	CONFIG_PKG_INC,
@@ -24,27 +37,6 @@ enum {
 	CONFIG_TGT_OUT_NAME,
 	CONFIG_TGT_OUT_TYPE,
 };
-
-static int create_tmp(fs_t *fs, strv_t dir)
-{
-	path_t path = {0};
-	path_init(&path, dir);
-
-	path_push(&path, STRV("tmp"));
-	if (!fs_isdir(fs, STRVS(path))) {
-		fs_mkdir(fs, STRVS(path));
-	}
-
-	path_push(&path, STRV(".gitignore"));
-	if (!fs_isfile(fs, STRVS(path))) {
-		void *f;
-		fs_open(fs, STRVS(path), "w", &f);
-		fs_write(fs, f, STRV("*"));
-		fs_close(fs, f);
-	}
-
-	return 0;
-}
 
 static int parse_pkg_deps(config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t var)
 {
@@ -92,8 +84,7 @@ static int parse_tgt_deps(config_t *config, uint pkg, uint tgt, const cfg_t *cfg
 	return ret;
 }
 
-static int parse_cfg_ext(config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, const cfg_t *cfg,
-			 cfg_var_t root, fs_t *fs, proc_t *proc, strv_t proj_path, str_t *buf, alloc_t alloc, dst_t dst)
+static int discover_cfg_exts(const cfg_t *cfg, cfg_var_t root, arr_t *exts)
 {
 	int ret = 0;
 
@@ -103,62 +94,53 @@ static int parse_cfg_ext(config_t *config, config_t *tmp, const config_schema_t 
 	{
 		strv_t key = cfg_get_key(cfg, tbl);
 
-		if (strv_eq(key, STRV("ext"))) {
-			void *data;
-			cfg_var_t ext;
-			cfg_foreach(cfg, tbl, data, &ext)
-			{
-				strv_t uri;
-				if (cfg_get_str(cfg, ext, &uri)) {
-					log_error("cbuild", "mod_cfg", NULL, "invalid extern format");
-					ret = 1;
-					continue;
-				}
+		if (!strv_eq(key, STRV("ext"))) {
+			continue;
+		}
 
-				strv_t file = {0};
-				strv_t name = {0};
-				strv_rsplit(uri, '/', NULL, &file);
-				strv_lsplit(file, '.', &name, NULL);
-
-				create_tmp(fs, proj_path);
-
-				path_t dir = {0};
-				path_init(&dir, STRV("tmp"));
-				path_push(&dir, STRV("ext"));
-				path_push(&dir, name);
-				path_push(&dir, STRV(""));
-
-				path_t path = {0};
-				path_init(&path, proj_path);
-				path_push(&path, STRVS(dir));
-				size_t path_len = path.len;
-
-				if (!fs_isdir(fs, STRVS(path))) {
-					fs_mkpath(fs, proj_path, STRVS(dir));
-				}
-
-				path_push(&path, STRV(".git"));
-				if (!fs_isdir(fs, STRVS(path))) {
-					path.len = path_len;
-					if (buf) {
-						buf->len = 0;
-						str_cat(buf, STRV("git clone "));
-						str_cat(buf, uri);
-						str_cat(buf, STRV(" "));
-						str_cat(buf, STRVS(path));
-						if (proc) {
-							log_info("cbuild", "mod_cfg", NULL, "cloning package: %.*s", uri.len, uri.data);
-							proc_cmd(proc, STRVS(*buf));
-						}
-					}
-				}
-
-				ret |= config_fs(config, tmp, schema, registry, fs, proc, proj_path, STRVS(dir), name, buf, alloc, dst);
+		void *ext_data;
+		cfg_var_t ext;
+		cfg_foreach(cfg, tbl, ext_data, &ext)
+		{
+			strv_t uri;
+			if (cfg_get_str(cfg, ext, &uri)) {
+				log_error("cbuild", "mod_cfg", NULL, "invalid extern format");
+				ret = 1;
+				continue;
 			}
+
+			strv_t file = {0};
+			strv_t name = {0};
+			strv_rsplit(uri, '/', NULL, &file);
+			strv_lsplit(file, '.', &name, NULL);
+
+			mod_cfg_ext_t *cfg_ext = arr_add(exts, NULL);
+			if (cfg_ext == NULL) {
+				log_error("cbuild", "mod_cfg", NULL, "failed to add extern");
+				ret = 1;
+				continue;
+			}
+
+			cfg_ext->uri  = uri;
+			cfg_ext->name = name;
 		}
 	}
 
 	return ret;
+}
+
+static int has_cfg_pkg_content(const cfg_t *cfg, cfg_var_t root)
+{
+	void *data;
+	cfg_var_t var;
+	cfg_foreach(cfg, root, data, &var)
+	{
+		if (!strv_eq(cfg_get_key(cfg, var), STRV("ext"))) {
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 static int parse_pkg_uri(mod_t *mod, config_t *config, uint pkg, const cfg_t *cfg, cfg_var_t var)
@@ -228,7 +210,7 @@ static int parse_cfg_com(mod_t *mod, config_t *config, registry_t *registry, uin
 					}
 				} else {
 					registry_add_pkg(registry, name, &pkg);
-					config_str_list(config, CONFIG_PKGS, pkg, -1, act, name, NULL);
+					config_str_list(config, CONFIG_PKGS, pkg, -1, CONFIG_ACT_APP, name, NULL);
 				}
 
 				cfg_var_t var;
@@ -324,29 +306,75 @@ static int parse_cfg_com(mod_t *mod, config_t *config, registry_t *registry, uin
 	return ret;
 }
 
-int config_cfg(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, cfg_var_t root, fs_t *fs,
-	       proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+static int mod_cfg_parse(mod_t *mod, fs_t *fs, strv_t path, str_t *buf, dst_t dst, mod_cfg_parsed_t *parsed)
 {
-	if (config == NULL) {
+	if (mod == NULL || fs == NULL || buf == NULL || parsed == NULL) {
 		return 1;
 	}
 
-	int ret = 0;
-
 	mod_cfg_priv_t *priv = mod->priv;
+	if (priv == NULL) {
+		return 1;
+	}
 
-	ret |= parse_cfg_ext(config, tmp, schema, registry, &priv->cfg, root, fs, proc, proj_path, buf, alloc, dst);
+	parsed->cfg	 = &priv->cfg;
+	parsed->root	 = -1;
+	parsed->vars_cnt = priv->cfg.vars.cnt;
+	parsed->strs_cnt = priv->cfg.strs.used;
+	arr_init(&parsed->exts, 1, sizeof(mod_cfg_ext_t), ALLOC_STD);
+
+	fs_reads(fs, path, buf);
+	int ret = cfg_prs_parse(&priv->prs, STRVS(*buf), &priv->cfg, &parsed->root, dst);
+	if (ret == 0) {
+		ret |= discover_cfg_exts(parsed->cfg, parsed->root, &parsed->exts);
+	}
+
+	return ret;
+}
+
+static void mod_cfg_parse_reset(mod_t *mod, mod_cfg_parsed_t *parsed)
+{
+	mod_cfg_priv_t *priv = mod->priv;
+	if (priv == NULL) {
+		return;
+	}
+
+	priv->cfg.vars.cnt  = parsed->vars_cnt;
+	priv->cfg.strs.used = parsed->strs_cnt;
+	arr_free(&parsed->exts);
+}
+
+static int config_cfg_parsed(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry,
+			     config_sync_plan_t *plan, const mod_cfg_parsed_t *parsed, strv_t cur_path, strv_t name)
+{
+	if (config == NULL || parsed == NULL || parsed->cfg == NULL) {
+		return 1;
+	}
+
+	int ret	    = 0;
+	int has_pkg = has_cfg_pkg_content(parsed->cfg, parsed->root);
+
+	config_state_t state;
+	config_get_state(tmp, &state);
+
+	uint i = 0;
+	const mod_cfg_ext_t *ext;
+	arr_foreach(&parsed->exts, i, ext)
+	{
+		ret |= config_sync_plan_add_ext(plan, ext->uri, ext->name);
+	}
+
+	if (!has_pkg) {
+		return ret;
+	}
 
 	uint pkg;
 	if (registry_add_pkg(registry, name, &pkg)) {
 		return 1;
 	}
-
-	config_state_t state;
-	config_get_state(tmp, &state);
-	ret |= config_str_list(tmp, CONFIG_PKGS, pkg, -1, CONFIG_ACT_EN, name, NULL);
+	ret |= config_str_list(tmp, CONFIG_PKGS, pkg, -1, CONFIG_ACT_APP, name, NULL);
 	ret |= config_str(tmp, CONFIG_PKG_PATH, pkg, -1, CONFIG_ACT_EN, cur_path);
-	ret |= parse_cfg_com(mod, tmp, registry, pkg, &priv->cfg, root);
+	ret |= parse_cfg_com(mod, tmp, registry, pkg, parsed->cfg, parsed->root);
 	tmp->prio = config->prio + 1;
 	ret |= config_merge(config, tmp, state, schema, registry);
 	tmp->prio = config->prio;
@@ -355,9 +383,12 @@ int config_cfg(mod_t *mod, config_t *config, config_t *tmp, const config_schema_
 	return ret;
 }
 
-static int mod_cfg_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, fs_t *fs,
-			     proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+static int mod_cfg_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry,
+			     config_sync_plan_t *plan, fs_t *fs, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc,
+			     dst_t dst)
 {
+	(void)alloc;
+
 	int ret = 0;
 
 	path_t path = {0};
@@ -366,15 +397,10 @@ static int mod_cfg_config_fs(mod_t *mod, config_t *config, config_t *tmp, const 
 	path_push(&path, STRV("build.cfg"));
 
 	if (fs_isfile(fs, STRVS(path))) {
-		mod_cfg_priv_t *priv = mod->priv;
-		cfg_var_t root	     = -1;
-		uint vars_cnt	     = priv->cfg.vars.cnt;
-		size_t strs_cnt	     = priv->cfg.strs.used;
-		fs_reads(fs, STRVS(path), buf);
-		ret |= cfg_prs_parse(&priv->prs, STRVS(*buf), &priv->cfg, &root, dst);
-		ret |= config_cfg(mod, config, tmp, schema, registry, root, fs, proc, proj_path, cur_path, name, buf, alloc, dst);
-		priv->cfg.vars.cnt  = vars_cnt;
-		priv->cfg.strs.used = strs_cnt;
+		mod_cfg_parsed_t parsed = {0};
+		ret |= mod_cfg_parse(mod, fs, STRVS(path), buf, dst, &parsed);
+		ret |= config_cfg_parsed(mod, config, tmp, schema, registry, plan, &parsed, cur_path, name);
+		mod_cfg_parse_reset(mod, &parsed);
 	}
 
 	return ret;

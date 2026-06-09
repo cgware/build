@@ -293,6 +293,27 @@ TEST(proj_set_uri_github_hash_zip)
 	END;
 }
 
+TEST(proj_set_uri_github_hash_invalid_char_zip)
+{
+	START;
+
+	proj_t proj = {0};
+	proj_init(&proj, 1, 1, ALLOC_STD);
+
+	pkg_t *pkg = proj_add_pkg(&proj, NULL);
+	strv_t val;
+
+	EXPECT_EQ(proj_set_uri(&proj, pkg, STRV("https://github.com/user/repo/archive/0123456789abcdef0123456789abcdef0123456g.zip")), 0);
+	EXPECT_EQ(pkg->uri.proto, PKG_URI_PROTO_HTTPS);
+	EXPECT_EQ(pkg->uri.ext, PKG_URI_EXT_ZIP);
+	val = proj_get_str(&proj, pkg->strs + PKG_STR_URI_VER);
+	EXPECT_STRN(val.data, "0123456789abcdef0123456789abcdef0123456g", val.len);
+
+	proj_free(&proj);
+
+	END;
+}
+
 TEST(proj_set_uri_github_hash_tar_gz)
 {
 	START;
@@ -557,6 +578,7 @@ STEST(proj_utils)
 	RUN(proj_set_uri_github_tag_tar_gz);
 	RUN(proj_set_uri_github_name_zip);
 	RUN(proj_set_uri_github_hash_zip);
+	RUN(proj_set_uri_github_hash_invalid_char_zip);
 	RUN(proj_set_uri_github_hash_tar_gz);
 	RUN(proj_set_uri_github_release_tag_tar_gz);
 	RUN(proj_set_uri_github_release_vtag_tar_gz);

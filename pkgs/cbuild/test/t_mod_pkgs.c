@@ -45,35 +45,29 @@ TESTP(mod_pkgs_config_fs, mod_t *mod, const config_schema_t *schema)
 	fs_mkdir(&fs, STRV("pkgs/p2"));
 	fs_mkdir(&fs, STRV("pkgs/p2/src"));
 
-	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
-
 	char tmp[128] = {0};
 	str_t buf     = STRB(tmp, 0);
 
+	config_sync_plan_t plan = {0};
+	config_sync_plan_init(&plan, 1, ALLOC_STD);
 	EXPECT_EQ(mod->config_fs(
-			  mod, &config, &tc, schema, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()),
+			  mod, &config, &tc, schema, &registry, &plan, &fs, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()),
 		  0);
+	EXPECT_EQ(plan.items.cnt, 2);
+	config_sync_item_t *item = arr_get(&plan.items, 0);
+	EXPECT_EQ(item->kind, CONFIG_SYNC_KIND_DIR);
+	strv_t val = strbuf_get(&plan.strs, item->path);
+	EXPECT_STRN(val.data, "pkgs" SEP "p1", val.len);
+	val = strbuf_get(&plan.strs, item->name);
+	EXPECT_STRN(val.data, "p1", val.len);
+	item = arr_get(&plan.items, 1);
+	EXPECT_EQ(item->kind, CONFIG_SYNC_KIND_DIR);
+	val = strbuf_get(&plan.strs, item->path);
+	EXPECT_STRN(val.data, "pkgs" SEP "p2", val.len);
+	val = strbuf_get(&plan.strs, item->name);
+	EXPECT_STRN(val.data, "p2", val.len);
 
-	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
-	EXPECT_STR(out,
-		   "pkgs ?= p1\n"
-		   "p1:path ?= pkgs" SEP "p1\n"
-		   "p1:tgts += p1\n"
-		   "p1:p1:type = 2\n"
-		   "p1:p1:src = src\n"
-		   "p1:p1:inc = include\n"
-		   "p1:p1:incs_priv = src\n"
-		   "pkgs ?= p2\n"
-		   "p2:path ?= pkgs" SEP "p2\n"
-		   "p2:tgts += p2\n"
-		   "p2:p2:type = 2\n"
-		   "p2:p2:src = src\n"
-		   "p2:p2:inc = include\n"
-		   "p2:p2:incs_priv = src\n");
-
-	proc_free(&proc);
+	config_sync_plan_free(&plan);
 	fs_free(&fs);
 	config_free(&tc);
 	config_free(&config);

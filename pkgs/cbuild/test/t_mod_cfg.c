@@ -1,16 +1,10 @@
 #include "mod.h"
 
-#include "file/cfg_prs.h"
 #include "log.h"
 #include "mem.h"
 #include "mod_base.h"
 #include "path.h"
 #include "test.h"
-
-typedef struct mod_cfg_priv_s {
-	cfg_prs_t prs;
-	cfg_t cfg;
-} mod_cfg_priv_t;
 
 enum {
 	CONFIG_PKG_URI,
@@ -24,8 +18,15 @@ enum {
 	CONFIG_TGT_OUT_TYPE,
 };
 
-int config_cfg(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, cfg_var_t root, fs_t *fs,
-	       proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst);
+typedef struct mod_cfg_ctx_s {
+	registry_t registry;
+	config_t config;
+	config_t tmp;
+	fs_t fs;
+	proc_t proc;
+	char data[256];
+	str_t buf;
+} mod_cfg_ctx_t;
 
 static mod_t *mod_cfg_init(config_schema_t *schema)
 {
@@ -51,86 +52,98 @@ static void mod_cfg_free(mod_t *mod)
 	mod->free(mod);
 }
 
+static void mod_cfg_ctx_init(mod_cfg_ctx_t *ctx)
+{
+	registry_init(&ctx->registry, 1, ALLOC_STD);
+	config_init(&ctx->config, 1, ALLOC_STD);
+	config_init(&ctx->tmp, 1, ALLOC_STD);
+	fs_init(&ctx->fs, 4, 1, ALLOC_STD);
+	proc_init(&ctx->proc, 32, 1);
+	ctx->buf = STRB(ctx->data, 0);
+}
+
+static void mod_cfg_ctx_free(mod_cfg_ctx_t *ctx)
+{
+	proc_free(&ctx->proc);
+	fs_free(&ctx->fs);
+	config_free(&ctx->tmp);
+	config_free(&ctx->config);
+	registry_free(&ctx->registry);
+}
+
+static void write_build_cfg(fs_t *fs, strv_t cur_path, strv_t cfg)
+{
+	if (cur_path.data) {
+		fs_mkpath(fs, STRV_NULL, cur_path);
+	}
+
+	path_t path = {0};
+	path_init(&path, cur_path);
+	path_push(&path, STRV("build.cfg"));
+
+	void *f;
+	fs_open(fs, STRVS(path), "w", &f);
+	fs_write(fs, f, cfg);
+	fs_close(fs, f);
+}
+
+static int run_build_cfg(mod_t *mod, mod_cfg_ctx_t *ctx, const config_schema_t *schema, config_sync_plan_t *plan, strv_t cur_path,
+			 strv_t name, dst_t dst)
+{
+	return mod->config_fs(
+		mod, &ctx->config, &ctx->tmp, schema, &ctx->registry, plan, &ctx->fs, STRV_NULL, cur_path, name, &ctx->buf, ALLOC_STD, dst);
+}
+
+static int load_build_cfg(mod_t *mod, mod_cfg_ctx_t *ctx, const config_schema_t *schema, strv_t cfg, strv_t cur_path, strv_t name,
+			  dst_t dst)
+{
+	write_build_cfg(&ctx->fs, cur_path, cfg);
+
+	config_sync_plan_t plan = {0};
+	if (config_sync_plan_init(&plan, 1, ALLOC_STD) == NULL) {
+		return 1;
+	}
+
+	int ret = run_build_cfg(mod, ctx, schema, &plan, cur_path, name, dst);
+	config_sync_plan_free(&plan);
+
+	return ret;
+}
+
 TESTP(config_cfg_empty, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV(""), STRV_NULL, STRV_NULL, DST_NONE()), 0);
+	EXPECT_EQ(ctx.config.vals.cnt, 0);
+	EXPECT_EQ(ctx.registry.pkgs.cnt, 0);
 
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
+	mod_cfg_ctx_free(&ctx);
 
-	mod_cfg_priv_t *priv = mod->priv;
+	END;
+}
 
-	cfg_var_t root;
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-	cfg_root(&priv->cfg, &root);
+TESTP(config_cfg_pkg_add_oom, mod_t *mod, const config_schema_t *schema)
+{
+	START;
 
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs, STRV_NULL, STRV("deps = [dep]\n"));
 
-	EXPECT_EQ(config_cfg(NULL,
-			     NULL,
-			     NULL,
-			     NULL,
-			     NULL,
-			     priv->cfg.vars.cnt,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     NULL,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
+	config_sync_plan_t plan = {0};
+	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+
+	ctx.registry.pkgs.cnt = ctx.registry.pkgs.cap;
 	mem_oom(1);
-
-	registry.pkgs.cnt = registry.pkgs.cap;
-	uint ops_cap	  = config.vals.cap;
-	config.vals.cap	  = 0;
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV("name"),
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
-	config.vals.cap	  = ops_cap;
-	registry.pkgs.cnt = 0;
+	EXPECT_EQ(run_build_cfg(mod, &ctx, schema, &plan, STRV_NULL, STRV("root"), DST_NONE()), 1);
 	mem_oom(0);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -139,58 +152,19 @@ TESTP(config_cfg_deps, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, deps, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_arr(&priv->cfg, STRV("deps"), CFG_MODE_SET, 0, &deps);
-	cfg_add_var(&priv->cfg, root, deps);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_UNKNOWN, STRV("dep1"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_UNKNOWN, STRV("dep2"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("deps = [dep1, dep2]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":deps = dep1, dep2\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -199,55 +173,24 @@ TESTP(config_cfg_deps_oom, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs, STRV_NULL, STRV("deps = [dep1, dep2]\n"));
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
+	config_free(&ctx.tmp);
+	config_init(&ctx.tmp, 2, ALLOC_STD);
 
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
+	config_sync_plan_t plan = {0};
+	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, deps, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_arr(&priv->cfg, STRV("deps"), CFG_MODE_SET, 0, &deps);
-	cfg_add_var(&priv->cfg, root, deps);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_UNKNOWN, STRV("dep1"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_UNKNOWN, STRV("dep2"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	config.lists.cnt = config.lists.size;
+	ctx.tmp.lists.cnt = ctx.tmp.lists.cap - 1;
 	mem_oom(1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
-	config.lists.cnt = 0;
+	EXPECT_EQ(run_build_cfg(mod, &ctx, schema, &plan, STRV_NULL, STRV_NULL, DST_NONE()), 1);
+	ctx.tmp.lists.cnt = 0;
 	mem_oom(0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -256,51 +199,14 @@ TESTP(config_cfg_deps_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, deps, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_arr(&priv->cfg, STRV("deps"), CFG_MODE_SET, 0, &deps);
-	cfg_add_var(&priv->cfg, root, deps);
-	cfg_str(&priv->cfg, STRV_NULL, CFG_MODE_UNKNOWN, STRV("dep"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("deps = [\"dep\"]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -309,54 +215,19 @@ TESTP(config_cfg_uri, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_str(&priv->cfg, STRV("uri"), CFG_MODE_SET, STRV("uri"), &var);
-	cfg_add_var(&priv->cfg, root, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("uri = \"uri\"\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":uri = uri\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -365,49 +236,14 @@ TESTP(config_cfg_uri_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_lit(&priv->cfg, STRV("uri"), CFG_MODE_SET, STRV("uri"), &var);
-	cfg_add_var(&priv->cfg, root, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("uri = uri\n"), STRV_NULL, STRV_NULL, DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -416,54 +252,19 @@ TESTP(config_cfg_inc, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_str(&priv->cfg, STRV("include"), CFG_MODE_SET, STRV("include"), &var);
-	cfg_add_var(&priv->cfg, root, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("include = \"include\"\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":inc = include\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -472,49 +273,14 @@ TESTP(config_cfg_inc_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_lit(&priv->cfg, STRV("include"), CFG_MODE_SET, STRV("include"), &var);
-	cfg_add_var(&priv->cfg, root, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("include = include\n"), STRV_NULL, STRV_NULL, DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -523,53 +289,18 @@ TESTP(config_cfg_pkg_app, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+pkg:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("[+pkg:]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
 		   "pkgs += \n"
 		   ":path ?= \n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -578,49 +309,14 @@ TESTP(config_cfg_pkg_app_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+pkg"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[256] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("[+pkg]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -629,110 +325,18 @@ TESTP(config_cfg_pkg_en, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("[?pkg:]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
 
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("?pkg:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[256] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
-
-	char out[512] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	char out[256] = {0};
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
-
-	END;
-}
-
-TESTP(config_cfg_pkg_set_not_found, mod_t *mod, const config_schema_t *schema)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("pkg:pkg"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[256] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
-	log_set_quiet(0, 0);
-
-	char out[512] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
-	EXPECT_STR(out,
-		   "pkgs ?= \n"
-		   ":path ?= \n");
-
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -741,64 +345,85 @@ TESTP(config_cfg_pkg_ops, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, deps, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("?pkg:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_tbl(&priv->cfg, STRV("deps"), &deps);
-	cfg_add_var(&priv->cfg, tbl, deps);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("dep"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-	cfg_str(&priv->cfg, STRV("uri"), CFG_MODE_SET, STRV("uri"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-	cfg_str(&priv->cfg, STRV("include"), CFG_MODE_SET, STRV("include"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	char tmp[256] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[?pkg:]\n"
+				      "deps = [dep]\n"
+				      "uri = \"uri\"\n"
+				      "include = \"include\"\n"),
+				 STRV_NULL,
+				 STRV_NULL,
+				 DST_NONE()),
 		  0);
 
 	char out[512] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":deps = dep\n"
 		   ":uri = uri\n"
 		   ":inc = include\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(config_cfg_pkg_ops_oom, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs,
+			STRV_NULL,
+			STRV("[?pkg:]\n"
+			     "deps = [dep]\n"));
+
+	config_free(&ctx.tmp);
+	config_init(&ctx.tmp, 2, ALLOC_STD);
+
+	config_sync_plan_t plan = {0};
+	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+
+	ctx.tmp.lists.cnt = ctx.tmp.lists.cap;
+	mem_oom(1);
+	EXPECT_EQ(run_build_cfg(mod, &ctx, schema, &plan, STRV_NULL, STRV_NULL, DST_NONE()), 1);
+	ctx.tmp.lists.cnt = 0;
+	mem_oom(0);
+
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(config_cfg_pkg_set_not_found, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[pkg:other=other]\n"
+				      "deps = [dep]\n"
+				      ""),
+				 STRV("pkgs/root"),
+				 STRV("root"),
+				 DST_NONE()),
+		  1);
+	log_set_quiet(0, 0);
+
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -807,54 +432,19 @@ TESTP(config_cfg_tgt_app, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("[+tgt:]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":tgts += \n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -863,49 +453,14 @@ TESTP(config_cfg_tgt_app_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("[+tgt]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -914,111 +469,19 @@ TESTP(config_cfg_tgt_en, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("?tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  0);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("[?tgt:]\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":tgts ?= \n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
-
-	END;
-}
-
-TESTP(config_cfg_tgt_set_not_found, mod_t *mod, const config_schema_t *schema)
-{
-	START;
-
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
-	log_set_quiet(0, 0);
-
-	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
-	EXPECT_STR(out,
-		   "pkgs ?= \n"
-		   ":path ?= \n");
-
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1027,58 +490,27 @@ TESTP(config_cfg_tgt_ops, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_str(&priv->cfg, STRV("prep"), CFG_MODE_SET, STRV("prep"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-	cfg_str(&priv->cfg, STRV("conf"), CFG_MODE_SET, STRV("conf"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-	cfg_str(&priv->cfg, STRV("comp"), CFG_MODE_SET, STRV("comp"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-	cfg_str(&priv->cfg, STRV("inst"), CFG_MODE_SET, STRV("inst"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-	cfg_str(&priv->cfg, STRV("out"), CFG_MODE_SET, STRV("out"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[+tgt:]\n"
+				      "prep = \"prep\"\n"
+				      "conf = \"conf\"\n"
+				      "comp = \"comp\"\n"
+				      "inst = \"inst\"\n"
+				      "out = \"out\"\n"),
+				 STRV_NULL,
+				 STRV_NULL,
+				 DST_NONE()),
 		  0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":tgts += \n"
 		   "::prep = prep\n"
@@ -1087,9 +519,7 @@ TESTP(config_cfg_tgt_ops, mod_t *mod, const config_schema_t *schema)
 		   "::inst = inst\n"
 		   "::path = out\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1098,62 +528,28 @@ TESTP(config_cfg_tgt_deps, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_tgt(&registry, 0, STRV(""), NULL);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, deps, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_arr(&priv->cfg, STRV("deps"), CFG_MODE_SET, 0, &deps);
-	cfg_add_var(&priv->cfg, tbl, deps);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("dep1"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("dep2"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[+tgt:]\n"
+				      "deps = [dep1, dep2]\n"),
+				 STRV_NULL,
+				 STRV_NULL,
+				 DST_NONE()),
 		  0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":tgts += \n"
 		   "::deps = dep1, dep2\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1162,58 +558,27 @@ TESTP(config_cfg_tgt_deps_oom, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-	registry_add_tgt(&registry, 0, STRV(""), NULL);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs,
+			STRV_NULL,
+			STRV("[+tgt:]\n"
+			     "deps = [dep1, dep2]\n"));
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
+	config_free(&ctx.tmp);
+	config_init(&ctx.tmp, 3, ALLOC_STD);
 
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
+	config_sync_plan_t plan = {0};
+	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, deps, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_arr(&priv->cfg, STRV("deps"), CFG_MODE_SET, 0, &deps);
-	cfg_add_var(&priv->cfg, tbl, deps);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("dep1"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("dep2"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
+	ctx.tmp.lists.cnt = ctx.tmp.lists.cap - 2;
 	mem_oom(1);
-	config.lists.cnt = config.lists.cap;
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
-		  1);
-	config.lists.cnt = 0;
+	EXPECT_EQ(run_build_cfg(mod, &ctx, schema, &plan, STRV_NULL, STRV_NULL, DST_NONE()), 1);
+	ctx.tmp.lists.cnt = 0;
 	mem_oom(0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1222,53 +587,47 @@ TESTP(config_cfg_tgt_deps_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, deps, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_arr(&priv->cfg, STRV("deps"), CFG_MODE_SET, 0, &deps);
-	cfg_add_var(&priv->cfg, tbl, deps);
-	cfg_str(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("dep"), &var);
-	cfg_add_var(&priv->cfg, deps, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[+tgt:]\n"
+				      "deps = [\"dep\"]\n"),
+				 STRV_NULL,
+				 STRV_NULL,
+				 DST_NONE()),
 		  1);
 	log_set_quiet(0, 0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(config_cfg_tgt_set_not_found, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[tgt:miss=miss]\n"
+				      "prep = \"prep\"\n"
+				      ""),
+				 STRV("pkgs/root"),
+				 STRV("root"),
+				 DST_NONE()),
+		  1);
+	log_set_quiet(0, 0);
+
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1277,58 +636,29 @@ TESTP(config_cfg_target_lib, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_str(&priv->cfg, STRV("lib"), CFG_MODE_SET, STRV("lib"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[+tgt:]\n"
+				      "lib = \"lib\"\n"),
+				 STRV_NULL,
+				 STRV_NULL,
+				 DST_NONE()),
 		  0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":tgts += \n"
 		   "::name = lib\n"
 		   "::type = 1\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1337,58 +667,29 @@ TESTP(config_cfg_target_exe, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_tbl(&priv->cfg, STRV("+tgt:"), &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_str(&priv->cfg, STRV("exe"), CFG_MODE_SET, STRV("exe"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_NONE()),
+	EXPECT_EQ(load_build_cfg(mod,
+				 &ctx,
+				 schema,
+				 STRV("[+tgt:]\n"
+				      "exe = \"exe\"\n"),
+				 STRV_NULL,
+				 STRV_NULL,
+				 DST_NONE()),
 		  0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":tgts += \n"
 		   "::name = exe\n"
 		   "::type = 2\n");
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1397,61 +698,17 @@ TESTP(config_cfg_ext, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("ext:\n\"repo\"\n\n"), STRV_NULL, STRV_NULL, DST_STD()), 0);
+	EXPECT_EQ(fs_isfile(&ctx.fs, STRV("tmp/.gitignore")), 0);
+	EXPECT_EQ(fs_isdir(&ctx.fs, STRV("tmp/ext/repo")), 0);
+	EXPECT_EQ(ctx.proc.buf.len, 0);
+	EXPECT_EQ(ctx.config.vals.cnt, 0);
+	EXPECT_EQ(ctx.registry.pkgs.cnt, 0);
 
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_arr(&priv->cfg, STRV("ext"), CFG_MODE_SET, 1, &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_str(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("repo"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     &fs,
-			     &proc,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_STD()),
-		  0);
-
-	EXPECT_EQ(fs_isfile(&fs, STRV("tmp/.gitignore")), 1);
-	EXPECT_EQ(fs_isdir(&fs, STRV("tmp/ext/repo")), 1);
-	EXPECT_STRN(proc.buf.data, "git clone repo tmp" SEP "ext" SEP "repo" SEP "\n", proc.buf.len);
-
-	proc_free(&proc);
-	fs_free(&fs);
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1460,51 +717,90 @@ TESTP(config_cfg_ext_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_arr(&priv->cfg, STRV("ext"), CFG_MODE_SET, 1, &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_lit(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("repo"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_cfg(mod,
-			     &config,
-			     &tc,
-			     schema,
-			     &registry,
-			     root,
-			     NULL,
-			     NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     STRV_NULL,
-			     &buf,
-			     ALLOC_STD,
-			     DST_STD()),
-		  1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("ext:\nrepo\n"), STRV_NULL, STRV_NULL, DST_STD()), 1);
 	log_set_quiet(0, 0);
 
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(config_cfg_ext_invalid_format, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("ext:\n1\n\n"), STRV_NULL, STRV_NULL, DST_STD()), 1);
+	log_set_quiet(0, 0);
+
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(config_cfg_ext_oom_second, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t warmup = {0};
+	mod_cfg_ctx_init(&warmup);
+	EXPECT_EQ(load_build_cfg(mod, &warmup, schema, STRV("ext:\n\"repo1\"\n\"repo2\"\n\n"), STRV_NULL, STRV_NULL, DST_NONE()), 0);
+	mod_cfg_ctx_free(&warmup);
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs, STRV_NULL, STRV("ext:\n\"repo1\"\n\"repo2\"\n\n"));
+
+	config_sync_plan_t plan = {0};
+	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+
+	log_set_quiet(0, 1);
+	mem_oom(1);
+	EXPECT_EQ(run_build_cfg(mod, &ctx, schema, &plan, STRV_NULL, STRV_NULL, DST_NONE()), 1);
+	mem_oom(0);
+	log_set_quiet(0, 0);
+
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(mod_cfg_config_fs_null_config, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs, STRV_NULL, STRV("[+pkg:]\n"));
+
+	config_sync_plan_t plan = {0};
+	config_sync_plan_init(&plan, 1, ALLOC_STD);
+
+	EXPECT_EQ(mod->config_fs(mod,
+				 NULL,
+				 &ctx.tmp,
+				 schema,
+				 &ctx.registry,
+				 &plan,
+				 &ctx.fs,
+				 STRV_NULL,
+				 STRV_NULL,
+				 STRV_NULL,
+				 &ctx.buf,
+				 ALLOC_STD,
+				 DST_NONE()),
+		  1);
+
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1513,56 +809,18 @@ TESTP(mod_cfg_config_fs, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_arr(&priv->cfg, STRV("ext"), CFG_MODE_SET, 1, &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_str(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("repo"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	void *f;
-	fs_open(&fs, STRV("build.cfg"), "w", &f);
-	fs_write(&fs, f, STRV("[+pkg:]\n"));
-	fs_close(&fs, f);
-
-	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
-
-	EXPECT_EQ(mod->config_fs(
-			  mod, &config, &tc, schema, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()),
-		  0);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("[+pkg:]\n"), STRV_NULL, STRV_NULL, DST_STD()), 0);
 
 	char out[256] = {0};
-	config_print(&config, schema, &registry, DST_BUF(out));
+	config_print(&ctx.config, schema, &ctx.registry, DST_BUF(out));
 	EXPECT_STR(out,
 		   "pkgs += \n"
 		   ":path ?= \n");
 
-	proc_free(&proc);
-	fs_free(&fs);
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1571,56 +829,80 @@ TESTP(mod_cfg_config_fs_invalid, mod_t *mod, const config_schema_t *schema)
 {
 	START;
 
-	registry_t registry = {0};
-	registry_init(&registry, 1, ALLOC_STD);
-
-	config_t config = {0};
-	config_init(&config, 1, ALLOC_STD);
-
-	config_t tc = {0};
-	config_init(&tc, 1, ALLOC_STD);
-
-	mod_cfg_priv_t *priv = mod->priv;
-
-	priv->cfg.strs.used = 0;
-	priv->cfg.vars.cnt  = 0;
-
-	cfg_var_t root, tbl, var;
-	cfg_root(&priv->cfg, &root);
-	cfg_arr(&priv->cfg, STRV("ext"), CFG_MODE_SET, 1, &tbl);
-	cfg_add_var(&priv->cfg, root, tbl);
-	cfg_str(&priv->cfg, STRV_NULL, CFG_MODE_SET, STRV("repo"), &var);
-	cfg_add_var(&priv->cfg, tbl, var);
-
-	fs_t fs = {0};
-	fs_init(&fs, 1, 1, ALLOC_STD);
-
-	void *f;
-	fs_open(&fs, STRV("build.cfg"), "w", &f);
-	fs_write(&fs,
-		 f,
-		 STRV("ext:\n"
-		      "uri = invalid\n"
-		      "\n"));
-	fs_close(&fs, f);
-
-	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
-
-	char tmp[128] = {0};
-	str_t buf     = STRB(tmp, 0);
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(mod->config_fs(
-			  mod, &config, &tc, schema, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_NONE()),
-		  1);
+	EXPECT_EQ(load_build_cfg(mod, &ctx, schema, STRV("ext:\nuri = invalid\n"), STRV_NULL, STRV_NULL, DST_NONE()), 1);
 	log_set_quiet(0, 0);
 
-	proc_free(&proc);
-	fs_free(&fs);
-	config_free(&tc);
-	config_free(&config);
-	registry_free(&registry);
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(mod_cfg_config_fs_null_priv, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs, STRV_NULL, STRV("[+pkg:]\n"));
+
+	config_sync_plan_t plan = {0};
+	config_sync_plan_init(&plan, 1, ALLOC_STD);
+
+	mod_t fake = *mod;
+	fake.priv  = NULL;
+	EXPECT_EQ(fake.config_fs(&fake,
+				 &ctx.config,
+				 &ctx.tmp,
+				 schema,
+				 &ctx.registry,
+				 &plan,
+				 &ctx.fs,
+				 STRV_NULL,
+				 STRV_NULL,
+				 STRV_NULL,
+				 &ctx.buf,
+				 ALLOC_STD,
+				 DST_NONE()),
+		  1);
+
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
+
+	END;
+}
+
+TESTP(mod_cfg_config_fs_null_buf, mod_t *mod, const config_schema_t *schema)
+{
+	START;
+
+	mod_cfg_ctx_t ctx = {0};
+	mod_cfg_ctx_init(&ctx);
+	write_build_cfg(&ctx.fs, STRV_NULL, STRV("[+pkg:]\n"));
+
+	config_sync_plan_t plan = {0};
+	config_sync_plan_init(&plan, 1, ALLOC_STD);
+
+	EXPECT_EQ(mod->config_fs(mod,
+				 &ctx.config,
+				 &ctx.tmp,
+				 schema,
+				 &ctx.registry,
+				 &plan,
+				 &ctx.fs,
+				 STRV_NULL,
+				 STRV_NULL,
+				 STRV_NULL,
+				 NULL,
+				 ALLOC_STD,
+				 DST_NONE()),
+		  1);
+
+	config_sync_plan_free(&plan);
+	mod_cfg_ctx_free(&ctx);
 
 	END;
 }
@@ -1950,6 +1232,7 @@ STEST(mod_cfg)
 	mod_base_init(0, &schema, ALLOC_STD);
 	mod_t *mod = mod_cfg_init(&schema);
 	RUNP(config_cfg_empty, mod, &schema);
+	RUNP(config_cfg_pkg_add_oom, mod, &schema);
 	RUNP(config_cfg_deps, mod, &schema);
 	RUNP(config_cfg_deps_oom, mod, &schema);
 	RUNP(config_cfg_deps_invalid, mod, &schema);
@@ -1960,22 +1243,28 @@ STEST(mod_cfg)
 	RUNP(config_cfg_pkg_app, mod, &schema);
 	RUNP(config_cfg_pkg_app_invalid, mod, &schema);
 	RUNP(config_cfg_pkg_en, mod, &schema);
-	RUNP(config_cfg_pkg_set_not_found, mod, &schema);
 	RUNP(config_cfg_pkg_ops, mod, &schema);
+	RUNP(config_cfg_pkg_ops_oom, mod, &schema);
+	RUNP(config_cfg_pkg_set_not_found, mod, &schema);
 	RUNP(config_cfg_tgt_app, mod, &schema);
 	RUNP(config_cfg_tgt_app_invalid, mod, &schema);
 	RUNP(config_cfg_tgt_en, mod, &schema);
-	RUNP(config_cfg_tgt_set_not_found, mod, &schema);
 	RUNP(config_cfg_tgt_ops, mod, &schema);
 	RUNP(config_cfg_tgt_deps, mod, &schema);
 	RUNP(config_cfg_tgt_deps_oom, mod, &schema);
 	RUNP(config_cfg_tgt_deps_invalid, mod, &schema);
+	RUNP(config_cfg_tgt_set_not_found, mod, &schema);
 	RUNP(config_cfg_target_lib, mod, &schema);
 	RUNP(config_cfg_target_exe, mod, &schema);
 	RUNP(config_cfg_ext, mod, &schema);
 	RUNP(config_cfg_ext_invalid, mod, &schema);
+	RUNP(config_cfg_ext_invalid_format, mod, &schema);
+	RUNP(config_cfg_ext_oom_second, mod, &schema);
 	RUNP(mod_cfg_config_fs, mod, &schema);
 	RUNP(mod_cfg_config_fs_invalid, mod, &schema);
+	RUNP(mod_cfg_config_fs_null_priv, mod, &schema);
+	RUNP(mod_cfg_config_fs_null_buf, mod, &schema);
+	RUNP(mod_cfg_config_fs_null_config, mod, &schema);
 	RUNP(mod_cfg_apply_val, mod, &schema);
 	RUNP(mod_cfg_apply_val_pkg_uri, mod, &schema);
 	RUNP(mod_cfg_apply_val_pkg_inc, mod, &schema);

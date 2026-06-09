@@ -41,27 +41,26 @@ TESTP(mod_test_config_fs, mod_t *mod, const config_schema_t *schema)
 	fs_mkdir(&fs, STRV("src"));
 	fs_mkdir(&fs, STRV("drivers"));
 
-	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
-
 	char tmp[128] = {0};
 	str_t buf     = STRB(tmp, 0);
 
+	config_sync_plan_t plan = {0};
+	config_sync_plan_init(&plan, 1, ALLOC_STD);
 	EXPECT_EQ(mod->config_fs(
-			  mod, &config, &tc, schema, &registry, &fs, &proc, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()),
+			  mod, &config, &tc, schema, &registry, &plan, &fs, STRV_NULL, STRV_NULL, STRV_NULL, &buf, ALLOC_STD, DST_STD()),
 		  0);
 
 	char out[256] = {0};
 	config_print(&config, schema, &registry, DST_BUF(out));
 	EXPECT_STR(out,
-		   "pkgs ?= \n"
+		   "pkgs += \n"
 		   ":path ?= \n"
 		   ":tgts += test\n"
 		   ":test:type = 5\n"
 		   ":test:src = test\n"
 		   ":test:incs_priv = test, src, drivers\n");
 
-	proc_free(&proc);
+	config_sync_plan_free(&plan);
 	fs_free(&fs);
 	config_free(&tc);
 	config_free(&config);

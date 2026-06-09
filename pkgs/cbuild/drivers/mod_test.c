@@ -3,11 +3,12 @@
 #include "mod_base.h"
 #include "path.h"
 
-static int mod_test_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, fs_t *fs,
-			      proc_t *proc, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+static int mod_test_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry,
+			      config_sync_plan_t *plan, fs_t *fs, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc,
+			      dst_t dst)
 {
 	(void)mod;
-	(void)proc;
+	(void)plan;
 	(void)buf;
 	(void)alloc;
 	(void)dst;
@@ -26,7 +27,7 @@ static int mod_test_config_fs(mod_t *mod, config_t *config, config_t *tmp, const
 
 		uint pkg;
 		registry_add_pkg(registry, name, &pkg);
-		config_str_list(tmp, CONFIG_PKGS, pkg, -1, CONFIG_ACT_EN, name, NULL);
+		config_str_list(tmp, CONFIG_PKGS, pkg, -1, CONFIG_ACT_APP, name, NULL);
 		config_str(tmp, CONFIG_PKG_PATH, pkg, -1, CONFIG_ACT_EN, cur_path);
 		uint tgt;
 		registry_add_tgt(registry, pkg, STRV("test"), &tgt);
