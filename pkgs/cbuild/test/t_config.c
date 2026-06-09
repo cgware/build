@@ -659,6 +659,7 @@ TEST(config_print_invalid_type)
 
 	config_val_t *v = arr_add(&config.vals, NULL);
 	v->op		= 0;
+	v->act		= CONFIG_ACT_SET;
 
 	char buf[256] = {0};
 	log_set_quiet(0, 1);
