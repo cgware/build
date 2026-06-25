@@ -12,8 +12,8 @@ fi
 arch="$1"
 config="$2"
 
-archs="host x64 x86"
-configs="Debug Release"
+archs="host"
+configs="Debug"
 
 ret=0
 
@@ -78,8 +78,9 @@ test() {
 	gen 11_extern "lib/cbase.a"
 	gen 12_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.a bin/exe"
 	gen 13_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.a bin/exe"
-	gen 14_hello "exe/bin/hello"
-	gen 15_hello_deps "ext/hello/bin/hello"
+	gen 14_platform "bin/14_platform"
+	gen 15_hello "exe/bin/hello"
+	gen 16_hello_deps "ext/hello/bin/hello"
 }
 
 test

@@ -710,11 +710,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		strv_t val;
 		make_act_t var;
 	} pkgfiles[] = {
-		[PKGSRC_C] = {STRVT("PKGSRC_C"), STRVT("$(shell find $(DIR_PKG_SRC) -type f -name '*.c' 2>/dev/null)")},
+		[PKGSRC_C] = {STRVT("PKGSRC_C"), STRVT("$(filter-out $(DIR_PKG_SRC)windows/%,$(shell find $(DIR_PKG_SRC) -type f -name '*.c' 2>/dev/null))")},
 		[PKGSRC_H] = {STRVT("PKGSRC_H"), STRVT("$(shell find $(DIR_PKG_SRC) -type f -name '*.h' 2>/dev/null)")},
-		[PKGDRV_C] = {STRVT("PKGDRV_C"), STRVT("$(shell find $(DIR_PKG_DRV) -type f -name '*.c' 2>/dev/null)")},
+		[PKGDRV_C] = {STRVT("PKGDRV_C"), STRVT("$(filter-out $(DIR_PKG_DRV)windows/%,$(shell find $(DIR_PKG_DRV) -type f -name '*.c' 2>/dev/null))")},
 		[PKGDRV_H] = {STRVT("PKGDRV_H"), STRVT("$(shell find $(DIR_PKG_DRV) -type f -name '*.h' 2>/dev/null)")},
-		[PKGTST_C] = {STRVT("PKGTST_C"), STRVT("$(shell find $(DIR_PKG_TST) -type f -name '*.c' 2>/dev/null)")},
+		[PKGTST_C] = {STRVT("PKGTST_C"), STRVT("$(filter-out $(DIR_PKG_TST)windows/%,$(shell find $(DIR_PKG_TST) -type f -name '*.c' 2>/dev/null))")},
 		[PKGTST_H] = {STRVT("PKGTST_H"), STRVT("$(shell find $(DIR_PKG_TST) -type f -name '*.h' 2>/dev/null)")},
 		[PKGINC_H] = {STRVT("PKGINC_H"), STRVT("$(shell find $(DIR_PKG_INC) -type f -name '*.h' 2>/dev/null)")},
 	};

@@ -53,6 +53,43 @@ static void get_path(const proj_t *proj, uint id, path_t *path)
 	}
 }
 
+static int gen_src(const proj_t *proj, fs_t *fs, void *f, const target_t *target)
+{
+	strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
+	fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
+
+	path_t tmp = {0};
+
+	path_init_s(&tmp, src, '/');
+
+	size_t src_len = tmp.len;
+	path_push_s(&tmp, STRV("*.h"), '/');
+	fs_write(fs, f, STRVS(tmp));
+
+	fs_write(fs, f, STRV(" ${DIR_PKG}"));
+	tmp.len = src_len;
+	path_push_s(&tmp, STRV("*.c"), '/');
+	fs_write(fs, f, STRVS(tmp));
+
+	fs_write(fs, f, STRV(")\n"));
+
+	fs_write(fs, f, STRV("list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \""));
+	tmp.len = src_len;
+	path_push_s(&tmp, STRV("(windows|linux)/.*"), '/');
+	fs_write(fs, f, STRVS(tmp));
+	fs_write(fs, f, STRV("\\\\.c$\")\n"));
+
+	fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}"));
+	tmp.len = src_len;
+	path_push_s(&tmp, STRV("${system}/*.c"), '/');
+	fs_write(fs, f, STRVS(tmp));
+	fs_write(fs, f, STRV(")\n"));
+
+	fs_write(fs, f, STRV("list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"));
+
+	return 0;
+}
+
 static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, const pkg_t *pkg, const target_t *target, str_t *buf)
 {
 	strv_t svalues[__VARS_CNT] = {
@@ -207,23 +244,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 
 	switch (target->type) {
 	case TARGET_TYPE_EXE: {
-		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
-		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
-
-		path_t tmp = {0};
-
-		path_init_s(&tmp, src, '/');
-
-		size_t src_len = tmp.len;
-		path_push_s(&tmp, STRV("*.h"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(" ${DIR_PKG}"));
-		tmp.len = src_len;
-		path_push_s(&tmp, STRV("*.c"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(")\n"));
+		gen_src(proj, fs, f, target);
 
 		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 		if (target->has_incs_priv) {
@@ -268,23 +289,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		break;
 	}
 	case TARGET_TYPE_LIB: {
-		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
-		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
-
-		path_t tmp = {0};
-
-		path_init_s(&tmp, src, '/');
-
-		size_t src_len = tmp.len;
-		path_push_s(&tmp, STRV("*.h"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(" ${DIR_PKG}"));
-		tmp.len = src_len;
-		path_push_s(&tmp, STRV("*.c"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(")\n"));
+		gen_src(proj, fs, f, target);
 
 		fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 		if (inc.len > 0 || target->has_incs_priv) {
@@ -336,23 +341,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		break;
 	}
 	case TARGET_TYPE_DRV: {
-		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
-		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
-
-		path_t tmp = {0};
-
-		path_init_s(&tmp, src, '/');
-
-		size_t src_len = tmp.len;
-		path_push_s(&tmp, STRV("*.h"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(" ${DIR_PKG}"));
-		tmp.len = src_len;
-		path_push_s(&tmp, STRV("*.c"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(")\n"));
+		gen_src(proj, fs, f, target);
 
 		fs_write(fs, f, STRV("add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"));
 		if (inc.len > 0 || target->has_incs_priv) {
@@ -504,23 +493,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		break;
 	}
 	case TARGET_TYPE_TST: {
-		strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
-		fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
-
-		path_t tmp = {0};
-
-		path_init_s(&tmp, src, '/');
-
-		size_t src_len = tmp.len;
-		path_push_s(&tmp, STRV("*.h"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(" ${DIR_PKG}"));
-		tmp.len = src_len;
-		path_push_s(&tmp, STRV("*.c"), '/');
-		fs_write(fs, f, STRVS(tmp));
-
-		fs_write(fs, f, STRV(")\n"));
+		gen_src(proj, fs, f, target);
 
 		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 
@@ -828,6 +801,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"
 		      "list(LENGTH CONFIGS _config_count)\n"
 		      "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
+		      "string(TOLOWER \"${CMAKE_SYSTEM_NAME}\" system)\n"
 		      "\n"
 		      "if(WIN32)\n"
 		      "\tset(EXT_LIB .lib)\n"

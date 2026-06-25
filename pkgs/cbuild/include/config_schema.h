@@ -26,7 +26,7 @@ typedef struct config_schema_op_desc_s {
 	void *priv;
 } config_schema_op_desc_t;
 
-typedef struct onfig_schema_op_s {
+typedef struct config_schema_op_s {
 	config_type_t type;
 	config_scope_t scope;
 	size_t name;
