@@ -587,6 +587,15 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
 
+	make_var(&make, STRV("LCOV_IGNORE_UNUSED"), MAKE_VAR_INST, &act);
+	make_var_add_val(&make,
+			 act,
+			 MSTR(STRV("$(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' "
+				   "'--ignore-errors unused')")));
+	make_add_act(&make, root, act);
+	make_empty(&make, &act);
+	make_add_act(&make, root, act);
+
 	path_t tmp = {0};
 	str_t buf  = strz(16);
 
@@ -1263,7 +1272,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		make_ifneq(&make, MSTR(STRV("$(PKGSRC_GCDA)$(PKGDRV_GCDA)")), MSTR(STRV_NULL), &if_gcda);
 		make_rule_add_act(&make, def_lcov, if_gcda);
 		make_cmd(&make,
-			 MCMD(STRV("lcov -q -c -o $$@ -d $(DIR_OUT) --include \"$(abspath $(DIR_PKG))/*\" --ignore-errors unused --exclude "
+			 MCMD(STRV("lcov -q -c -o $$@ -d $(DIR_OUT) --include \"$(abspath $(DIR_PKG))/*\" $(LCOV_IGNORE_UNUSED) --exclude "
 				   "\"*/test/*\" --exclude \"*/example/*\"")),
 			 &act);
 		make_if_add_true_act(&make, if_gcda, act);

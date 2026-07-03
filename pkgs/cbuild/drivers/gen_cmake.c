@@ -810,6 +810,18 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\tset(EXT_LIB .a)\n"
 		      "\tset(EXT_EXE )\n"
 		      "endif()\n"
+		      "\n"
+		      "execute_process(\n"
+		      "\tCOMMAND lcov --ignore-errors unused --version\n"
+		      "\tOUTPUT_QUIET\n"
+		      "\tERROR_QUIET\n"
+		      "\tRESULT_VARIABLE lcov_ignore_unused_result\n"
+		      ")\n"
+		      "if(lcov_ignore_unused_result EQUAL 0)\n"
+		      "\tset(LCOV_IGNORE_UNUSED --ignore-errors unused)\n"
+		      "else()\n"
+		      "\tset(LCOV_IGNORE_UNUSED )\n"
+		      "endif()\n"
 		      "\n"));
 
 	path_t tmp = {0};
@@ -1022,7 +1034,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		      "\tadd_custom_target(cov\n"
 		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
 		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} --ignore-errors unused --exclude "
+		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} ${LCOV_IGNORE_UNUSED} --exclude "
 		      "\\\"*/test/*\\\" --exclude \\\"*/example/*\\\" --exclude \\\"*/tmp/*\\\"\\;\n"
 		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
 		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
