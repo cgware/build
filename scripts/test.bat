@@ -81,6 +81,7 @@ exit /b %ret%
 	call :gen 12_zip "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.zip ext/cbase/cbase.lib bin/exe.exe"
 	call :gen 13_tar_gz "../../tmp/dl/cbase-cef9bd84547f055b91d7dd80ad9b6a769e6c99a8.tar.gz libs/cbase.lib bin/exe.exe"
 	call :gen 14_platform "bin/14_platform.exe"
+	call :gen 15_example "bin/15_example_example.exe"
 	rem call :gen 15_hello "ext/11_hello/bin/hello.exe"
 	rem call :gen 16_hello_deps "ext/hello/bin/hello"
 

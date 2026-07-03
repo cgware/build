@@ -12,6 +12,7 @@ STEST(gen_none);
 STEST(mod_base);
 STEST(mod_cfg);
 STEST(mod_drv);
+STEST(mod_example);
 STEST(mod_exe);
 STEST(mod_lib);
 STEST(mod_pkgs);
@@ -37,6 +38,7 @@ TEST(cbuild)
 	RUN(mod_base);
 	RUN(mod_cfg);
 	RUN(mod_drv);
+	RUN(mod_example);
 	RUN(mod_exe);
 	RUN(mod_lib);
 	RUN(mod_pkgs);
