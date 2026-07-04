@@ -35,8 +35,7 @@ TEST(gen_make_proj_build_dir)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ := .." SEP ".." SEP "\n"
@@ -149,8 +148,7 @@ TEST(gen_make_proj_empty)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
@@ -263,8 +261,7 @@ TEST(gen_make_proj_name)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
@@ -377,8 +374,7 @@ TEST(gen_make_proj_unknown)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
@@ -500,8 +496,7 @@ TEST(gen_make_proj_exe)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
@@ -581,8 +576,8 @@ TEST(gen_make_proj_exe)
 		    "PKGTST_OBJ = $(patsubst $(DIR_PKG_TST)%.c,$(DIR_OUT_INT_TST)%.o,$(PKGTST_C))\n"
 		    "PKGTST_GCDA = $(patsubst %.o,%.gcda,$(PKGTST_OBJ))\n"
 		    "\n",
-		    3094);
-	EXPECT_STRN(tmp.data + 3094,
+		    3106);
+	EXPECT_STRN(tmp.data + 3106,
 		    "ARCH = $1\n"
 		    "CONFIG = $2\n"
 		    "\n"
@@ -620,7 +615,7 @@ TEST(gen_make_proj_exe)
 		    "\n"
 		    "include $(DIR_BUILD)pkg.mk\n"
 		    "\n",
-		    tmp.len - 3094);
+		    tmp.len - 3106);
 
 	fs_reads(&com.fs, STRV("pkg.mk"), &tmp);
 	EXPECT_STRN(tmp.data,
@@ -655,8 +650,7 @@ TEST(gen_make_proj_lib)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
@@ -807,8 +801,7 @@ TEST(gen_make_proj_ext)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
@@ -975,8 +968,7 @@ TEST(gen_make_proj_test)
 		    "EXT_LIB := .a\n"
 		    "EXT_EXE :=\n"
 		    "\n"
-		    "LCOV_IGNORE_UNUSED := $(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' '--ignore-errors "
-		    "unused')\n"
+		    "LCOV_IGNORE_UNUSED := $(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", \"--ignore-errors unused\" }')\n"
 		    "\n"
 		    "CP := cp\n"
 		    "DIR_PROJ :=\n"
@@ -1092,9 +1084,9 @@ TEST(gen_make_proj_test)
 		    "endif\n"
 		    "endif\n"
 		    "\n",
-		    3941);
+		    3953);
 
-	EXPECT_STRN(tmp.data + 3941,
+	EXPECT_STRN(tmp.data + 3953,
 		    "$(DIR_OUT_INT)$(PN)/lcov.info: $(DIR_OUT_TST_FILE)\n"
 		    "\trm -rf $(PKGSRC_GCDA) $(PKGDRV_GCDA)\n"
 		    "\t$(DIR_OUT_TST_FILE)\n"
@@ -1144,7 +1136,7 @@ TEST(gen_make_proj_test)
 		    "\n"
 		    "$(foreach a,$(ARCHS),$(foreach c,$(CONFIGS),$(eval $(call _cov,$(a),$(c)))))\n"
 		    "\n",
-		    tmp.len - 3941);
+		    tmp.len - 3953);
 
 	fs_reads(&com.fs, STRV("pkg.mk"), &tmp);
 	EXPECT_STRN(tmp.data,

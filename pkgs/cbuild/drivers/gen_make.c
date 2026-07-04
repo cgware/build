@@ -590,8 +590,8 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 	make_var(&make, STRV("LCOV_IGNORE_UNUSED"), MAKE_VAR_INST, &act);
 	make_var_add_val(&make,
 			 act,
-			 MSTR(STRV("$(shell lcov --ignore-errors unused --version >/dev/null 2>&1 && printf '%s' "
-				   "'--ignore-errors unused')")));
+			 MSTR(STRV("$(shell lcov --version 2>/dev/null | awk '/version ([2-9]|[1-9][0-9])/ { printf \"%s\", "
+				   "\"--ignore-errors unused\" }')")));
 	make_add_act(&make, root, act);
 	make_empty(&make, &act);
 	make_add_act(&make, root, act);
