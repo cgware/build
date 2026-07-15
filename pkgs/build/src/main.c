@@ -342,7 +342,7 @@ int main(int argc, const char **argv)
 	str_t buf = strz(1024);
 
 	proc_t proc = {0};
-	proc_init(&proc, 0, 0);
+	proc_init(&proc, 0, 0, ALLOC_STD);
 
 	if (comp == 0 && build(&proc, STRVS(proj_dir), gen_driver, STRVS(build_rel), &buf)) {
 		return 1;

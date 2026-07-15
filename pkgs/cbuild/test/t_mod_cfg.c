@@ -58,7 +58,7 @@ static void mod_cfg_ctx_init(mod_cfg_ctx_t *ctx)
 	config_init(&ctx->config, 1, ALLOC_STD);
 	config_init(&ctx->tmp, 1, ALLOC_STD);
 	fs_init(&ctx->fs, 4, 1, ALLOC_STD);
-	proc_init(&ctx->proc, 32, 1);
+	proc_init(&ctx->proc, 32, 1, ALLOC_STD);
 	ctx->buf = STRB(ctx->data, 0);
 }
 
@@ -83,7 +83,7 @@ static void write_build_cfg(fs_t *fs, strv_t cur_path, strv_t cfg)
 
 	void *f;
 	fs_open(fs, STRVS(path), "w", &f);
-	fs_write(fs, f, cfg);
+	fs_writes(fs, f, cfg);
 	fs_close(fs, f);
 }
 

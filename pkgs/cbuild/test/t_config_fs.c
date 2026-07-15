@@ -243,7 +243,7 @@ TEST(config_fs_pkgs_queue)
 	fs_mkdir(&fs, STRV("pkgs/p2/src"));
 
 	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
+	proc_init(&proc, 32, 1, ALLOC_STD);
 
 	char storage[256] = {0};
 	str_t buf	  = STRB(storage, 0);
@@ -318,7 +318,7 @@ TEST(config_fs_ext_sync_queue_oom)
 	path_init(&cfg_path, STRV(cur_path));
 	path_push(&cfg_path, STRV("build.cfg"));
 	fs_open(&fs, STRVS(cfg_path), "w", &f);
-	fs_write(&fs, f, STRVS(cfg_buf));
+	fs_writes(&fs, f, STRVS(cfg_buf));
 	fs_close(&fs, f);
 
 	char storage[1024] = {0};
@@ -375,7 +375,7 @@ TEST(config_fs_ext_sync)
 
 	void *f;
 	fs_open(&fs, STRV("build.cfg"), "w", &f);
-	fs_write(&fs,
+	fs_writes(&fs,
 		 f,
 		 STRV("ext:\n"
 		      "\"https://host/repo.git\"\n"
@@ -383,7 +383,7 @@ TEST(config_fs_ext_sync)
 	fs_close(&fs, f);
 
 	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
+	proc_init(&proc, 32, 1, ALLOC_STD);
 
 	char storage[256] = {0};
 	str_t buf	  = STRB(storage, 0);
@@ -428,7 +428,7 @@ TEST(config_fs_ext_sync_invalid)
 
 	void *f;
 	fs_open(&fs, STRV("build.cfg"), "w", &f);
-	fs_write(&fs,
+	fs_writes(&fs,
 		 f,
 		 STRV("ext:\n"
 		      "\"https://host/repo.git\"\n"
@@ -437,14 +437,14 @@ TEST(config_fs_ext_sync_invalid)
 
 	fs_mkpath(&fs, STRV_NULL, STRV("tmp/ext/repo"));
 	fs_open(&fs, STRV("tmp/ext/repo/build.cfg"), "w", &f);
-	fs_write(&fs,
+	fs_writes(&fs,
 		 f,
 		 STRV("ext:\n"
 		      "uri = invalid\n"));
 	fs_close(&fs, f);
 
 	proc_t proc = {0};
-	proc_init(&proc, 32, 1);
+	proc_init(&proc, 32, 1, ALLOC_STD);
 
 	char storage[256] = {0};
 	str_t buf	  = STRB(storage, 0);

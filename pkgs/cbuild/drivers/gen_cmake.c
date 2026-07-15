@@ -56,7 +56,7 @@ static void get_path(const proj_t *proj, uint id, path_t *path)
 static int gen_src(const proj_t *proj, fs_t *fs, void *f, const target_t *target)
 {
 	strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
-	fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
+	fs_writes(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 	path_t tmp = {0};
 
@@ -64,28 +64,28 @@ static int gen_src(const proj_t *proj, fs_t *fs, void *f, const target_t *target
 
 	size_t src_len = tmp.len;
 	path_push_s(&tmp, STRV("*.h"), '/');
-	fs_write(fs, f, STRVS(tmp));
+	fs_writes(fs, f, STRVS(tmp));
 
-	fs_write(fs, f, STRV(" ${DIR_PKG}"));
+	fs_writes(fs, f, STRV(" ${DIR_PKG}"));
 	tmp.len = src_len;
 	path_push_s(&tmp, STRV("*.c"), '/');
-	fs_write(fs, f, STRVS(tmp));
+	fs_writes(fs, f, STRVS(tmp));
 
-	fs_write(fs, f, STRV(")\n"));
+	fs_writes(fs, f, STRV(")\n"));
 
-	fs_write(fs, f, STRV("list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \""));
+	fs_writes(fs, f, STRV("list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \""));
 	tmp.len = src_len;
 	path_push_s(&tmp, STRV("(windows|linux)/.*"), '/');
-	fs_write(fs, f, STRVS(tmp));
-	fs_write(fs, f, STRV("\\\\.c$\")\n"));
+	fs_writes(fs, f, STRVS(tmp));
+	fs_writes(fs, f, STRV("\\\\.c$\")\n"));
 
-	fs_write(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}"));
+	fs_writes(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}"));
 	tmp.len = src_len;
 	path_push_s(&tmp, STRV("${system}/*.c"), '/');
-	fs_write(fs, f, STRVS(tmp));
-	fs_write(fs, f, STRV(")\n"));
+	fs_writes(fs, f, STRVS(tmp));
+	fs_writes(fs, f, STRV(")\n"));
 
-	fs_write(fs, f, STRV("list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"));
+	fs_writes(fs, f, STRV("list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"));
 
 	return 0;
 }
@@ -97,12 +97,12 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		[CONFIG] = STRVT("${CONFIG}"),
 	};
 
-	fs_write(fs, f, STRV("set(TN \""));
+	fs_writes(fs, f, STRV("set(TN \""));
 	strv_t name = proj_get_str(proj, target->strs + TGT_STR_NAME);
 	if (name.len > 0) {
-		fs_write(fs, f, name);
+		fs_writes(fs, f, name);
 	}
-	fs_write(fs, f, STRV("\")\n"));
+	fs_writes(fs, f, STRV("\")\n"));
 
 	for (int i = 0; i < __VARS_CNT; i++) {
 		if (!(vars->vars[i].deps & (1 << TN))) {
@@ -230,15 +230,15 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 
 		var_convert(buf, '{', '}', '{', '}');
 
-		fs_write(fs, f, STRV("set("));
-		fs_write(fs, f, vars->vars[i].name);
-		fs_write(fs, f, STRV(" "));
+		fs_writes(fs, f, STRV("set("));
+		fs_writes(fs, f, vars->vars[i].name);
+		fs_writes(fs, f, STRV(" "));
 		if (buf->len > 0) {
-			fs_write(fs, f, STRVS(*buf));
+			fs_writes(fs, f, STRVS(*buf));
 		}
-		fs_write(fs, f, STRV(")\n"));
+		fs_writes(fs, f, STRV(")\n"));
 	}
-	fs_write(fs, f, STRV("\n"));
+	fs_writes(fs, f, STRV("\n"));
 
 	strv_t inc = proj_get_str(proj, target->strs + TGT_STR_INC);
 
@@ -246,21 +246,21 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 	case TARGET_TYPE_EXE: {
 		gen_src(proj, fs, f, target);
 
-		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+		fs_writes(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 		if (target->has_incs_priv) {
-			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
+			fs_writes(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
 			const uint *inc_id;
 			list_node_t j = target->incs_priv;
 			list_foreach(&proj->lists, j, inc_id)
 			{
 				strv_t inc = proj_get_str(proj, *inc_id);
-				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				fs_write(fs, f, inc);
+				fs_writes(fs, f, STRV(" ${DIR_PKG}"));
+				fs_writes(fs, f, inc);
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
@@ -272,47 +272,47 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			      "endif()\n"));
 
 		if (target->has_deps) {
-			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
+			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
 			const list_node_t *dep_target_id;
 			list_node_t j = target->deps;
 			list_foreach(&proj->deps, j, dep_target_id)
 			{
 				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_write(fs, f, STRV(" "));
-				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
+				fs_writes(fs, f, STRV(" "));
+				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_writes(fs, f, STRV("_"));
+				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 		break;
 	}
 	case TARGET_TYPE_LIB: {
 		gen_src(proj, fs, f, target);
 
-		fs_write(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+		fs_writes(fs, f, STRV("add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 		if (inc.len > 0 || target->has_incs_priv) {
-			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
+			fs_writes(fs, f, STRV("target_include_directories(${PN}_${TN}"));
 			if (inc.len > 0) {
-				fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
-				fs_write(fs, f, inc);
+				fs_writes(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
+				fs_writes(fs, f, inc);
 			}
 			if (target->has_incs_priv) {
-				fs_write(fs, f, STRV(" PRIVATE"));
+				fs_writes(fs, f, STRV(" PRIVATE"));
 				const uint *inc_id;
 				list_node_t j = target->incs_priv;
 				list_foreach(&proj->lists, j, inc_id)
 				{
 					strv_t inc = proj_get_str(proj, *inc_id);
-					fs_write(fs, f, STRV(" ${DIR_PKG}"));
-					fs_write(fs, f, inc);
+					fs_writes(fs, f, STRV(" ${DIR_PKG}"));
+					fs_writes(fs, f, inc);
 				}
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
@@ -324,47 +324,47 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			      "endif()\n"));
 
 		if (target->has_deps) {
-			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
+			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
 			const list_node_t *dep_target_id;
 			list_node_t j = target->deps;
 			list_foreach(&proj->deps, j, dep_target_id)
 			{
 				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_write(fs, f, STRV(" "));
-				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
+				fs_writes(fs, f, STRV(" "));
+				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_writes(fs, f, STRV("_"));
+				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 		break;
 	}
 	case TARGET_TYPE_DRV: {
 		gen_src(proj, fs, f, target);
 
-		fs_write(fs, f, STRV("add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"));
+		fs_writes(fs, f, STRV("add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"));
 		if (inc.len > 0 || target->has_incs_priv) {
-			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN}"));
+			fs_writes(fs, f, STRV("target_include_directories(${PN}_${TN}"));
 			if (inc.len > 0) {
-				fs_write(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
-				fs_write(fs, f, inc);
+				fs_writes(fs, f, STRV(" PUBLIC ${DIR_PKG}"));
+				fs_writes(fs, f, inc);
 			}
 			if (target->has_incs_priv) {
-				fs_write(fs, f, STRV(" PRIVATE"));
+				fs_writes(fs, f, STRV(" PRIVATE"));
 				const uint *inc_id;
 				list_node_t j = target->incs_priv;
 				list_foreach(&proj->lists, j, inc_id)
 				{
 					strv_t inc = proj_get_str(proj, *inc_id);
-					fs_write(fs, f, STRV(" ${DIR_PKG}"));
-					fs_write(fs, f, inc);
+					fs_writes(fs, f, STRV(" ${DIR_PKG}"));
+					fs_writes(fs, f, inc);
 				}
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
@@ -376,24 +376,24 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			      "endif()\n"));
 
 		if (target->has_deps) {
-			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
+			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
 			const list_node_t *dep_target_id;
 			list_node_t j = target->deps;
 			list_foreach(&proj->deps, j, dep_target_id)
 			{
 				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_write(fs, f, STRV(" "));
-				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
+				fs_writes(fs, f, STRV(" "));
+				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_writes(fs, f, STRV("_"));
+				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 		break;
 	}
 	case TARGET_TYPE_EXT: {
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
 			      "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
@@ -402,7 +402,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 
 		strv_t uri = proj_get_str(proj, pkg->strs + PKG_STR_URI);
 		if (uri.len > 0) {
-			fs_write(fs,
+			fs_writes(fs,
 				 f,
 				 STRV("if(NOT EXISTS ${DIR_TMP_DL}${PKG_URI_FILE})\n"
 				      "\tfile(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL}${PKG_URI_FILE}\n"
@@ -413,7 +413,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				      "\"${DIR_TMP_EXT_PKG_SRC}\")\n"));
 		}
 
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("add_custom_target(${PN}_${TN}_build\n"
 			      "\tALL\n"
@@ -439,31 +439,31 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				}
 
 				if (header == 0) {
-					fs_write(fs, f, STRV("add_dependencies(${PN}_${TN}_build"));
+					fs_writes(fs, f, STRV("add_dependencies(${PN}_${TN}_build"));
 					header = 1;
 				}
-				fs_write(fs, f, STRV(" "));
-				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
+				fs_writes(fs, f, STRV(" "));
+				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_writes(fs, f, STRV("_"));
+				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
 			if (header) {
-				fs_write(fs, f, STRV(")\n"));
+				fs_writes(fs, f, STRV(")\n"));
 			}
 		}
 
 		switch (target->out_type) {
 		case TARGET_TGT_TYPE_LIB:
-			fs_write(fs, f, STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"));
+			fs_writes(fs, f, STRV("add_library(${PN}_${TN} STATIC IMPORTED)\n"));
 			break;
 		case TARGET_TGT_TYPE_EXE:
-			fs_write(fs, f, STRV("add_executable(${PN}_${TN} IMPORTED)\n"));
+			fs_writes(fs, f, STRV("add_executable(${PN}_${TN} IMPORTED)\n"));
 			break;
 		default:
 			break;
 		}
 
-		fs_write(fs, f, STRV("add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
+		fs_writes(fs, f, STRV("add_dependencies(${PN}_${TN} ${PN}_${TN}_build)\n"));
 
 		if (target->has_deps) {
 			int header = 0;
@@ -476,17 +476,17 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 				if (dtarget->type == TARGET_TYPE_LIB ||
 				    (dtarget->type == TARGET_TYPE_EXT && dtarget->out_type == TARGET_TGT_TYPE_LIB)) {
 					if (header == 0) {
-						fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
+						fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} INTERFACE"));
 						header = 1;
 					}
-					fs_write(fs, f, STRV(" "));
-					fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-					fs_write(fs, f, STRV("_"));
-					fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
+					fs_writes(fs, f, STRV(" "));
+					fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+					fs_writes(fs, f, STRV("_"));
+					fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 				}
 			}
 			if (header) {
-				fs_write(fs, f, STRV(")\n"));
+				fs_writes(fs, f, STRV(")\n"));
 			}
 		}
 
@@ -495,22 +495,22 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 	case TARGET_TYPE_TST: {
 		gen_src(proj, fs, f, target);
 
-		fs_write(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
+		fs_writes(fs, f, STRV("add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"));
 
 		if (target->has_incs_priv) {
-			fs_write(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
+			fs_writes(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
 			const uint *inc_id;
 			list_node_t j = target->incs_priv;
 			list_foreach(&proj->lists, j, inc_id)
 			{
 				strv_t inc = proj_get_str(proj, *inc_id);
-				fs_write(fs, f, STRV(" ${DIR_PKG}"));
-				fs_write(fs, f, inc);
+				fs_writes(fs, f, STRV(" ${DIR_PKG}"));
+				fs_writes(fs, f, inc);
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
@@ -522,22 +522,22 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			      "endif()\n"));
 
 		if (target->has_deps) {
-			fs_write(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
+			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
 			const list_node_t *dep_target_id;
 			list_node_t j = target->deps;
 			list_foreach(&proj->deps, j, dep_target_id)
 			{
 				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
 				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_write(fs, f, STRV(" "));
-				fs_write(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_write(fs, f, STRV("_"));
-				fs_write(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
+				fs_writes(fs, f, STRV(" "));
+				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
+				fs_writes(fs, f, STRV("_"));
+				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
 			}
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("add_test(\n"
 			      "\tNAME ${PN}_${TN}\n"
@@ -552,30 +552,30 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 	strv_t values[__VARS_CNT] = {0};
 
 	if (target->type == TARGET_TYPE_EXT) {
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
 			      "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE "
 			      "\"${DIR_OUT_EXT_FILE}\")\n"));
 	}
 
-	fs_write(fs, f, STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"));
+	fs_writes(fs, f, STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"));
 
 	if (target->type == TARGET_TYPE_EXT) {
-		fs_write(fs,
+		fs_writes(fs,
 			 f,
 			 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
 			      "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
 			      "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"));
 
 		if (target->out_type == TARGET_TGT_TYPE_LIB && inc.len > 0) {
-			fs_write(fs, f, STRV("\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_SRC_ROOT}"));
-			fs_write(fs, f, inc);
-			fs_write(fs, f, STRV("\n"));
+			fs_writes(fs, f, STRV("\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_SRC_ROOT}"));
+			fs_writes(fs, f, inc);
+			fs_writes(fs, f, STRV("\n"));
 		}
 	}
 
-	fs_write(fs, f, STRV("\tOUTPUT_NAME \"${PN}\"\n"));
+	fs_writes(fs, f, STRV("\tOUTPUT_NAME \"${PN}\"\n"));
 
 	path_t outdir = {0};
 
@@ -610,24 +610,24 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 			continue;
 		}
 
-		fs_write(fs, f, STRV("\t"));
-		fs_write(fs, f, props[target->type][i].name);
-		fs_write(fs, f, STRV(" "));
+		fs_writes(fs, f, STRV("\t"));
+		fs_writes(fs, f, props[target->type][i].name);
+		fs_writes(fs, f, STRV(" "));
 		values[CONFIG] = props[target->type][i].config;
 		resolve_dir(proj, vars, values, target->type, buf, &outdir);
-		fs_write(fs, f, STRVS(outdir));
-		fs_write(fs, f, STRV("\n"));
+		fs_writes(fs, f, STRVS(outdir));
+		fs_writes(fs, f, STRV("\n"));
 	}
 
 	switch (target->type) {
 	case TARGET_TYPE_LIB:
-		fs_write(fs, f, STRV("\tPREFIX \"\"\n"));
+		fs_writes(fs, f, STRV("\tPREFIX \"\"\n"));
 		break;
 	default:
 		break;
 	}
 
-	fs_write(fs, f, STRV(")\n"));
+	fs_writes(fs, f, STRV(")\n"));
 
 	return 0;
 }
@@ -654,45 +654,45 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 
 	str_t buf = strz(64);
 
-	fs_write(fs, f, STRV("set(PN \""));
+	fs_writes(fs, f, STRV("set(PN \""));
 	strv_t name = proj_get_str(proj, pkg->strs + PKG_STR_NAME);
 	if (name.len > 0) {
-		fs_write(fs, f, name);
+		fs_writes(fs, f, name);
 	}
-	fs_write(fs, f, STRV("\")\n"));
+	fs_writes(fs, f, STRV("\")\n"));
 
-	fs_write(fs, f, STRV("set(${PN}_DIR \""));
+	fs_writes(fs, f, STRV("set(${PN}_DIR \""));
 	if (tmp.len > 0) {
-		fs_write(fs, f, STRVS(tmp));
+		fs_writes(fs, f, STRVS(tmp));
 	}
-	fs_write(fs, f, STRV("\")\n"));
+	fs_writes(fs, f, STRV("\")\n"));
 
 	strv_t uri = proj_get_str(proj, pkg->strs + PKG_STR_URI);
 	if (uri.len > 0) {
-		fs_write(fs, f, STRV("set(${PN}_URI "));
-		fs_write(fs, f, uri);
-		fs_write(fs, f, STRV(")\n"));
+		fs_writes(fs, f, STRV("set(${PN}_URI "));
+		fs_writes(fs, f, uri);
+		fs_writes(fs, f, STRV(")\n"));
 
 		strv_t uri_file = proj_get_str(proj, pkg->strs + PKG_STR_URI_FILE);
-		fs_write(fs, f, STRV("set(${PN}_URI_FILE "));
-		fs_write(fs, f, uri_file);
-		fs_write(fs, f, STRV(")\n"));
+		fs_writes(fs, f, STRV("set(${PN}_URI_FILE "));
+		fs_writes(fs, f, uri_file);
+		fs_writes(fs, f, STRV(")\n"));
 
 		strv_t uri_name = proj_get_str(proj, pkg->strs + PKG_STR_URI_NAME);
 		strv_t uri_ver	= proj_get_str(proj, pkg->strs + PKG_STR_URI_VER);
-		fs_write(fs, f, STRV("set(${PN}_URI_NAME "));
-		fs_write(fs, f, uri_name);
+		fs_writes(fs, f, STRV("set(${PN}_URI_NAME "));
+		fs_writes(fs, f, uri_name);
 		if (uri_ver.len > 0) {
-			fs_write(fs, f, STRV("-"));
-			fs_write(fs, f, uri_ver);
+			fs_writes(fs, f, STRV("-"));
+			fs_writes(fs, f, uri_ver);
 		}
-		fs_write(fs, f, STRV(")\n"));
+		fs_writes(fs, f, STRV(")\n"));
 
 		get_path(proj, pkg->strs + PKG_STR_URI_DIR, &tmp);
 		if (tmp.len > 0) {
-			fs_write(fs, f, STRV("set(${PN}_URI_ROOT "));
-			fs_write(fs, f, STRVS(tmp));
-			fs_write(fs, f, STRV(")\n"));
+			fs_writes(fs, f, STRV("set(${PN}_URI_ROOT "));
+			fs_writes(fs, f, STRVS(tmp));
+			fs_writes(fs, f, STRV(")\n"));
 		}
 	}
 
@@ -737,16 +737,16 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 
 		var_convert(&buf, '{', '}', '{', '}');
 
-		fs_write(fs, f, STRV("set("));
-		fs_write(fs, f, vars->vars[i].name);
-		fs_write(fs, f, STRV(" "));
+		fs_writes(fs, f, STRV("set("));
+		fs_writes(fs, f, vars->vars[i].name);
+		fs_writes(fs, f, STRV(" "));
 		if (buf.len > 0) {
-			fs_write(fs, f, STRVS(buf));
+			fs_writes(fs, f, STRVS(buf));
 		}
-		fs_write(fs, f, STRV(")\n"));
+		fs_writes(fs, f, STRV(")\n"));
 	}
 
-	fs_write(fs, f, STRV("\n"));
+	fs_writes(fs, f, STRV("\n"));
 
 	if (pkg->has_targets) {
 		const target_t *target;
@@ -783,18 +783,18 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	void *f;
 	fs_open(drv->fs, STRVS(path), "w", &f);
 
-	fs_write(drv->fs, f, STRV("cmake_minimum_required(VERSION 3.10)\n\n"));
+	fs_writes(drv->fs, f, STRV("cmake_minimum_required(VERSION 3.10)\n\n"));
 
-	fs_write(drv->fs, f, STRV("project("));
+	fs_writes(drv->fs, f, STRV("project("));
 	strv_t proj_name = proj_get_str(proj, proj->name);
 	if (proj_name.len > 0) {
-		fs_write(drv->fs, f, proj_name);
+		fs_writes(drv->fs, f, proj_name);
 	}
-	fs_write(drv->fs, f, STRV(" LANGUAGES C)\n\n"));
+	fs_writes(drv->fs, f, STRV(" LANGUAGES C)\n\n"));
 
-	fs_write(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
+	fs_writes(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
-	fs_write(drv->fs,
+	fs_writes(drv->fs,
 		 f,
 		 STRV("set(ARCHS \"host\" CACHE STRING \"List of architectures to build\")\n"
 		      "list(LENGTH ARCHS _arch_count)\n"
@@ -834,15 +834,15 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		strv_t val = vars.vars[i].val;
 		switch (i) {
 		case CONFIG: {
-			fs_write(drv->fs, f, STRV("if(is_multi_config)\n"));
-			fs_write(drv->fs, f, STRV("\tset("));
-			fs_write(drv->fs, f, vars.vars[i].name);
-			fs_write(drv->fs, f, STRV(" $<CONFIG>)\n"));
-			fs_write(drv->fs, f, STRV("else()\n"));
-			fs_write(drv->fs, f, STRV("\tset("));
-			fs_write(drv->fs, f, vars.vars[i].name);
-			fs_write(drv->fs, f, STRV(" ${CMAKE_BUILD_TYPE})\n"));
-			fs_write(drv->fs, f, STRV("endif()\n"));
+			fs_writes(drv->fs, f, STRV("if(is_multi_config)\n"));
+			fs_writes(drv->fs, f, STRV("\tset("));
+			fs_writes(drv->fs, f, vars.vars[i].name);
+			fs_writes(drv->fs, f, STRV(" $<CONFIG>)\n"));
+			fs_writes(drv->fs, f, STRV("else()\n"));
+			fs_writes(drv->fs, f, STRV("\tset("));
+			fs_writes(drv->fs, f, vars.vars[i].name);
+			fs_writes(drv->fs, f, STRV(" ${CMAKE_BUILD_TYPE})\n"));
+			fs_writes(drv->fs, f, STRV("endif()\n"));
 			break;
 		}
 		case CP: {
@@ -870,16 +870,16 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 		var_convert(&buf, '{', '}', '{', '}');
 
-		fs_write(drv->fs, f, STRV("set("));
-		fs_write(drv->fs, f, vars.vars[i].name);
-		fs_write(drv->fs, f, STRV(" "));
+		fs_writes(drv->fs, f, STRV("set("));
+		fs_writes(drv->fs, f, vars.vars[i].name);
+		fs_writes(drv->fs, f, STRV(" "));
 		if (buf.len > 0) {
-			fs_write(drv->fs, f, STRVS(buf));
+			fs_writes(drv->fs, f, STRVS(buf));
 		}
-		fs_write(drv->fs, f, STRV(")\n"));
+		fs_writes(drv->fs, f, STRV(")\n"));
 	}
 
-	fs_write(drv->fs,
+	fs_writes(drv->fs,
 		 f,
 		 STRV("\n"
 		      "enable_testing()\n"
@@ -981,16 +981,16 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 		var_convert(&buf, '{', '}', '{', '}');
 
-		fs_write(drv->fs, f, STRV("\tset("));
-		fs_write(drv->fs, f, vars.vars[i].name);
-		fs_write(drv->fs, f, STRV(" "));
+		fs_writes(drv->fs, f, STRV("\tset("));
+		fs_writes(drv->fs, f, vars.vars[i].name);
+		fs_writes(drv->fs, f, STRV(" "));
 		if (buf.len > 0) {
-			fs_write(drv->fs, f, STRVS(buf));
+			fs_writes(drv->fs, f, STRVS(buf));
 		}
-		fs_write(drv->fs, f, STRV(")\n"));
+		fs_writes(drv->fs, f, STRV(")\n"));
 	}
 
-	fs_write(drv->fs,
+	fs_writes(drv->fs,
 		 f,
 		 STRV("\n"
 		      "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
@@ -1015,9 +1015,9 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			path_t dir = {0};
 			get_path(proj, pkg->strs + PKG_STR_PATH, &dir);
 			path_push_s(&dir, STRV("pkg.cmake"), '/');
-			fs_write(drv->fs, f, STRV("\n\tinclude("));
-			fs_write(drv->fs, f, STRVS(dir));
-			fs_write(drv->fs, f, STRV(")\n"));
+			fs_writes(drv->fs, f, STRV("\n\tinclude("));
+			fs_writes(drv->fs, f, STRVS(dir));
+			fs_writes(drv->fs, f, STRV(")\n"));
 
 			gen_pkg(proj, &vars, drv->fs, i, build_dir);
 		}
@@ -1025,7 +1025,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 		arr_free(&order);
 	}
 
-	fs_write(drv->fs,
+	fs_writes(drv->fs,
 		 f,
 		 STRV("endif()\n"
 		      "\n"

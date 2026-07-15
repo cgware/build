@@ -93,7 +93,7 @@ static int ensure_tmp(fs_t *fs, strv_t dir)
 	if (!fs_isfile(fs, STRVS(path))) {
 		void *f;
 		fs_open(fs, STRVS(path), "w", &f);
-		fs_write(fs, f, STRV("*"));
+		fs_writes(fs, f, STRV("*"));
 		fs_close(fs, f);
 	}
 
