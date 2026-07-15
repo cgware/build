@@ -30,6 +30,6 @@ int config_sync_plan_add_ext(config_sync_plan_t *plan, strv_t uri, strv_t name);
 int config_sync_plan_add_dir(config_sync_plan_t *plan, strv_t path, strv_t name);
 
 int config_fs(config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, fs_t *fs, proc_t *proc,
-	      strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst);
+	      strv_t proj_path, strv_t cur_path, strv_t name, int develop, str_t *buf, alloc_t alloc, dst_t dst);
 
 #endif

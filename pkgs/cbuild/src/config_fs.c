@@ -10,7 +10,8 @@ config_sync_plan_t *config_sync_plan_init(config_sync_plan_t *plan, uint cap, al
 		return NULL;
 	}
 
-	if (arr_init(&plan->items, cap, sizeof(config_sync_item_t), alloc) == NULL || strbuf_init(&plan->strs, cap * 3, 16, alloc) == NULL) {
+	if (arr_init(&plan->items, cap, sizeof(config_sync_item_t), alloc) == NULL ||
+	    strbuf_init(&plan->strs, cap * 3, 16, alloc) == NULL) {
 		arr_free(&plan->items);
 		return NULL;
 	}
@@ -109,8 +110,42 @@ static strv_t config_sync_plan_get_str(const config_sync_plan_t *plan, uint id)
 	return strbuf_get(&plan->strs, id);
 }
 
-static int config_sync_plan_sync_ext(const config_sync_plan_t *plan, const config_sync_item_t *item, config_sync_plan_t *queue, fs_t *fs, proc_t *proc,
-				     strv_t proj_path, str_t *buf)
+static int config_sync_plan_add_develop_uri(str_t *buf, strv_t uri)
+{
+	strv_t scheme = STRV("https://");
+	strv_t suffix = STRV(".git");
+
+	if (uri.len <= scheme.len + suffix.len || strv_cmpn(uri, scheme, scheme.len) ||
+	    strv_cmpn(STRVN(&uri.data[uri.len - suffix.len], suffix.len), suffix, suffix.len)) {
+		return 1;
+	}
+
+	strv_t host = STRV_NULL;
+	strv_t path = STRV_NULL;
+	strv_lsplit(STRVN(&uri.data[scheme.len], uri.len - scheme.len), '/', &host, &path);
+	if (host.len == 0 || path.data == NULL || path.len == 0) {
+		return 1;
+	}
+
+	str_cat(buf, STRV("git@"));
+	str_cat(buf, host);
+	str_cat(buf, STRV(":"));
+	str_cat(buf, path);
+
+	return 0;
+}
+
+static void config_sync_plan_add_clone_uri(str_t *buf, strv_t uri, int develop)
+{
+	if (develop && config_sync_plan_add_develop_uri(buf, uri) == 0) {
+		return;
+	}
+
+	str_cat(buf, uri);
+}
+
+static int config_sync_plan_sync_ext(const config_sync_plan_t *plan, const config_sync_item_t *item, config_sync_plan_t *queue, fs_t *fs,
+				     proc_t *proc, strv_t proj_path, int develop, str_t *buf)
 {
 	strv_t uri  = config_sync_plan_get_str(plan, item->uri);
 	strv_t name = config_sync_plan_get_str(plan, item->name);
@@ -138,11 +173,13 @@ static int config_sync_plan_sync_ext(const config_sync_plan_t *plan, const confi
 		if (buf) {
 			buf->len = 0;
 			str_cat(buf, STRV("git clone "));
-			str_cat(buf, uri);
+			size_t uri_start = buf->len;
+			config_sync_plan_add_clone_uri(buf, uri, develop);
+			size_t uri_len = buf->len - uri_start;
 			str_cat(buf, STRV(" "));
 			str_cat(buf, STRVS(path));
 			if (proc) {
-				log_info("cbuild", "config", NULL, "cloning package: %.*s", uri.len, uri.data);
+				log_info("cbuild", "config", NULL, "cloning package: %.*s", uri_len, &buf->data[uri_start]);
 				proc_cmd(proc, STRVS(*buf));
 			}
 		}
@@ -156,21 +193,21 @@ static int config_sync_plan_sync_ext(const config_sync_plan_t *plan, const confi
 }
 
 int config_fs(config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry, fs_t *fs, proc_t *proc,
-	      strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc, dst_t dst)
+	      strv_t proj_path, strv_t cur_path, strv_t name, int develop, str_t *buf, alloc_t alloc, dst_t dst)
 {
 	if (config == NULL || tmp == NULL || schema == NULL || registry == NULL || fs == NULL) {
 		return 0;
 	}
 
-	int ret		  = 0;
+	int ret			 = 0;
 	config_sync_plan_t queue = {0};
 	config_sync_plan_init(&queue, 4, alloc);
 	config_sync_plan_add_dir(&queue, cur_path, name);
 
 	for (uint idx = 0; idx < queue.items.cnt; idx++) {
 		const config_sync_item_t *work = arr_get(&queue.items, idx);
-		strv_t work_path = config_sync_plan_get_str(&queue, work->path);
-		strv_t work_name = config_sync_plan_get_str(&queue, work->name);
+		strv_t work_path	       = config_sync_plan_get_str(&queue, work->path);
+		strv_t work_name	       = config_sync_plan_get_str(&queue, work->name);
 
 		switch (work->kind) {
 		case CONFIG_SYNC_KIND_DIR:
@@ -182,11 +219,12 @@ int config_fs(config_t *config, config_t *tmp, const config_schema_t *schema, re
 				}
 
 				mod_t *mod = i->data;
-				ret |= mod->config_fs(mod, config, tmp, schema, registry, &queue, fs, proj_path, work_path, work_name, buf, alloc, dst);
+				ret |= mod->config_fs(
+					mod, config, tmp, schema, registry, &queue, fs, proj_path, work_path, work_name, buf, alloc, dst);
 			}
 			break;
 		case CONFIG_SYNC_KIND_EXT:
-			ret |= config_sync_plan_sync_ext(&queue, work, &queue, fs, proc, proj_path, buf);
+			ret |= config_sync_plan_sync_ext(&queue, work, &queue, fs, proc, proj_path, develop, buf);
 			break;
 		default:
 			ret = 1;

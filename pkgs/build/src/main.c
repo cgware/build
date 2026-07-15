@@ -9,7 +9,7 @@
 #include "proj_cfg.h"
 #include "proj_gen.h"
 
-static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t build_rel, str_t *buf)
+static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t build_rel, int develop, str_t *buf)
 {
 	int ret = 0;
 
@@ -63,7 +63,19 @@ static int build(proc_t *proc, strv_t proj_dir, gen_driver_t *gen_driver, strv_t
 	config_init(&config, 16, ALLOC_STD);
 	config_t tmp_config = {0};
 	config_init(&tmp_config, 16, ALLOC_STD);
-	if (config_fs(&config, &tmp_config, &schema, &registry, &fs, proc, STRVS(proj_rel), STRV_NULL, name, buf, ALLOC_STD, DST_STD())) {
+	if (config_fs(&config,
+		      &tmp_config,
+		      &schema,
+		      &registry,
+		      &fs,
+		      proc,
+		      STRVS(proj_rel),
+		      STRV_NULL,
+		      name,
+		      develop,
+		      buf,
+		      ALLOC_STD,
+		      DST_STD())) {
 		ret = 1;
 	}
 
@@ -269,6 +281,7 @@ int main(int argc, const char **argv)
 	int open     = 1;
 	int comp     = 0;
 	int generate = 0;
+	int develop  = 0;
 
 	int gen = 0;
 
@@ -321,6 +334,7 @@ int main(int argc, const char **argv)
 		OPT('O', "open", OPT_BOOL, "<0/1>", "Open", &open, {0}, OPT_OPT),
 		OPT('S', "generate", OPT_NONE, NULL, "Only generate", &generate, {0}, OPT_OPT),
 		OPT('C', "compile", OPT_NONE, NULL, "Only compile", &comp, {0}, OPT_OPT),
+		OPT('d', "develop", OPT_NONE, NULL, "Use development dependency URLs", &develop, {0}, OPT_OPT),
 	};
 
 	if (args_parse(argc, argv, opts, sizeof(opts), DST_STD())) {
@@ -344,7 +358,7 @@ int main(int argc, const char **argv)
 	proc_t proc = {0};
 	proc_init(&proc, 0, 0, ALLOC_STD);
 
-	if (comp == 0 && build(&proc, STRVS(proj_dir), gen_driver, STRVS(build_rel), &buf)) {
+	if (comp == 0 && build(&proc, STRVS(proj_dir), gen_driver, STRVS(build_rel), develop, &buf)) {
 		return 1;
 	}
 
