@@ -14,7 +14,8 @@ TEST(proj_gen_folders)
 
 	gen_driver_t drv = *gen_find_param(STRV("N"));
 
-	drv.fs = &fs;
+	drv.fs	  = &fs;
+	drv.alloc = ALLOC_STD;
 
 	EXPECT_EQ(proj_gen(NULL, NULL, STRV_NULL, STRV_NULL), 1);
 	EXPECT_EQ(proj_gen(NULL, &drv, STRV("."), STRV(".")), 0);

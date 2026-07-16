@@ -20,7 +20,7 @@ static void resolve_var(const vars_t *vars, strv_t var, const strv_t *values, st
 }
 
 static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint tgt_id, make_act_t inc, const defines_t *defines, arr_t *deps,
-		   str_t *buf)
+		   str_t *buf, alloc_t alloc)
 {
 	const target_t *target = proj_get_target(proj, tgt_id);
 
@@ -58,7 +58,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint tg
 
 	if (target->type != TARGET_TYPE_EXT) {
 		deps->cnt = 0;
-		proj_graph_transitive_deps(proj, tgt_id, deps, ALLOC_STD);
+		proj_graph_transitive_deps(proj, tgt_id, deps, alloc);
 
 		int include_priv = 0;
 		if (target->has_incs_priv) {
@@ -447,7 +447,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, make_t *make, uint tg
 
 static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *fs, uint tgt_id, make_act_t inc,
 		   const defines_t *protos_defs, const defines_t *exts_defs, const defines_t *defines, arr_t *deps, str_t *buf,
-		   strv_t build_dir)
+		   strv_t build_dir, alloc_t alloc)
 
 {
 	const target_t *target = proj_get_target(proj, tgt_id);
@@ -524,7 +524,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, make_t *make, fs_t *f
 		}
 	}
 
-	gen_tgt(proj, vars, make, tgt_id, inc, defines, deps, buf);
+	gen_tgt(proj, vars, make, tgt_id, inc, defines, deps, buf, alloc);
 
 	void *file;
 	fs_open(fs, STRVS(path), "w", &file);
@@ -550,9 +550,10 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 
 	vars_t vars = {0};
 	vars_init(&vars);
+	alloc_t alloc = drv->alloc;
 
 	make_t make = {0};
-	make_init(&make, 32, 32, 2, 32, ALLOC_STD);
+	make_init(&make, 32, 32, 2, 32, alloc);
 
 	make_act_t root, mcurdir, march, mconfig, mopen, act;
 	make_var_ext(&make, STRV("CURDIR"), &mcurdir);
@@ -1331,11 +1332,11 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 		str_t buf2 = strz(16);
 
 		arr_t order = {0};
-		arr_init(&order, proj->targets.cnt, sizeof(uint), ALLOC_STD);
-		ret |= proj_graph_toposort_targets(proj, &order, ALLOC_STD);
+		arr_init(&order, proj->targets.cnt, sizeof(uint), alloc);
+		ret |= proj_graph_toposort_targets(proj, &order, alloc);
 
 		arr_t deps = {0};
-		arr_init(&deps, 1, sizeof(uint), ALLOC_STD);
+		arr_init(&deps, 1, sizeof(uint), alloc);
 
 		i = 0;
 		const uint *id;
@@ -1359,7 +1360,7 @@ static int gen_make(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir
 			make_inc(&make, STRVS(buf), &inc);
 			make_add_act(&make, root, inc);
 
-			gen_pkg(proj, &vars, &make, drv->fs, *id, inc, protos_defs, exts_defs, defines, &deps, &buf, build_dir);
+			gen_pkg(proj, &vars, &make, drv->fs, *id, inc, protos_defs, exts_defs, defines, &deps, &buf, build_dir, alloc);
 		}
 
 		arr_free(&deps);

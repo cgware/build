@@ -1,6 +1,7 @@
 #ifndef GEN_H
 #define GEN_H
 
+#include "alloc.h"
 #include "driver.h"
 #include "fs.h"
 #include "proj.h"
@@ -12,6 +13,7 @@ struct gen_driver_s {
 	const char *desc;
 	int (*gen)(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir, strv_t build_dir);
 	fs_t *fs;
+	alloc_t alloc;
 };
 
 #define GEN_DRIVER_TYPE 1

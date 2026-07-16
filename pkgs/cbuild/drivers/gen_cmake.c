@@ -90,8 +90,124 @@ static int gen_src(const proj_t *proj, fs_t *fs, void *f, const target_t *target
 	return 0;
 }
 
-static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, const pkg_t *pkg, const target_t *target, str_t *buf)
+static void gen_tgt_name(const proj_t *proj, fs_t *fs, void *f, uint target_id)
 {
+	const target_t *target = proj_get_target(proj, target_id);
+	const pkg_t *pkg       = proj_get_pkg(proj, target->pkg);
+
+	fs_writes(fs, f, proj_get_str(proj, pkg->strs + PKG_STR_NAME));
+	fs_writes(fs, f, STRV("_"));
+	fs_writes(fs, f, proj_get_str(proj, target->strs + TGT_STR_NAME));
+}
+
+static int gen_tgt_links(const proj_t *proj, fs_t *fs, void *f, uint target_id, strv_t scope, int transitive, int drivers, alloc_t alloc)
+{
+	const target_t *target = proj_get_target(proj, target_id);
+	if (target == NULL || !target->has_deps) {
+		return 0;
+	}
+
+	arr_t deps = {0};
+	if (transitive && arr_init(&deps, 1, sizeof(uint), alloc) == NULL) {
+		log_error("cbuild", "gen_cmake", NULL, "failed to initialize dependencies");
+		return 1;
+	}
+
+	int ret = 0;
+	if (transitive) {
+		ret = proj_graph_transitive_deps(proj, target_id, &deps, alloc);
+	}
+
+	int link_header	  = 0;
+	int source_header = 0;
+	int has_drivers	  = 0;
+
+	if (!ret) {
+		if (transitive) {
+			uint i = 0;
+			const uint *dep_target_id;
+			arr_foreach(&deps, i, dep_target_id)
+			{
+				const target_t *dtarget = proj_get_target(proj, *dep_target_id);
+				if (dtarget->type == TARGET_TYPE_DRV) {
+					has_drivers = 1;
+					break;
+				}
+			}
+		}
+
+		if (transitive && has_drivers) {
+			uint i = 0;
+			const uint *dep_target_id;
+			arr_foreach(&deps, i, dep_target_id)
+			{
+				const target_t *dtarget = proj_get_target(proj, *dep_target_id);
+				if (dtarget->type == TARGET_TYPE_DRV) {
+					continue;
+				}
+
+				if (!link_header) {
+					fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} "));
+					fs_writes(fs, f, scope);
+					link_header = 1;
+				}
+				fs_writes(fs, f, STRV(" "));
+				gen_tgt_name(proj, fs, f, *dep_target_id);
+			}
+
+			if (link_header) {
+				fs_writes(fs, f, STRV(")\n"));
+				link_header = 0;
+			}
+
+			if (drivers) {
+				i = 0;
+				arr_foreach(&deps, i, dep_target_id)
+				{
+					const target_t *dtarget = proj_get_target(proj, *dep_target_id);
+					if (dtarget->type != TARGET_TYPE_DRV) {
+						continue;
+					}
+
+					if (!source_header) {
+						fs_writes(fs, f, STRV("target_sources(${PN}_${TN} PRIVATE"));
+						source_header = 1;
+					}
+					fs_writes(fs, f, STRV(" $<TARGET_OBJECTS:"));
+					gen_tgt_name(proj, fs, f, *dep_target_id);
+					fs_writes(fs, f, STRV(">"));
+				}
+			}
+		} else {
+			const list_node_t *dep_target_id;
+			list_node_t j = target->deps;
+			list_foreach(&proj->deps, j, dep_target_id)
+			{
+				if (!link_header) {
+					fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} "));
+					fs_writes(fs, f, scope);
+					link_header = 1;
+				}
+				fs_writes(fs, f, STRV(" "));
+				gen_tgt_name(proj, fs, f, *dep_target_id);
+			}
+		}
+	}
+
+	if (link_header) {
+		fs_writes(fs, f, STRV(")\n"));
+	}
+	if (source_header) {
+		fs_writes(fs, f, STRV(")\n"));
+	}
+
+	arr_free(&deps);
+	return ret;
+}
+
+static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, const pkg_t *pkg, uint target_id, str_t *buf, alloc_t alloc)
+{
+	const target_t *target	   = proj_get_target(proj, target_id);
 	strv_t svalues[__VARS_CNT] = {
 		[ARCH]	 = STRVT("${ARCH}"),
 		[CONFIG] = STRVT("${CONFIG}"),
@@ -241,6 +357,7 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 	fs_writes(fs, f, STRV("\n"));
 
 	strv_t inc = proj_get_str(proj, target->strs + TGT_STR_INC);
+	int ret	   = 0;
 
 	switch (target->type) {
 	case TARGET_TYPE_EXE: {
@@ -261,31 +378,17 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		}
 
 		fs_writes(fs,
-			 f,
-			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "endif()\n"));
+			  f,
+			  STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			       "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "endif()\n"));
 
-		if (target->has_deps) {
-			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
-			const list_node_t *dep_target_id;
-			list_node_t j = target->deps;
-			list_foreach(&proj->deps, j, dep_target_id)
-			{
-				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_writes(fs, f, STRV(" "));
-				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_writes(fs, f, STRV("_"));
-				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
-			}
-			fs_writes(fs, f, STRV(")\n"));
-		}
+		ret |= gen_tgt_links(proj, fs, f, target_id, STRV("PRIVATE"), 1, 1, alloc);
 		break;
 	}
 	case TARGET_TYPE_LIB: {
@@ -313,31 +416,17 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		}
 
 		fs_writes(fs,
-			 f,
-			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "endif()\n"));
+			  f,
+			  STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			       "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "endif()\n"));
 
-		if (target->has_deps) {
-			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
-			const list_node_t *dep_target_id;
-			list_node_t j = target->deps;
-			list_foreach(&proj->deps, j, dep_target_id)
-			{
-				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_writes(fs, f, STRV(" "));
-				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_writes(fs, f, STRV("_"));
-				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
-			}
-			fs_writes(fs, f, STRV(")\n"));
-		}
+		ret |= gen_tgt_links(proj, fs, f, target_id, STRV("PUBLIC"), 0, 0, alloc);
 		break;
 	}
 	case TARGET_TYPE_DRV: {
@@ -365,65 +454,51 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		}
 
 		fs_writes(fs,
-			 f,
-			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "endif()\n"));
+			  f,
+			  STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			       "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "endif()\n"));
 
-		if (target->has_deps) {
-			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PUBLIC"));
-			const list_node_t *dep_target_id;
-			list_node_t j = target->deps;
-			list_foreach(&proj->deps, j, dep_target_id)
-			{
-				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_writes(fs, f, STRV(" "));
-				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_writes(fs, f, STRV("_"));
-				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
-			}
-			fs_writes(fs, f, STRV(")\n"));
-		}
+		ret |= gen_tgt_links(proj, fs, f, target_id, STRV("PUBLIC"), 0, 0, alloc);
 		break;
 	}
 	case TARGET_TYPE_EXT: {
 		fs_writes(fs,
-			 f,
-			 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
-			      "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
-			      "file(MAKE_DIRECTORY \"${DIR_TMP_DL}\" \"${TGT_BUILD_DEBUG}\" "
-			      "\"${TGT_BUILD_RELEASE}\")\n"));
+			  f,
+			  STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" TGT_BUILD_DEBUG \"${TGT_BUILD}\")\n"
+			       "string(REPLACE \"$<CONFIG>\" \"Release\" TGT_BUILD_RELEASE \"${TGT_BUILD}\")\n"
+			       "file(MAKE_DIRECTORY \"${DIR_TMP_DL}\" \"${TGT_BUILD_DEBUG}\" "
+			       "\"${TGT_BUILD_RELEASE}\")\n"));
 
 		strv_t uri = proj_get_str(proj, pkg->strs + PKG_STR_URI);
 		if (uri.len > 0) {
 			fs_writes(fs,
-				 f,
-				 STRV("if(NOT EXISTS ${DIR_TMP_DL}${PKG_URI_FILE})\n"
-				      "\tfile(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL}${PKG_URI_FILE}\n"
-				      "\t\tSHOW_PROGRESS\n"
-				      ")\n"
-				      "endif()\n"
-				      "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL}${PKG_URI_FILE}\" DESTINATION "
-				      "\"${DIR_TMP_EXT_PKG_SRC}\")\n"));
+				  f,
+				  STRV("if(NOT EXISTS ${DIR_TMP_DL}${PKG_URI_FILE})\n"
+				       "\tfile(DOWNLOAD ${PKG_URI} ${DIR_TMP_DL}${PKG_URI_FILE}\n"
+				       "\t\tSHOW_PROGRESS\n"
+				       ")\n"
+				       "endif()\n"
+				       "file(ARCHIVE_EXTRACT INPUT \"${DIR_TMP_DL}${PKG_URI_FILE}\" DESTINATION "
+				       "\"${DIR_TMP_EXT_PKG_SRC}\")\n"));
 		}
 
 		fs_writes(fs,
-			 f,
-			 STRV("add_custom_target(${PN}_${TN}_build\n"
-			      "\tALL\n"
-			      "\tCOMMAND ${TGT_PREP}\n"
-			      "\tCOMMAND ${TGT_CONF}\n"
-			      "\tCOMMAND ${TGT_COMP}\n"
-			      "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
-			      "\tCOMMAND ${TGT_INST}\n"
-			      "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
-			      ")\n"));
+			  f,
+			  STRV("add_custom_target(${PN}_${TN}_build\n"
+			       "\tALL\n"
+			       "\tCOMMAND ${TGT_PREP}\n"
+			       "\tCOMMAND ${TGT_CONF}\n"
+			       "\tCOMMAND ${TGT_COMP}\n"
+			       "\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_OUT_EXT_PKG}\n"
+			       "\tCOMMAND ${TGT_INST}\n"
+			       "\tWORKING_DIRECTORY ${TGT_BUILD}\n"
+			       ")\n"));
 
 		if (target->has_deps) {
 			int header = 0;
@@ -511,38 +586,24 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 		}
 
 		fs_writes(fs,
-			 f,
-			 STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-			      "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
-			      "\t\t$<$<CONFIG:Debug>:--coverage>\n"
-			      "\t)\n"
-			      "endif()\n"));
+			  f,
+			  STRV("if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+			       "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+			       "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+			       "\t)\n"
+			       "endif()\n"));
 
-		if (target->has_deps) {
-			fs_writes(fs, f, STRV("target_link_libraries(${PN}_${TN} PRIVATE"));
-			const list_node_t *dep_target_id;
-			list_node_t j = target->deps;
-			list_foreach(&proj->deps, j, dep_target_id)
-			{
-				const target_t *dtarget = list_get(&proj->targets, *dep_target_id);
-				const pkg_t *dpkg	= proj_get_pkg(proj, dtarget->pkg);
-				fs_writes(fs, f, STRV(" "));
-				fs_writes(fs, f, proj_get_str(proj, dpkg->strs + PKG_STR_NAME));
-				fs_writes(fs, f, STRV("_"));
-				fs_writes(fs, f, proj_get_str(proj, dtarget->strs + TGT_STR_NAME));
-			}
-			fs_writes(fs, f, STRV(")\n"));
-		}
+		ret |= gen_tgt_links(proj, fs, f, target_id, STRV("PRIVATE"), 1, 1, alloc);
 
 		fs_writes(fs,
-			 f,
-			 STRV("add_test(\n"
-			      "\tNAME ${PN}_${TN}\n"
-			      "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
-			      ")\n"));
+			  f,
+			  STRV("add_test(\n"
+			       "\tNAME ${PN}_${TN}\n"
+			       "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+			       ")\n"));
 		break;
 	}
 	default:
@@ -553,20 +614,20 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 
 	if (target->type == TARGET_TYPE_EXT) {
 		fs_writes(fs,
-			 f,
-			 STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
-			      "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE "
-			      "\"${DIR_OUT_EXT_FILE}\")\n"));
+			  f,
+			  STRV("string(REPLACE \"$<CONFIG>\" \"Debug\" DIR_OUT_EXT_FILE_DEBUG \"${DIR_OUT_EXT_FILE}\")\n"
+			       "string(REPLACE \"$<CONFIG>\" \"Release\" DIR_OUT_EXT_FILE_RELEASE "
+			       "\"${DIR_OUT_EXT_FILE}\")\n"));
 	}
 
 	fs_writes(fs, f, STRV("set_target_properties(${PN}_${TN} PROPERTIES\n"));
 
 	if (target->type == TARGET_TYPE_EXT) {
 		fs_writes(fs,
-			 f,
-			 STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
-			      "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
-			      "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"));
+			  f,
+			  STRV("\tIMPORTED_LOCATION ${DIR_OUT_EXT_FILE_DEBUG}\n"
+			       "\tIMPORTED_LOCATION_DEBUG ${DIR_OUT_EXT_FILE_DEBUG}\n"
+			       "\tIMPORTED_LOCATION_RELEASE ${DIR_OUT_EXT_FILE_RELEASE}\n"));
 
 		if (target->out_type == TARGET_TGT_TYPE_LIB && inc.len > 0) {
 			fs_writes(fs, f, STRV("\tINTERFACE_INCLUDE_DIRECTORIES ${DIR_TMP_EXT_PKG_SRC_ROOT}"));
@@ -629,10 +690,10 @@ static int gen_tgt(const proj_t *proj, const vars_t *vars, fs_t *fs, void *f, co
 
 	fs_writes(fs, f, STRV(")\n"));
 
-	return 0;
+	return ret;
 }
 
-static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, strv_t build_dir)
+static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, strv_t build_dir, alloc_t alloc)
 {
 	const pkg_t *pkg = proj_get_pkg(proj, id);
 
@@ -653,6 +714,7 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 	fs_open(fs, STRVS(path), "w", &f);
 
 	str_t buf = strz(64);
+	int ret	  = 0;
 
 	fs_writes(fs, f, STRV("set(PN \""));
 	strv_t name = proj_get_str(proj, pkg->strs + PKG_STR_NAME);
@@ -753,14 +815,14 @@ static int gen_pkg(const proj_t *proj, const vars_t *vars, fs_t *fs, uint id, st
 		list_node_t i = pkg->targets;
 		list_foreach(&proj->targets, i, target)
 		{
-			gen_tgt(proj, vars, fs, f, pkg, target, &buf);
+			ret |= gen_tgt(proj, vars, fs, f, pkg, i, &buf, alloc);
 		}
 	}
 
 	str_free(&buf);
 	fs_close(fs, f);
 
-	return 0;
+	return ret;
 }
 
 static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_dir, strv_t build_dir)
@@ -779,6 +841,7 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 
 	vars_t vars = {0};
 	vars_init(&vars);
+	alloc_t alloc = drv->alloc;
 
 	void *f;
 	fs_open(drv->fs, STRVS(path), "w", &f);
@@ -795,33 +858,33 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	fs_writes(drv->fs, f, STRV("option(OPEN \"Open HTML coverage report\" ON)\n\n"));
 
 	fs_writes(drv->fs,
-		 f,
-		 STRV("set(ARCHS \"host\" CACHE STRING \"List of architectures to build\")\n"
-		      "list(LENGTH ARCHS _arch_count)\n"
-		      "set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"
-		      "list(LENGTH CONFIGS _config_count)\n"
-		      "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
-		      "string(TOLOWER \"${CMAKE_SYSTEM_NAME}\" system)\n"
-		      "\n"
-		      "if(WIN32)\n"
-		      "\tset(EXT_LIB .lib)\n"
-		      "\tset(EXT_EXE .exe)\n"
-		      "else()\n"
-		      "\tset(EXT_LIB .a)\n"
-		      "\tset(EXT_EXE )\n"
-		      "endif()\n"
-		      "\n"
-		      "execute_process(\n"
-		      "\tCOMMAND lcov --version\n"
-		      "\tOUTPUT_VARIABLE lcov_version\n"
-		      "\tERROR_QUIET\n"
-		      ")\n"
-		      "if(lcov_version MATCHES \"version ([2-9]|[1-9][0-9])\")\n"
-		      "\tset(LCOV_IGNORE_UNUSED --ignore-errors unused)\n"
-		      "else()\n"
-		      "\tset(LCOV_IGNORE_UNUSED )\n"
-		      "endif()\n"
-		      "\n"));
+		  f,
+		  STRV("set(ARCHS \"host\" CACHE STRING \"List of architectures to build\")\n"
+		       "list(LENGTH ARCHS _arch_count)\n"
+		       "set(CONFIGS \"Debug\" CACHE STRING \"List of configurations to build\")\n"
+		       "list(LENGTH CONFIGS _config_count)\n"
+		       "get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)\n"
+		       "string(TOLOWER \"${CMAKE_SYSTEM_NAME}\" system)\n"
+		       "\n"
+		       "if(WIN32)\n"
+		       "\tset(EXT_LIB .lib)\n"
+		       "\tset(EXT_EXE .exe)\n"
+		       "else()\n"
+		       "\tset(EXT_LIB .a)\n"
+		       "\tset(EXT_EXE )\n"
+		       "endif()\n"
+		       "\n"
+		       "execute_process(\n"
+		       "\tCOMMAND lcov --version\n"
+		       "\tOUTPUT_VARIABLE lcov_version\n"
+		       "\tERROR_QUIET\n"
+		       ")\n"
+		       "if(lcov_version MATCHES \"version ([2-9]|[1-9][0-9])\")\n"
+		       "\tset(LCOV_IGNORE_UNUSED --ignore-errors unused)\n"
+		       "else()\n"
+		       "\tset(LCOV_IGNORE_UNUSED )\n"
+		       "endif()\n"
+		       "\n"));
 
 	path_t tmp = {0};
 	str_t buf  = strz(16);
@@ -880,64 +943,64 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	}
 
 	fs_writes(drv->fs,
-		 f,
-		 STRV("\n"
-		      "enable_testing()\n"
-		      "\n"
-		      "if(_arch_count GREATER 0 AND _config_count GREATER 0)\n"
-		      "\tinclude(ExternalProject)\n"
-		      "\tforeach(arch IN LISTS ARCHS)\n"
-		      "\t\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
-		      "\t\t\tif(arch STREQUAL \"x86\")\n"
-		      "\t\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
-		      "\t\t\telseif(arch STREQUAL \"host\")\n"
-		      "\t\t\t\tset(ARGS_ARCH \"\")\n"
-		      "\t\t\telse()\n"
-		      "\t\t\t\tset(ARGS_ARCH \"-A ${arch}\")\n"
-		      "\t\t\tendif()\n"
-		      "\t\telse()\n"
-		      "\t\t\tset(ARGS_ARCH \"-DARCH=${arch}\")\n"
-		      "\t\tendif()\n"
-		      "\n"
-		      "\t\tif(is_multi_config)\n"
-		      "\t\t\tExternalProject_Add(${arch}\n"
-		      "\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
-		      "\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}\n"
-		      "\t\t\t\tINSTALL_COMMAND \"\"\n"
-		      "\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH}\n"
-		      "\t\t\t)\n"
-		      "\t\t\tadd_test(\n"
-		      "\t\t\t\tNAME ${arch}\n"
-		      "\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch} -C $<CONFIG>\n"
-		      "\t\t\t)\n"
-		      "\t\telse()\n"
-		      "\t\t\tforeach(conf IN LISTS CONFIGS)\n"
-		      "\t\t\t\tExternalProject_Add(${arch}-${conf}\n"
-		      "\t\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
-		      "\t\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
-		      "\t\t\t\t\tINSTALL_COMMAND \"\"\n"
-		      "\t\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH} -DCMAKE_BUILD_TYPE=${conf}\n"
-		      "\t\t\t\t)\n"
-		      "\t\t\t\tadd_test(\n"
-		      "\t\t\t\t\tNAME ${arch}-${conf}\n"
-		      "\t\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
-		      "\t\t\t\t)\n"
-		      "\t\t\tendforeach()\n"
-		      "\t\tendif()\n"
-		      "\tendforeach()\n"
-		      "else()\n"
-		      "\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
-		      "\t\tif(CMAKE_GENERATOR_PLATFORM STREQUAL \"Win32\")\n"
-		      "\t\t\tset(ARCH \"x86\")\n"
-		      "\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
-		      "\t\telseif(CMAKE_GENERATOR_PLATFORM STREQUAL \"\")\n"
-		      "\t\t\tset(ARCH \"host\")\n"
-		      "\t\telse()\n"
-		      "\t\t\tset(ARCH \"${CMAKE_GENERATOR_PLATFORM}\")\n"
-		      "\t\t\tset(ARGS_ARCH \"-A ${CMAKE_GENERATOR_PLATFORM}\")\n"
-		      "\t\tendif()\n"
-		      "\tendif()\n"
-		      "\n"));
+		  f,
+		  STRV("\n"
+		       "enable_testing()\n"
+		       "\n"
+		       "if(_arch_count GREATER 0 AND _config_count GREATER 0)\n"
+		       "\tinclude(ExternalProject)\n"
+		       "\tforeach(arch IN LISTS ARCHS)\n"
+		       "\t\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
+		       "\t\t\tif(arch STREQUAL \"x86\")\n"
+		       "\t\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
+		       "\t\t\telseif(arch STREQUAL \"host\")\n"
+		       "\t\t\t\tset(ARGS_ARCH \"\")\n"
+		       "\t\t\telse()\n"
+		       "\t\t\t\tset(ARGS_ARCH \"-A ${arch}\")\n"
+		       "\t\t\tendif()\n"
+		       "\t\telse()\n"
+		       "\t\t\tset(ARGS_ARCH \"-DARCH=${arch}\")\n"
+		       "\t\tendif()\n"
+		       "\n"
+		       "\t\tif(is_multi_config)\n"
+		       "\t\t\tExternalProject_Add(${arch}\n"
+		       "\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		       "\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}\n"
+		       "\t\t\t\tINSTALL_COMMAND \"\"\n"
+		       "\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH}\n"
+		       "\t\t\t)\n"
+		       "\t\t\tadd_test(\n"
+		       "\t\t\t\tNAME ${arch}\n"
+		       "\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch} -C $<CONFIG>\n"
+		       "\t\t\t)\n"
+		       "\t\telse()\n"
+		       "\t\t\tforeach(conf IN LISTS CONFIGS)\n"
+		       "\t\t\t\tExternalProject_Add(${arch}-${conf}\n"
+		       "\t\t\t\t\tSOURCE_DIR ${CMAKE_SOURCE_DIR}\n"
+		       "\t\t\t\t\tBINARY_DIR ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
+		       "\t\t\t\t\tINSTALL_COMMAND \"\"\n"
+		       "\t\t\t\t\tCMAKE_ARGS -DARCHS= -DCONFIGS= ${ARGS_ARCH} -DCMAKE_BUILD_TYPE=${conf}\n"
+		       "\t\t\t\t)\n"
+		       "\t\t\t\tadd_test(\n"
+		       "\t\t\t\t\tNAME ${arch}-${conf}\n"
+		       "\t\t\t\t\tCOMMAND ${CMAKE_CTEST_COMMAND} --test-dir ${CMAKE_BINARY_DIR}/${arch}-${conf}\n"
+		       "\t\t\t\t)\n"
+		       "\t\t\tendforeach()\n"
+		       "\t\tendif()\n"
+		       "\tendforeach()\n"
+		       "else()\n"
+		       "\tif (CMAKE_GENERATOR MATCHES \"Visual Studio 17 2022\")\n"
+		       "\t\tif(CMAKE_GENERATOR_PLATFORM STREQUAL \"Win32\")\n"
+		       "\t\t\tset(ARCH \"x86\")\n"
+		       "\t\t\tset(ARGS_ARCH \"-A Win32\")\n"
+		       "\t\telseif(CMAKE_GENERATOR_PLATFORM STREQUAL \"\")\n"
+		       "\t\t\tset(ARCH \"host\")\n"
+		       "\t\telse()\n"
+		       "\t\t\tset(ARCH \"${CMAKE_GENERATOR_PLATFORM}\")\n"
+		       "\t\t\tset(ARGS_ARCH \"-A ${CMAKE_GENERATOR_PLATFORM}\")\n"
+		       "\t\tendif()\n"
+		       "\tendif()\n"
+		       "\n"));
 
 	for (int i = 0; i < __VARS_CNT; i++) {
 		if (vars.vars[i].deps & ((1 << PN) | (1 << TN))) {
@@ -991,20 +1054,20 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 	}
 
 	fs_writes(drv->fs,
-		 f,
-		 STRV("\n"
-		      "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		      "\t\tif(ARCH STREQUAL \"x64\")\n"
-		      "\t\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
-		      "\t\telseif(ARCH STREQUAL \"x86\")\n"
-		      "\t\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
-		      "\t\tendif()\n"
-		      "\tendif()\n"));
+		  f,
+		  STRV("\n"
+		       "\tif(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		       "\t\tif(ARCH STREQUAL \"x64\")\n"
+		       "\t\t\tset(CMAKE_C_FLAGS \"-m64\")\n"
+		       "\t\telseif(ARCH STREQUAL \"x86\")\n"
+		       "\t\t\tset(CMAKE_C_FLAGS \"-m32\")\n"
+		       "\t\tendif()\n"
+		       "\tendif()\n"));
 
 	if (proj->pkgs.cnt > 0) {
 		arr_t order = {0};
-		arr_init(&order, proj->pkgs.cnt, sizeof(uint), ALLOC_STD);
-		ret |= proj_graph_toposort_packages(proj, &order, ALLOC_STD);
+		arr_init(&order, proj->pkgs.cnt, sizeof(uint), alloc);
+		ret |= proj_graph_toposort_packages(proj, &order, alloc);
 
 		uint i = 0;
 		const uint *id;
@@ -1019,28 +1082,28 @@ static int gen_cmake(const gen_driver_t *drv, const proj_t *proj, strv_t proj_di
 			fs_writes(drv->fs, f, STRVS(dir));
 			fs_writes(drv->fs, f, STRV(")\n"));
 
-			gen_pkg(proj, &vars, drv->fs, i, build_dir);
+			ret |= gen_pkg(proj, &vars, drv->fs, i, build_dir, alloc);
 		}
 
 		arr_free(&order);
 	}
 
 	fs_writes(drv->fs,
-		 f,
-		 STRV("endif()\n"
-		      "\n"
-		      "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
-		      "\tadd_custom_target(cov\n"
-		      "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
-		      "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
-		      "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} ${LCOV_IGNORE_UNUSED} --exclude "
-		      "\\\"*/test/*\\\" --exclude \\\"*/example/*\\\" --exclude \\\"*/tmp/*\\\"\\;\n"
-		      "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
-		      "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
-		      "\t\tfi\n"
-		      "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
-		      "\t)\n"
-		      "endif()\n"));
+		  f,
+		  STRV("endif()\n"
+		       "\n"
+		       "if(CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		       "\tadd_custom_target(cov\n"
+		       "\t\tCOMMAND ${CMAKE_COMMAND} -E make_directory ${DIR_TMP_COV}\n"
+		       "\t\tCOMMAND if [ -n \\\"$$\\(find ${CMAKE_BINARY_DIR} -name *.gcda\\)\\\" ]\\; then \n"
+		       "\t\t\tlcov -q -c -o ${DIR_TMP_COV}lcov.info -d ${CMAKE_BINARY_DIR} ${LCOV_IGNORE_UNUSED} --exclude "
+		       "\\\"*/test/*\\\" --exclude \\\"*/example/*\\\" --exclude \\\"*/tmp/*\\\"\\;\n"
+		       "\t\t\tgenhtml -q -o ${DIR_TMP_COV} ${DIR_TMP_COV}lcov.info\\;\n"
+		       "\t\t\t[ \\\"${OPEN}\\\" = \\\"1\\\" ] && open ${DIR_TMP_COV}index.html || true\\;\n"
+		       "\t\tfi\n"
+		       "\t\tWORKING_DIRECTORY ${CMAKE_BINARY_DIR}\n"
+		       "\t)\n"
+		       "endif()\n"));
 
 	fs_close(drv->fs, f);
 

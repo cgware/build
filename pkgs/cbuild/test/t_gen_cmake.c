@@ -1,15 +1,29 @@
 #include "t_gen_common.h"
 
 #include "log.h"
-#include "mem.h"
 #include "path.h"
 #include "test.h"
+
+typedef struct fail_after_s {
+	uint cnt;
+	uint fail;
+} fail_after_t;
+
+static void *fail_after_alloc(alloc_t *alloc, size_t size)
+{
+	fail_after_t *ctx = alloc->priv;
+	if (ctx->cnt++ == ctx->fail) {
+		return NULL;
+	}
+
+	return alloc_alloc_std(alloc, size);
+}
 
 TEST(gen_cmake_null)
 {
 	START;
 
-	gen_driver_t drv = *gen_find_param(STRV("C"));
+	gen_driver_t drv = t_gen_driver(STRV("C"));
 
 	EXPECT_EQ(drv.gen(&drv, NULL, STRV_NULL, STRV_NULL), 1);
 
@@ -1140,7 +1154,7 @@ TEST(gen_cmake_pkg_exe_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _drv)\n"
+		    "target_sources(${PN}_${TN} PRIVATE $<TARGET_OBJECTS:_drv>)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
@@ -1167,6 +1181,193 @@ TEST(gen_cmake_pkg_exe_drv)
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    ")\n",
 		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_exe_transitive_drv)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	fs_init(&com.fs, 2, 1, ALLOC_STD);
+	proj_init(&com.proj, 1, 4, ALLOC_STD);
+
+	uint pkg_id, exe_id, drv1_id, drv2_id, lib_id;
+	target_t *target;
+
+	proj_add_pkg(&com.proj, &pkg_id);
+	target = proj_add_target(&com.proj, pkg_id, &exe_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_NAME, STRV("exe"));
+	target->type = TARGET_TYPE_EXE;
+
+	target = proj_add_target(&com.proj, pkg_id, &drv1_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_NAME, STRV("drv1"));
+	target->type = TARGET_TYPE_DRV;
+
+	target = proj_add_target(&com.proj, pkg_id, &drv2_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_NAME, STRV("drv2"));
+	target->type = TARGET_TYPE_DRV;
+
+	target = proj_add_target(&com.proj, pkg_id, &lib_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_NAME, STRV("lib"));
+	target->type = TARGET_TYPE_LIB;
+
+	proj_add_dep(&com.proj, exe_id, drv1_id);
+	proj_add_dep(&com.proj, drv1_id, drv2_id);
+	proj_add_dep(&com.proj, drv2_id, lib_id);
+
+	gen_driver_t drv = t_gen_driver(STRV("C"));
+	drv.fs		 = &com.fs;
+	EXPECT_EQ(drv.gen(&drv, &com.proj, STRV_NULL, STRV_NULL), 0);
+
+	char buf[8192] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"exe\")\n"
+		    "set(TGT_OUT ${DIR_OUT_BIN})\n"
+		    "set(DIR_OUT_BIN_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
+		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PRIVATE _lib)\n"
+		    "target_sources(${PN}_${TN} PRIVATE $<TARGET_OBJECTS:_drv1> $<TARGET_OBJECTS:_drv2>)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG bin/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE bin/\n"
+		    ")\n"
+		    "set(TN \"drv1\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
+		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
+		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC _drv2)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n"
+		    "set(TN \"drv2\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
+		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
+		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_link_libraries(${PN}_${TN} PUBLIC _lib)\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n"
+		    "set(TN \"lib\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
+		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_exe_transitive_drv_oom)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	fs_init(&com.fs, 2, 1, ALLOC_STD);
+	proj_init(&com.proj, 1, 3, ALLOC_STD);
+
+	uint pkg_id, exe_id, drv_id, lib_id;
+	target_t *target;
+
+	proj_add_pkg(&com.proj, &pkg_id);
+	target = proj_add_target(&com.proj, pkg_id, &exe_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_NAME, STRV("exe"));
+	target->type = TARGET_TYPE_EXE;
+
+	target = proj_add_target(&com.proj, pkg_id, &drv_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_NAME, STRV("drv"));
+	target->type = TARGET_TYPE_DRV;
+
+	target = proj_add_target(&com.proj, pkg_id, &lib_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_NAME, STRV("lib"));
+	target->type = TARGET_TYPE_LIB;
+
+	proj_add_dep(&com.proj, exe_id, drv_id);
+	proj_add_dep(&com.proj, drv_id, lib_id);
+
+	gen_driver_t drv  = t_gen_driver(STRV("C"));
+	drv.fs		  = &com.fs;
+	fail_after_t fail = {.fail = 6};
+	drv.alloc	  = (alloc_t){
+			.alloc	 = fail_after_alloc,
+			.realloc = alloc_realloc_std,
+			.free	 = alloc_free_std,
+			.priv	 = &fail,
+	};
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(drv.gen(&drv, &com.proj, STRV_NULL, STRV_NULL), 1);
+	log_set_quiet(0, 0);
 
 	t_gen_free(&com);
 
@@ -1954,7 +2155,7 @@ TEST(gen_cmake_pkg_test_drv)
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
 		    "\t)\n"
 		    "endif()\n"
-		    "target_link_libraries(${PN}_${TN} PRIVATE _)\n"
+		    "target_sources(${PN}_${TN} PRIVATE $<TARGET_OBJECTS:_>)\n"
 		    "add_test(\n"
 		    "\tNAME ${PN}_${TN}\n"
 		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
@@ -3072,6 +3273,8 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_exe_out);
 	RUN(gen_cmake_pkg_exe_lib);
 	RUN(gen_cmake_pkg_exe_drv);
+	RUN(gen_cmake_pkg_exe_transitive_drv);
+	RUN(gen_cmake_pkg_exe_transitive_drv_oom);
 	RUN(gen_cmake_pkg_lib);
 	RUN(gen_cmake_pkg_lib_inc);
 	RUN(gen_cmake_pkg_lib_inc_priv);

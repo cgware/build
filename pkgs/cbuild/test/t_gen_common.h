@@ -8,6 +8,8 @@ typedef struct t_gen_common_s {
 	proj_t proj;
 } t_gen_common_t;
 
+gen_driver_t t_gen_driver(strv_t p);
+
 int t_gen_proj_build_dir(t_gen_common_t *com, strv_t p);
 int t_gen_proj_empty(t_gen_common_t *com, strv_t p);
 int t_gen_proj_name(t_gen_common_t *com, strv_t p);

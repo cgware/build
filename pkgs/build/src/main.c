@@ -352,6 +352,7 @@ int main(int argc, const char **argv)
 	path_push(&genbuild_rel, STRV(""));
 
 	gen_driver_t *gen_driver = (gen_driver_t *)gens[gen].priv;
+	gen_driver->alloc	 = ALLOC_STD;
 
 	str_t buf = strz(1024);
 

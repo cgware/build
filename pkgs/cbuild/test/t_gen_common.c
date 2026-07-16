@@ -1,5 +1,17 @@
 #include "t_gen_common.h"
 
+gen_driver_t t_gen_driver(strv_t p)
+{
+	gen_driver_t drv  = {0};
+	gen_driver_t *gen = gen_find_param(p);
+	if (gen != NULL) {
+		drv = *gen;
+	}
+	drv.alloc = ALLOC_STD;
+
+	return drv;
+}
+
 int t_gen_proj_build_dir(t_gen_common_t *com, strv_t p)
 {
 	fs_init(&com->fs, 3, 1, ALLOC_STD);
@@ -8,7 +20,7 @@ int t_gen_proj_build_dir(t_gen_common_t *com, strv_t p)
 
 	proj_init(&com->proj, 1, 1, ALLOC_STD);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -23,7 +35,7 @@ int t_gen_proj_empty(t_gen_common_t *com, strv_t p)
 
 	proj_init(&com->proj, 1, 1, ALLOC_STD);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -40,7 +52,7 @@ int t_gen_proj_name(t_gen_common_t *com, strv_t p)
 
 	proj_set_str(&com->proj, com->proj.name, STRV("proj"));
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -60,7 +72,7 @@ int t_gen_proj_unknown(t_gen_common_t *com, strv_t p)
 	target = proj_add_target(&com->proj, pkg_id, NULL);
 	proj_set_str(&com->proj, target->strs + TGT_STR_NAME, STRV("pkg"));
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -81,7 +93,7 @@ int t_gen_proj_exe(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_EXE;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -102,7 +114,7 @@ int t_gen_proj_lib(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -128,7 +140,7 @@ int t_gen_proj_ext(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_EXT;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -149,7 +161,7 @@ int t_gen_proj_test(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_NAME, STRV("pkg"));
 	target->type = TARGET_TYPE_TST;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -169,7 +181,7 @@ int t_gen_pkg(t_gen_common_t *com, strv_t p)
 	pkg = proj_add_pkg(&com->proj, NULL);
 	proj_set_str(&com->proj, pkg->strs + PKG_STR_NAME, STRV("pkg"));
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -191,7 +203,7 @@ int t_gen_pkg_exe(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_SRC, STRV("src"));
 	target->type = TARGET_TYPE_EXE;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -212,7 +224,7 @@ int t_gen_pkg_exe_inc_priv(t_gen_common_t *com, strv_t p)
 	proj_add_inc_priv(&com->proj, tgt, STRV("src"));
 	target->type = TARGET_TYPE_EXE;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -233,7 +245,7 @@ int t_gen_pkg_exe_out(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_OUT, STRV("exes"));
 	target->type = TARGET_TYPE_EXE;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -261,7 +273,7 @@ int t_gen_pkg_exe_lib(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, exe, lib);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -289,7 +301,7 @@ int t_gen_pkg_exe_drv(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, exe_id, drv_id);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -311,7 +323,7 @@ int t_gen_pkg_lib(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_SRC, STRV("src"));
 	target->type = TARGET_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -332,7 +344,7 @@ int t_gen_pkg_lib_inc(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_INC, STRV("include"));
 	target->type = TARGET_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -353,7 +365,7 @@ int t_gen_pkg_lib_inc_priv(t_gen_common_t *com, strv_t p)
 	proj_add_inc_priv(&com->proj, tgt, STRV("src"));
 	target->type = TARGET_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -374,7 +386,7 @@ int t_gen_pkg_lib_out(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_OUT, STRV("libs"));
 	target->type = TARGET_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -402,7 +414,7 @@ int t_gen_pkg_lib_drv(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, lib_id, drv_id);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -424,7 +436,7 @@ int t_gen_pkg_drv(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_SRC, STRV("drivers"));
 	target->type = TARGET_TYPE_DRV;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -445,7 +457,7 @@ int t_gen_pkg_drv_inc(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_INC, STRV("include"));
 	target->type = TARGET_TYPE_DRV;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -466,7 +478,7 @@ int t_gen_pkg_drv_inc_priv(t_gen_common_t *com, strv_t p)
 	proj_add_inc_priv(&com->proj, tgt, STRV("drivers"));
 	target->type = TARGET_TYPE_DRV;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -487,7 +499,7 @@ int t_gen_pkg_drv_out(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_OUT, STRV("libs"));
 	target->type = TARGET_TYPE_DRV;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -516,7 +528,7 @@ int t_gen_pkg_drv_lib(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, drv, lib);
 
-	gen_driver_t d = *gen_find_param(p);
+	gen_driver_t d = t_gen_driver(p);
 
 	d.fs = &com->fs;
 
@@ -537,7 +549,7 @@ int t_gen_pkg_test(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_SRC, STRV("test"));
 	target->type = TARGET_TYPE_TST;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -558,7 +570,7 @@ int t_gen_pkg_test_inc_priv(t_gen_common_t *com, strv_t p)
 	proj_add_inc_priv(&com->proj, tgt, STRV("test"));
 	target->type = TARGET_TYPE_TST;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -579,7 +591,7 @@ int t_gen_pkg_test_out(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_OUT, STRV("tests"));
 	target->type = TARGET_TYPE_TST;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -607,7 +619,7 @@ int t_gen_pkg_test_lib(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, tst, lib);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -631,7 +643,7 @@ int t_gen_pkg_test_drv(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, tst_id, drv_id);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -663,7 +675,7 @@ int t_gen_pkg_multi(t_gen_common_t *com, strv_t p)
 	target	     = proj_add_target(&com->proj, b, NULL);
 	target->type = TARGET_TYPE_EXE;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -697,7 +709,7 @@ int t_gen_pkg_depends(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, exe, lib);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -746,7 +758,7 @@ int t_gen_pkg_rdepends(t_gen_common_t *com, strv_t p)
 	proj_add_dep(&com->proj, exe, lib1);
 	proj_add_dep(&com->proj, exe, lib2);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -766,7 +778,7 @@ int t_gen_pkg_ext_unknown(t_gen_common_t *com, strv_t p)
 	target	     = proj_add_target(&com->proj, ext, NULL);
 	target->type = TARGET_TYPE_EXT;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -792,7 +804,7 @@ int t_gen_pkg_ext_uri(t_gen_common_t *com, strv_t p)
 	target	     = proj_add_target(&com->proj, pkg_id, NULL);
 	target->type = TARGET_TYPE_EXT;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -818,7 +830,7 @@ int t_gen_pkg_ext_cmd(t_gen_common_t *com, strv_t p)
 	proj_set_str(&com->proj, target->strs + TGT_STR_TGT, STRV("out"));
 	target->type = TARGET_TYPE_EXT;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -840,7 +852,7 @@ int t_gen_pkg_ext_out(t_gen_common_t *com, strv_t p)
 	target->type	 = TARGET_TYPE_EXT;
 	target->out_type = TARGET_TGT_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -862,7 +874,7 @@ int t_gen_pkg_ext_inc(t_gen_common_t *com, strv_t p)
 	target->type	 = TARGET_TYPE_EXT;
 	target->out_type = TARGET_TGT_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -883,7 +895,7 @@ int t_gen_pkg_ext_lib(t_gen_common_t *com, strv_t p)
 	target->type	 = TARGET_TYPE_EXT;
 	target->out_type = TARGET_TGT_TYPE_LIB;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -904,7 +916,7 @@ int t_gen_pkg_ext_exe(t_gen_common_t *com, strv_t p)
 	target->type	 = TARGET_TYPE_EXT;
 	target->out_type = TARGET_TGT_TYPE_EXE;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -933,7 +945,7 @@ int t_gen_pkg_ext_zip(t_gen_common_t *com, strv_t p)
 	target	     = proj_add_target(&com->proj, pkg_id, NULL);
 	target->type = TARGET_TYPE_EXT;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -962,7 +974,7 @@ int t_gen_pkg_ext_tar(t_gen_common_t *com, strv_t p)
 	target	     = proj_add_target(&com->proj, pkg_id, NULL);
 	target->type = TARGET_TYPE_EXT;
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -990,7 +1002,7 @@ int t_gen_pkg_ext_dep_lib(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, ext, lib);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 
@@ -1018,7 +1030,7 @@ int t_gen_pkg_ext_dep_exe(t_gen_common_t *com, strv_t p)
 
 	proj_add_dep(&com->proj, ext, lib);
 
-	gen_driver_t drv = *gen_find_param(p);
+	gen_driver_t drv = t_gen_driver(p);
 
 	drv.fs = &com->fs;
 

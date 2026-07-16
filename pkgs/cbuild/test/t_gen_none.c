@@ -7,6 +7,7 @@ TEST(gen_none_empty)
 	START;
 
 	gen_driver_t drv = *gen_find_param(STRV("N"));
+	drv.alloc	 = ALLOC_STD;
 
 	EXPECT_EQ(drv.gen(&drv, NULL, STRV_NULL, STRV_NULL), 0);
 
