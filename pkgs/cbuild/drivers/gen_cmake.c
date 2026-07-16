@@ -120,6 +120,7 @@ static int gen_tgt_links(const proj_t *proj, fs_t *fs, void *f, uint target_id, 
 
 	int link_header	  = 0;
 	int source_header = 0;
+	int inc_header	  = 0;
 	int has_drivers	  = 0;
 
 	if (!ret) {
@@ -177,6 +178,32 @@ static int gen_tgt_links(const proj_t *proj, fs_t *fs, void *f, uint target_id, 
 					gen_tgt_name(proj, fs, f, *dep_target_id);
 					fs_writes(fs, f, STRV(">"));
 				}
+
+				if (source_header) {
+					fs_writes(fs, f, STRV(")\n"));
+					source_header = 0;
+				}
+
+				i = 0;
+				arr_foreach(&deps, i, dep_target_id)
+				{
+					const target_t *dtarget = proj_get_target(proj, *dep_target_id);
+					if (dtarget->type != TARGET_TYPE_DRV) {
+						continue;
+					}
+					strv_t inc = proj_get_str(proj, dtarget->strs + TGT_STR_INC);
+					if (inc.len == 0) {
+						continue;
+					}
+
+					if (!inc_header) {
+						fs_writes(fs, f, STRV("target_include_directories(${PN}_${TN} PRIVATE"));
+						inc_header = 1;
+					}
+					fs_writes(fs, f, STRV(" $<TARGET_PROPERTY:"));
+					gen_tgt_name(proj, fs, f, *dep_target_id);
+					fs_writes(fs, f, STRV(",INTERFACE_INCLUDE_DIRECTORIES>"));
+				}
 			}
 		} else {
 			const list_node_t *dep_target_id;
@@ -197,7 +224,7 @@ static int gen_tgt_links(const proj_t *proj, fs_t *fs, void *f, uint target_id, 
 	if (link_header) {
 		fs_writes(fs, f, STRV(")\n"));
 	}
-	if (source_header) {
+	if (inc_header) {
 		fs_writes(fs, f, STRV(")\n"));
 	}
 

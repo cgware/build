@@ -1155,6 +1155,7 @@ TEST(gen_cmake_pkg_exe_drv)
 		    "\t)\n"
 		    "endif()\n"
 		    "target_sources(${PN}_${TN} PRIVATE $<TARGET_OBJECTS:_drv>)\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE $<TARGET_PROPERTY:_drv,INTERFACE_INCLUDE_DIRECTORIES>)\n"
 		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
 		    "\tOUTPUT_NAME \"${PN}\"\n"
 		    "\tRUNTIME_OUTPUT_DIRECTORY bin/\n"
@@ -2173,6 +2174,96 @@ TEST(gen_cmake_pkg_test_drv)
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
 		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_test_drv_inc)
+{
+	START;
+
+	t_gen_common_t com = {0};
+	fs_init(&com.fs, 2, 1, ALLOC_STD);
+	proj_init(&com.proj, 1, 2, ALLOC_STD);
+
+	uint pkg_id, tst_id, drv_id;
+	target_t *target;
+
+	proj_add_pkg(&com.proj, &pkg_id);
+	target	     = proj_add_target(&com.proj, pkg_id, &tst_id);
+	target->type = TARGET_TYPE_TST;
+	target	     = proj_add_target(&com.proj, pkg_id, &drv_id);
+	proj_set_str(&com.proj, target->strs + TGT_STR_INC, STRV("include"));
+	target->type = TARGET_TYPE_DRV;
+
+	proj_add_dep(&com.proj, tst_id, drv_id);
+
+	gen_driver_t drv = t_gen_driver(STRV("C"));
+	drv.fs		 = &com.fs;
+	EXPECT_EQ(drv.gen(&drv, &com.proj, STRV_NULL, STRV_NULL), 0);
+
+	char buf[4096] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_OUT ${DIR_OUT_TST})\n"
+		    "set(DIR_OUT_TST_FILE ${TGT_OUT}${PN}${EXT_EXE})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
+		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
+		    "add_executable(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "target_sources(${PN}_${TN} PRIVATE $<TARGET_OBJECTS:_>)\n"
+		    "target_include_directories(${PN}_${TN} PRIVATE $<TARGET_PROPERTY:_,INTERFACE_INCLUDE_DIRECTORIES>)\n"
+		    "add_test(\n"
+		    "\tNAME ${PN}_${TN}\n"
+		    "\tCOMMAND $<TARGET_FILE:${PN}_${TN}>\n"
+		    ")\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_DEBUG test/\n"
+		    "\tRUNTIME_OUTPUT_DIRECTORY_RELEASE test/\n"
+		    ")\n"
+		    "set(TN \"\")\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
+		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
+		    "add_library(${PN}_${TN} OBJECT ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
 		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
 		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
 		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
@@ -3289,6 +3380,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_test_inc_priv);
 	RUN(gen_cmake_pkg_test_out);
 	RUN(gen_cmake_pkg_test_drv);
+	RUN(gen_cmake_pkg_test_drv_inc);
 	RUN(gen_cmake_pkg_test_lib);
 	RUN(gen_cmake_pkg_multi);
 	RUN(gen_cmake_pkg_depends);
