@@ -127,6 +127,89 @@ static int invalid_kind_config_fs(mod_t *mod, config_t *config, config_t *tmp, c
 	return 0;
 }
 
+static int ext_duplicate_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry,
+				   config_sync_plan_t *plan, fs_t *fs, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf,
+				   alloc_t alloc, dst_t dst)
+{
+	(void)mod;
+	(void)config;
+	(void)tmp;
+	(void)schema;
+	(void)registry;
+	(void)fs;
+	(void)proj_path;
+	(void)cur_path;
+	(void)name;
+	(void)buf;
+	(void)alloc;
+	(void)dst;
+
+	if (config_sync_plan_add_ext(plan, STRV("u"), STRV("r"))) {
+		return 1;
+	}
+	if (config_sync_plan_add_ext(plan, STRV("u"), STRV("r"))) {
+		return 1;
+	}
+
+	return 0;
+}
+
+static int ext_fill_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry,
+			      config_sync_plan_t *plan, fs_t *fs, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf, alloc_t alloc,
+			      dst_t dst)
+{
+	(void)mod;
+	(void)config;
+	(void)tmp;
+	(void)schema;
+	(void)registry;
+	(void)fs;
+	(void)proj_path;
+	(void)cur_path;
+	(void)name;
+	(void)buf;
+	(void)alloc;
+	(void)dst;
+
+	if (config_sync_plan_add_ext(plan, STRV("u"), STRV("r"))) {
+		return 1;
+	}
+	if (config_sync_plan_add_ext(plan, STRV("u"), STRV("r"))) {
+		return 1;
+	}
+	if (config_sync_plan_add_ext(plan, STRV("u"), STRV("r"))) {
+		return 1;
+	}
+
+	return 0;
+}
+
+static int ext_str_full_config_fs(mod_t *mod, config_t *config, config_t *tmp, const config_schema_t *schema, registry_t *registry,
+				  config_sync_plan_t *plan, fs_t *fs, strv_t proj_path, strv_t cur_path, strv_t name, str_t *buf,
+				  alloc_t alloc, dst_t dst)
+{
+	(void)mod;
+	(void)config;
+	(void)tmp;
+	(void)schema;
+	(void)registry;
+	(void)fs;
+	(void)proj_path;
+	(void)cur_path;
+	(void)name;
+	(void)buf;
+	(void)alloc;
+	(void)dst;
+
+	if (config_sync_plan_add_ext(plan, STRV("u"), STRV("r"))) {
+		return 1;
+	}
+
+	plan->strs.off.cnt = plan->strs.off.cap;
+
+	return 0;
+}
+
 static void config_fs_ext_clone_cmd(strv_t uri, int develop, str_t *cmd)
 {
 	config_schema_t schema = {0};
@@ -225,7 +308,7 @@ TEST(config_sync_plan_helpers)
 
 	fail_alloc_ctx_t init_fail_ctx = {.fail_at = 2};
 	alloc_t init_fail_alloc	       = {
-		.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &init_fail_ctx};
+		       .alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &init_fail_ctx};
 	config_sync_plan_t init_fail = {0};
 	log_set_quiet(0, 1);
 	EXPECT_EQ(config_sync_plan_init(&init_fail, 1, init_fail_alloc), NULL);
@@ -553,17 +636,192 @@ TEST(config_fs_ext_sync_name_ref)
 
 	char out[2048] = {0};
 	config_print(&config, &schema, &registry, DST_BUF(out));
-	EXPECT_STR(
-		out,
-		"pkgs += really_long_repo_name_that_forces_strbuf_reallocation\n"
-		"really_long_repo_name_that_forces_strbuf_reallocation:path ?= tmp" SEP "ext" SEP
-		"really_long_repo_name_that_forces_strbuf_reallocation" SEP "\n"
-		"really_long_repo_name_that_forces_strbuf_reallocation:tgts += really_long_repo_name_that_forces_strbuf_reallocation\n"
-		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:type = 2\n"
-		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:src = src\n"
-		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:inc = include\n"
-		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:incs_priv = src\n");
+	EXPECT_STR(out,
+		   "pkgs += really_long_repo_name_that_forces_strbuf_reallocation\n"
+		   "really_long_repo_name_that_forces_strbuf_reallocation:path ?= tmp" SEP "ext" SEP
+		   "really_long_repo_name_that_forces_strbuf_reallocation" SEP "\n"
+		   "really_long_repo_name_that_forces_strbuf_reallocation:tgts += really_long_repo_name_that_forces_strbuf_reallocation\n"
+		   "really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:type = 2\n"
+		   "really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:src = src\n"
+		   "really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:inc = "
+		   "include\n"
+		   "really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:incs_priv "
+		   "= src\n");
 
+	fs_free(&fs);
+	config_free(&tmp);
+	config_free(&config);
+	registry_free(&registry);
+	mods_free();
+	config_schema_free(&schema);
+
+	END;
+}
+
+TEST(config_fs_ext_sync_dir_ref_duplicate)
+{
+	START;
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 16, ALLOC_STD);
+	mod_base_init(0, &schema, ALLOC_STD);
+	mods_init(&schema);
+
+	registry_t registry = {0};
+	registry_init(&registry, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, ALLOC_STD);
+
+	config_t tmp = {0};
+	config_init(&tmp, 1, ALLOC_STD);
+
+	fs_t fs = {0};
+	fs_init(&fs, 4, 1, ALLOC_STD);
+
+	mod_t *mod = find_mod(STRV("mod_pkgs"));
+	EXPECT_NE(mod, NULL);
+	int (*config_fs_fn)(mod_t *,
+			    config_t *,
+			    config_t *,
+			    const config_schema_t *,
+			    registry_t *,
+			    config_sync_plan_t *,
+			    fs_t *,
+			    strv_t,
+			    strv_t,
+			    strv_t,
+			    str_t *,
+			    alloc_t,
+			    dst_t) = mod->config_fs;
+	mod->config_fs		   = ext_duplicate_config_fs;
+
+	char storage[256] = {0};
+	str_t buf	  = STRB(storage, 0);
+
+	EXPECT_EQ(
+		config_fs(&config, &tmp, &schema, &registry, &fs, NULL, STRV_NULL, STRV_NULL, STRV("proj"), 0, &buf, ALLOC_STD, DST_NONE()),
+		0);
+
+	mod->config_fs = config_fs_fn;
+	fs_free(&fs);
+	config_free(&tmp);
+	config_free(&config);
+	registry_free(&registry);
+	mods_free();
+	config_schema_free(&schema);
+
+	END;
+}
+
+TEST(config_fs_ext_sync_dir_ref_str_oom)
+{
+	START;
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 16, ALLOC_STD);
+	mod_base_init(0, &schema, ALLOC_STD);
+	mods_init(&schema);
+
+	registry_t registry = {0};
+	registry_init(&registry, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, ALLOC_STD);
+
+	config_t tmp = {0};
+	config_init(&tmp, 1, ALLOC_STD);
+
+	fs_t fs = {0};
+	fs_init(&fs, 4, 1, ALLOC_STD);
+
+	mod_t *mod = find_mod(STRV("mod_pkgs"));
+	EXPECT_NE(mod, NULL);
+	int (*config_fs_fn)(mod_t *,
+			    config_t *,
+			    config_t *,
+			    const config_schema_t *,
+			    registry_t *,
+			    config_sync_plan_t *,
+			    fs_t *,
+			    strv_t,
+			    strv_t,
+			    strv_t,
+			    str_t *,
+			    alloc_t,
+			    dst_t) = mod->config_fs;
+	mod->config_fs		   = ext_str_full_config_fs;
+
+	char storage[256] = {0};
+	str_t buf	  = STRB(storage, 0);
+
+	fail_alloc_ctx_t ctx = {.fail_at = 1};
+	alloc_t alloc	     = {.alloc = fail_realloc_alloc, .realloc = fail_realloc_realloc, .free = fail_realloc_free, .priv = &ctx};
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(config_fs(&config, &tmp, &schema, &registry, &fs, NULL, STRV_NULL, STRV_NULL, STRV_NULL, 0, &buf, alloc, DST_NONE()), 1);
+	log_set_quiet(0, 0);
+
+	mod->config_fs = config_fs_fn;
+	fs_free(&fs);
+	config_free(&tmp);
+	config_free(&config);
+	registry_free(&registry);
+	mods_free();
+	config_schema_free(&schema);
+
+	END;
+}
+
+TEST(config_fs_ext_sync_dir_ref_item_oom)
+{
+	START;
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 16, ALLOC_STD);
+	mod_base_init(0, &schema, ALLOC_STD);
+	mods_init(&schema);
+
+	registry_t registry = {0};
+	registry_init(&registry, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, ALLOC_STD);
+
+	config_t tmp = {0};
+	config_init(&tmp, 1, ALLOC_STD);
+
+	fs_t fs = {0};
+	fs_init(&fs, 4, 1, ALLOC_STD);
+
+	mod_t *mod = find_mod(STRV("mod_pkgs"));
+	EXPECT_NE(mod, NULL);
+	int (*config_fs_fn)(mod_t *,
+			    config_t *,
+			    config_t *,
+			    const config_schema_t *,
+			    registry_t *,
+			    config_sync_plan_t *,
+			    fs_t *,
+			    strv_t,
+			    strv_t,
+			    strv_t,
+			    str_t *,
+			    alloc_t,
+			    dst_t) = mod->config_fs;
+	mod->config_fs		   = ext_fill_config_fs;
+
+	char storage[256] = {0};
+	str_t buf	  = STRB(storage, 0);
+
+	fail_alloc_ctx_t ctx = {.fail_at = 1};
+	alloc_t alloc	     = {.alloc = fail_realloc_alloc, .realloc = fail_realloc_realloc, .free = fail_realloc_free, .priv = &ctx};
+
+	log_set_quiet(0, 1);
+	EXPECT_EQ(config_fs(&config, &tmp, &schema, &registry, &fs, NULL, STRV_NULL, STRV_NULL, STRV_NULL, 0, &buf, alloc, DST_NONE()), 1);
+	log_set_quiet(0, 0);
+
+	mod->config_fs = config_fs_fn;
 	fs_free(&fs);
 	config_free(&tmp);
 	config_free(&config);
@@ -707,6 +965,9 @@ STEST(config_fs)
 	RUN(config_fs_ext_sync_develop_clone_cmd_parse_fallback);
 	RUN(config_fs_ext_sync);
 	RUN(config_fs_ext_sync_name_ref);
+	RUN(config_fs_ext_sync_dir_ref_duplicate);
+	RUN(config_fs_ext_sync_dir_ref_str_oom);
+	RUN(config_fs_ext_sync_dir_ref_item_oom);
 	RUN(config_fs_ext_sync_invalid);
 	RUN(config_fs_invalid_work_kind);
 

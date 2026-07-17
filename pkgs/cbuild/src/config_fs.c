@@ -82,10 +82,6 @@ int config_sync_plan_add_dir(config_sync_plan_t *plan, strv_t path, strv_t name)
 
 static int config_sync_plan_add_dir_ref(config_sync_plan_t *plan, strv_t path, uint name)
 {
-	if (plan == NULL) {
-		return 1;
-	}
-
 	uint i = 0;
 	const config_sync_item_t *item;
 	arr_foreach(&plan->items, i, item)
