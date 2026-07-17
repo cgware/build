@@ -213,6 +213,7 @@ TEST(config_sync_plan_helpers)
 	EXPECT_EQ(config_sync_plan_add_dir(&plan, STRV("pkgs/p1"), STRV("p1")), 0);
 	EXPECT_EQ(config_sync_plan_add_dir(&plan, STRV("pkgs/p1"), STRV("p1")), 0);
 	EXPECT_EQ(plan.items.cnt, 2);
+	config_sync_plan_free(&plan);
 
 	config_sync_plan_t path_fail = {0};
 	EXPECT_EQ(config_sync_plan_init(&path_fail, 1, ALLOC_STD), &path_fail);
@@ -368,7 +369,7 @@ TEST(config_fs_ext_sync_queue_oom)
 	char storage[1024] = {0};
 	str_t buf	   = STRB(storage, 0);
 
-	fail_alloc_ctx_t ctx = {.fail_at = 3};
+	fail_alloc_ctx_t ctx = {.fail_at = 2};
 	alloc_t alloc	     = {.alloc = fail_realloc_alloc, .realloc = fail_realloc_realloc, .free = fail_realloc_free, .priv = &ctx};
 
 	log_set_quiet(0, 1);
@@ -383,9 +384,9 @@ TEST(config_fs_ext_sync_queue_oom)
 	int extdir = fs_isdir(&fs, STRVS(path));
 
 	EXPECT_EQ(ret, 1);
-	EXPECT_EQ(ctx.cnt, 3);
-	EXPECT_EQ(gitignore, 1);
-	EXPECT_EQ(extdir, 1);
+	EXPECT_EQ(ctx.cnt, 2);
+	EXPECT_EQ(gitignore, 0);
+	EXPECT_EQ(extdir, 0);
 
 	fs_free(&fs);
 	config_free(&tmp);
@@ -498,6 +499,71 @@ TEST(config_fs_ext_sync)
 	EXPECT_EQ(proc.buf.len > 0, 1);
 
 	proc_free(&proc);
+	fs_free(&fs);
+	config_free(&tmp);
+	config_free(&config);
+	registry_free(&registry);
+	mods_free();
+	config_schema_free(&schema);
+
+	END;
+}
+
+TEST(config_fs_ext_sync_name_ref)
+{
+	START;
+
+	strv_t name = STRV("really_long_repo_name_that_forces_strbuf_reallocation");
+
+	config_schema_t schema = {0};
+	config_schema_init(&schema, 16, ALLOC_STD);
+	mod_base_init(0, &schema, ALLOC_STD);
+	mods_init(&schema);
+
+	registry_t registry = {0};
+	registry_init(&registry, 1, ALLOC_STD);
+
+	config_t config = {0};
+	config_init(&config, 1, ALLOC_STD);
+
+	config_t tmp = {0};
+	config_init(&tmp, 1, ALLOC_STD);
+
+	fs_t fs = {0};
+	fs_init(&fs, 8, 1, ALLOC_STD);
+
+	void *f;
+	fs_open(&fs, STRV("build.cfg"), "w", &f);
+	fs_writes(&fs, f, STRV("ext:\n\"https://host/really_long_repo_name_that_forces_strbuf_reallocation.git\"\n\n"));
+	fs_close(&fs, f);
+
+	path_t path = {0};
+	path_init(&path, STRV("tmp"));
+	path_push(&path, STRV("ext"));
+	path_push(&path, name);
+	path_push(&path, STRV("src"));
+	fs_mkpath(&fs, STRV_NULL, STRVS(path));
+
+	char storage[256] = {0};
+	str_t buf	  = STRB(storage, 0);
+
+	EXPECT_EQ(
+		config_fs(&config, &tmp, &schema, &registry, &fs, NULL, STRV_NULL, STRV_NULL, STRV("proj"), 0, &buf, ALLOC_STD, DST_NONE()),
+		0);
+
+	char out[2048] = {0};
+	config_print(&config, &schema, &registry, DST_BUF(out));
+	EXPECT_STR(
+		out,
+		"pkgs += really_long_repo_name_that_forces_strbuf_reallocation\n"
+		"really_long_repo_name_that_forces_strbuf_reallocation:path ?= tmp" SEP "ext" SEP
+		"really_long_repo_name_that_forces_strbuf_reallocation" SEP "\n"
+		"really_long_repo_name_that_forces_strbuf_reallocation:tgts += really_long_repo_name_that_forces_strbuf_reallocation\n"
+		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:type = 2\n"
+		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:src = src\n"
+		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:inc = include\n"
+		"really_long_repo_name_that_forces_strbuf_reallocation:really_long_repo_name_that_forces_strbuf_reallocation:incs_priv = src\n");
+
 	fs_free(&fs);
 	config_free(&tmp);
 	config_free(&config);
@@ -640,6 +706,7 @@ STEST(config_fs)
 	RUN(config_fs_ext_sync_develop_clone_cmd_fallback);
 	RUN(config_fs_ext_sync_develop_clone_cmd_parse_fallback);
 	RUN(config_fs_ext_sync);
+	RUN(config_fs_ext_sync_name_ref);
 	RUN(config_fs_ext_sync_invalid);
 	RUN(config_fs_invalid_work_kind);
 

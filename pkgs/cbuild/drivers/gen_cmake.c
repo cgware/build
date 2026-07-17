@@ -56,6 +56,7 @@ static void get_path(const proj_t *proj, uint id, path_t *path)
 static int gen_src(const proj_t *proj, fs_t *fs, void *f, const target_t *target)
 {
 	strv_t src = proj_get_str(proj, target->strs + TGT_STR_SRC);
+	strv_t inc = proj_get_str(proj, target->strs + TGT_STR_INC);
 	fs_writes(fs, f, STRV("file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}"));
 
 	path_t tmp = {0};
@@ -70,6 +71,14 @@ static int gen_src(const proj_t *proj, fs_t *fs, void *f, const target_t *target
 	tmp.len = src_len;
 	path_push_s(&tmp, STRV("*.c"), '/');
 	fs_writes(fs, f, STRVS(tmp));
+
+	if (inc.len > 0) {
+		path_t tmp_inc = {0};
+		path_init_s(&tmp_inc, inc, '/');
+		fs_writes(fs, f, STRV(" ${DIR_PKG}"));
+		path_push_s(&tmp_inc, STRV("*.h"), '/');
+		fs_writes(fs, f, STRVS(tmp_inc));
+	}
 
 	fs_writes(fs, f, STRV(")\n"));
 

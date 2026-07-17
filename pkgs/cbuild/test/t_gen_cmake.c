@@ -1091,7 +1091,7 @@ TEST(gen_cmake_pkg_exe_lib)
 		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
 		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
@@ -1164,7 +1164,7 @@ TEST(gen_cmake_pkg_exe_drv)
 		    ")\n"
 		    "set(TN \"drv\")\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
@@ -1446,9 +1446,77 @@ TEST(gen_cmake_pkg_lib_inc)
 		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
 		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
+		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
+		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
+		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
+		    "if (CMAKE_C_COMPILER_ID MATCHES \"GNU|Clang\")\n"
+		    "\ttarget_compile_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "\ttarget_link_options(${PN}_${TN} PRIVATE\n"
+		    "\t\t$<$<CONFIG:Debug>:--coverage>\n"
+		    "\t)\n"
+		    "endif()\n"
+		    "set_target_properties(${PN}_${TN} PROPERTIES\n"
+		    "\tOUTPUT_NAME \"${PN}\"\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_DEBUG lib/\n"
+		    "\tARCHIVE_OUTPUT_DIRECTORY_RELEASE lib/\n"
+		    "\tPREFIX \"\"\n"
+		    ")\n",
+		    tmp.len);
+
+	t_gen_free(&com);
+
+	END;
+}
+
+TEST(gen_cmake_pkg_lib_src_inc)
+{
+	START;
+
+	t_gen_common_t com = {0};
+
+	fs_init(&com.fs, 2, 1, ALLOC_STD);
+
+	proj_init(&com.proj, 1, 1, ALLOC_STD);
+
+	uint pkg_id;
+	target_t *target;
+
+	proj_add_pkg(&com.proj, &pkg_id);
+	target = proj_add_target(&com.proj, pkg_id, NULL);
+	proj_set_str(&com.proj, target->strs + TGT_STR_SRC, STRV("src"));
+	proj_set_str(&com.proj, target->strs + TGT_STR_INC, STRV("include"));
+	target->type = TARGET_TYPE_LIB;
+
+	gen_driver_t drv = t_gen_driver(STRV("C"));
+
+	drv.fs = &com.fs;
+
+	EXPECT_EQ(drv.gen(&drv, &com.proj, STRV_NULL, STRV_NULL), 0);
+
+	char buf[2048] = {0};
+	str_t tmp      = STRB(buf, 0);
+
+	fs_reads(&com.fs, STRV("pkg.cmake"), &tmp);
+	EXPECT_STRN(tmp.data,
+		    "set(PN \"\")\n"
+		    "set(${PN}_DIR \"\")\n"
+		    "set(DIR_OUT_EXT ${DIR_OUT}ext/${PN}/)\n"
+		    "set(PKG_DIR ${${PN}_DIR})\n"
+		    "set(DIR_PKG ${DIR_PROJ}${PKG_DIR})\n"
+		    "\n"
+		    "set(TN \"\")\n"
+		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
+		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
+		    "\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}src/*.h ${DIR_PKG}src/*.c ${DIR_PKG}include/*.h)\n"
+		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"src/(windows|linux)/.*\\\\.c$\")\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}src/${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
 		    "add_library(${PN}_${TN} ${${PN}_${TN}_src})\n"
 		    "target_include_directories(${PN}_${TN} PUBLIC ${DIR_PKG}include)\n"
@@ -1618,7 +1686,7 @@ TEST(gen_cmake_pkg_lib_drv)
 		    ")\n"
 		    "set(TN \"drv\")\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
@@ -1705,7 +1773,7 @@ TEST(gen_cmake_pkg_drv_inc)
 		    "\n"
 		    "set(TN \"\")\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
@@ -1839,7 +1907,7 @@ TEST(gen_cmake_pkg_drv_lib)
 		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
 		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
@@ -2065,7 +2133,7 @@ TEST(gen_cmake_pkg_test_lib)
 		    "set(TGT_OUT ${DIR_OUT_LIB})\n"
 		    "set(DIR_OUT_LIB_FILE ${TGT_OUT}${PN}${EXT_LIB})\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
@@ -2258,7 +2326,7 @@ TEST(gen_cmake_pkg_test_drv_inc)
 		    ")\n"
 		    "set(TN \"\")\n"
 		    "\n"
-		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c)\n"
+		    "file(GLOB_RECURSE ${PN}_${TN}_src ${DIR_PKG}*.h ${DIR_PKG}*.c ${DIR_PKG}include/*.h)\n"
 		    "list(FILTER ${PN}_${TN}_src EXCLUDE REGEX \"(windows|linux)/.*\\\\.c$\")\n"
 		    "file(GLOB_RECURSE ${PN}_${TN}_src_platform ${DIR_PKG}${system}/*.c)\n"
 		    "list(APPEND ${PN}_${TN}_src ${${PN}_${TN}_src_platform})\n"
@@ -3368,6 +3436,7 @@ STEST(gen_cmake)
 	RUN(gen_cmake_pkg_exe_transitive_drv_oom);
 	RUN(gen_cmake_pkg_lib);
 	RUN(gen_cmake_pkg_lib_inc);
+	RUN(gen_cmake_pkg_lib_src_inc);
 	RUN(gen_cmake_pkg_lib_inc_priv);
 	RUN(gen_cmake_pkg_lib_out);
 	RUN(gen_cmake_pkg_lib_drv);

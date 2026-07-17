@@ -80,6 +80,39 @@ int config_sync_plan_add_dir(config_sync_plan_t *plan, strv_t path, strv_t name)
 	return config_sync_plan_add(plan, CONFIG_SYNC_KIND_DIR, STRV_NULL, path, name);
 }
 
+static int config_sync_plan_add_dir_ref(config_sync_plan_t *plan, strv_t path, uint name)
+{
+	if (plan == NULL) {
+		return 1;
+	}
+
+	uint i = 0;
+	const config_sync_item_t *item;
+	arr_foreach(&plan->items, i, item)
+	{
+		if (item->kind == CONFIG_SYNC_KIND_DIR && item->path != (uint)-1 && strv_eq(strbuf_get(&plan->strs, item->path), path)) {
+			return 0;
+		}
+	}
+
+	uint path_id = -1;
+	if (strbuf_add(&plan->strs, path, &path_id)) {
+		return 1;
+	}
+
+	config_sync_item_t *dir = arr_add(&plan->items, NULL);
+	if (dir == NULL) {
+		return 1;
+	}
+
+	dir->kind = CONFIG_SYNC_KIND_DIR;
+	dir->uri  = -1;
+	dir->path = path_id;
+	dir->name = name;
+
+	return 0;
+}
+
 static int ensure_tmp(fs_t *fs, strv_t dir)
 {
 	path_t path = {0};
@@ -144,11 +177,11 @@ static void config_sync_plan_add_clone_uri(str_t *buf, strv_t uri, int develop)
 	str_cat(buf, uri);
 }
 
-static int config_sync_plan_sync_ext(const config_sync_plan_t *plan, const config_sync_item_t *item, config_sync_plan_t *queue, fs_t *fs,
-				     proc_t *proc, strv_t proj_path, int develop, str_t *buf)
+static int config_sync_plan_sync_ext(config_sync_plan_t *queue, const config_sync_item_t *item, fs_t *fs, proc_t *proc, strv_t proj_path,
+				     int develop, str_t *buf)
 {
-	strv_t uri  = config_sync_plan_get_str(plan, item->uri);
-	strv_t name = config_sync_plan_get_str(plan, item->name);
+	strv_t uri  = config_sync_plan_get_str(queue, item->uri);
+	strv_t name = config_sync_plan_get_str(queue, item->name);
 
 	ensure_tmp(fs, proj_path);
 
@@ -185,7 +218,7 @@ static int config_sync_plan_sync_ext(const config_sync_plan_t *plan, const confi
 		}
 	}
 
-	if (config_sync_plan_add_dir(queue, STRVS(dir), name)) {
+	if (config_sync_plan_add_dir_ref(queue, STRVS(dir), item->name)) {
 		return 1;
 	}
 
@@ -224,7 +257,7 @@ int config_fs(config_t *config, config_t *tmp, const config_schema_t *schema, re
 			}
 			break;
 		case CONFIG_SYNC_KIND_EXT:
-			ret |= config_sync_plan_sync_ext(&queue, work, &queue, fs, proc, proj_path, develop, buf);
+			ret |= config_sync_plan_sync_ext(&queue, work, fs, proc, proj_path, develop, buf);
 			break;
 		default:
 			ret = 1;
