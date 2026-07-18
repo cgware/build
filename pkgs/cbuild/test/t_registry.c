@@ -11,12 +11,12 @@ TEST(registry_init_free)
 	registry_t registry = {0};
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(registry_init(NULL, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(registry_init(NULL, 0, ALLOC_STD));
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(registry_init(&registry, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(registry_init(&registry, 1, ALLOC_STD));
 	mem_oom(0);
-	EXPECT_EQ(registry_init(&registry, 1, ALLOC_STD), &registry);
+	EXPECT_PTR(registry_init(&registry, 1, ALLOC_STD), &registry);
 
 	registry_free(&registry);
 	registry_free(NULL);
@@ -61,9 +61,9 @@ TEST(registry_get_pkg)
 	uint id;
 	registry_add_pkg(&registry, STRV("pkg"), &id);
 
-	EXPECT_EQ(registry_get_pkg(NULL, 0).data, NULL);
+	EXPECT_NULL(registry_get_pkg(NULL, 0).data);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(registry_get_pkg(&registry, registry.pkgs.cnt).data, NULL);
+	EXPECT_NULL(registry_get_pkg(&registry, registry.pkgs.cnt).data);
 	log_set_quiet(0, 0);
 	strv_t name = registry_get_pkg(&registry, id);
 	EXPECT_STRN(name.data, "pkg", name.len);
@@ -132,9 +132,9 @@ TEST(registry_get_tgt)
 	registry_add_pkg(&registry, STRV("pkg"), &pkg);
 	registry_add_tgt(&registry, pkg, STRV("tgt"), &id);
 
-	EXPECT_EQ(registry_get_tgt(NULL, 0).data, NULL);
+	EXPECT_NULL(registry_get_tgt(NULL, 0).data);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(registry_get_tgt(&registry, registry.tgts.cnt).data, NULL);
+	EXPECT_NULL(registry_get_tgt(&registry, registry.tgts.cnt).data);
 	log_set_quiet(0, 0);
 	strv_t name = registry_get_tgt(&registry, id);
 	EXPECT_STRN(name.data, "tgt", name.len);

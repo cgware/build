@@ -6,8 +6,8 @@ TEST(gen_find_param)
 {
 	START;
 
-	EXPECT_EQ(gen_find_param(STRV_NULL), NULL);
-	EXPECT_NE(gen_find_param(STRV("N")), NULL);
+	EXPECT_NULL(gen_find_param(STRV_NULL));
+	EXPECT_NOT_NULL(gen_find_param(STRV("N")));
 
 	END;
 }

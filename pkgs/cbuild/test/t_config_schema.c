@@ -11,12 +11,12 @@ TEST(config_schema_init_free)
 	config_schema_t schema = {0};
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_schema_init(NULL, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(config_schema_init(NULL, 0, ALLOC_STD));
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(config_schema_init(&schema, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(config_schema_init(&schema, 1, ALLOC_STD));
 	mem_oom(0);
-	EXPECT_EQ(config_schema_init(&schema, 1, ALLOC_STD), &schema);
+	EXPECT_PTR(config_schema_init(&schema, 1, ALLOC_STD), &schema);
 
 	config_schema_free(&schema);
 	config_schema_free(NULL);
@@ -59,11 +59,11 @@ TEST(config_schema_get_op)
 	config_schema_op_desc_t desc = {0};
 	config_schema_add_ops(&schema, &desc, sizeof(desc));
 
-	EXPECT_EQ(config_schema_get_op(NULL, 0), NULL);
+	EXPECT_NULL(config_schema_get_op(NULL, 0));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_schema_get_op(&schema, schema.ops.cnt), NULL);
+	EXPECT_NULL(config_schema_get_op(&schema, schema.ops.cnt));
 	log_set_quiet(0, 0);
-	EXPECT_NE(config_schema_get_op(&schema, 0), NULL);
+	EXPECT_NOT_NULL(config_schema_get_op(&schema, 0));
 
 	config_schema_free(&schema);
 

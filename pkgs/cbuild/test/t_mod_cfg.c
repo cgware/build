@@ -135,7 +135,7 @@ TESTP(config_cfg_pkg_add_oom, mod_t *mod, const config_schema_t *schema)
 	write_build_cfg(&ctx.fs, STRV_NULL, STRV("deps = [dep]\n"));
 
 	config_sync_plan_t plan = {0};
-	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+	EXPECT_PTR(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 
 	ctx.registry.pkgs.cnt = ctx.registry.pkgs.cap;
 	mem_oom(1);
@@ -181,7 +181,7 @@ TESTP(config_cfg_deps_oom, mod_t *mod, const config_schema_t *schema)
 	config_init(&ctx.tmp, 2, ALLOC_STD);
 
 	config_sync_plan_t plan = {0};
-	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+	EXPECT_PTR(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 
 	ctx.tmp.lists.cnt = ctx.tmp.lists.cap - 1;
 	mem_oom(1);
@@ -389,7 +389,7 @@ TESTP(config_cfg_pkg_ops_oom, mod_t *mod, const config_schema_t *schema)
 	config_init(&ctx.tmp, 2, ALLOC_STD);
 
 	config_sync_plan_t plan = {0};
-	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+	EXPECT_PTR(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 
 	ctx.tmp.lists.cnt = ctx.tmp.lists.cap;
 	mem_oom(1);
@@ -569,7 +569,7 @@ TESTP(config_cfg_tgt_deps_oom, mod_t *mod, const config_schema_t *schema)
 	config_init(&ctx.tmp, 3, ALLOC_STD);
 
 	config_sync_plan_t plan = {0};
-	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+	EXPECT_PTR(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 
 	ctx.tmp.lists.cnt = ctx.tmp.lists.cap - 2;
 	mem_oom(1);
@@ -759,7 +759,7 @@ TESTP(config_cfg_ext_oom_second, mod_t *mod, const config_schema_t *schema)
 	write_build_cfg(&ctx.fs, STRV_NULL, STRV("ext:\n\"repo1\"\n\"repo2\"\n\n"));
 
 	config_sync_plan_t plan = {0};
-	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+	EXPECT_PTR(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 
 	log_set_quiet(0, 1);
 	mem_oom(1);

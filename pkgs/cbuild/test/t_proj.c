@@ -11,13 +11,13 @@ TEST(proj_init_free)
 	proj_t proj = {0};
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_init(NULL, 0, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(proj_init(NULL, 0, 0, ALLOC_STD));
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(proj_init(&proj, 1, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(proj_init(&proj, 1, 0, ALLOC_STD));
 	mem_oom(0);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_init(&proj, 1, 0, ALLOC_STD), &proj);
+	EXPECT_PTR(proj_init(&proj, 1, 0, ALLOC_STD), &proj);
 	log_set_quiet(0, 0);
 
 	proj_free(&proj);
@@ -35,11 +35,11 @@ TEST(proj_add_pkg)
 	proj_init(&proj, 0, 0, ALLOC_STD);
 	log_set_quiet(0, 0);
 
-	EXPECT_EQ(proj_add_pkg(NULL, NULL), NULL);
+	EXPECT_NULL(proj_add_pkg(NULL, NULL));
 	mem_oom(1);
-	EXPECT_EQ(proj_add_pkg(&proj, NULL), NULL);
+	EXPECT_NULL(proj_add_pkg(&proj, NULL));
 	mem_oom(0);
-	EXPECT_NE(proj_add_pkg(&proj, NULL), NULL);
+	EXPECT_NOT_NULL(proj_add_pkg(&proj, NULL));
 
 	proj_free(&proj);
 
@@ -57,7 +57,7 @@ TEST(proj_add_pkg_oom_strs)
 
 	proj.strs.off.cnt = proj.strs.off.cap;
 	mem_oom(1);
-	EXPECT_EQ(proj_add_pkg(&proj, NULL), NULL);
+	EXPECT_NULL(proj_add_pkg(&proj, NULL));
 	mem_oom(0);
 
 	proj_free(&proj);
@@ -77,11 +77,11 @@ TEST(proj_get_pkg)
 	uint id;
 	pkg_t *pkg = proj_add_pkg(&proj, &id);
 
-	EXPECT_EQ(proj_get_pkg(NULL, id), NULL);
+	EXPECT_NULL(proj_get_pkg(NULL, id));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_get_pkg(&proj, proj.pkgs.cnt), NULL);
+	EXPECT_NULL(proj_get_pkg(&proj, proj.pkgs.cnt));
 	log_set_quiet(0, 0);
-	EXPECT_EQ(proj_get_pkg(&proj, id), pkg);
+	EXPECT_PTR(proj_get_pkg(&proj, id), pkg);
 
 	proj_free(&proj);
 
@@ -100,10 +100,10 @@ TEST(proj_find_pkg)
 	uint pkg, found;
 	pkg_t *data = proj_add_pkg(&proj, &pkg);
 
-	EXPECT_EQ(proj_find_pkg(NULL, STRV_NULL, NULL), NULL);
-	EXPECT_EQ(proj_find_pkg(&proj, STRV_NULL, NULL), NULL);
-	EXPECT_EQ(proj_find_pkg(&proj, STRV("asd"), NULL), NULL);
-	EXPECT_EQ(proj_find_pkg(&proj, STRV(""), &found), data);
+	EXPECT_NULL(proj_find_pkg(NULL, STRV_NULL, NULL));
+	EXPECT_NULL(proj_find_pkg(&proj, STRV_NULL, NULL));
+	EXPECT_NULL(proj_find_pkg(&proj, STRV("asd"), NULL));
+	EXPECT_PTR(proj_find_pkg(&proj, STRV(""), &found), data);
 	EXPECT_EQ(found, pkg);
 
 	proj_free(&proj);
@@ -123,14 +123,14 @@ TEST(proj_add_target)
 	uint pkg;
 	proj_add_pkg(&proj, &pkg);
 
-	EXPECT_EQ(proj_add_target(NULL, proj.pkgs.cnt, NULL), NULL);
+	EXPECT_NULL(proj_add_target(NULL, proj.pkgs.cnt, NULL));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_add_target(&proj, proj.pkgs.cnt, NULL), NULL);
+	EXPECT_NULL(proj_add_target(&proj, proj.pkgs.cnt, NULL));
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(proj_add_target(&proj, pkg, NULL), NULL);
+	EXPECT_NULL(proj_add_target(&proj, pkg, NULL));
 	mem_oom(0);
-	EXPECT_NE(proj_add_target(&proj, pkg, NULL), NULL);
+	EXPECT_NOT_NULL(proj_add_target(&proj, pkg, NULL));
 
 	proj_free(&proj);
 
@@ -149,7 +149,7 @@ TEST(proj_add_target_oom_strs)
 
 	proj.strs.off.cnt = proj.strs.off.cap;
 	mem_oom(1);
-	EXPECT_EQ(proj_add_target(&proj, pkg, NULL), NULL);
+	EXPECT_NULL(proj_add_target(&proj, pkg, NULL));
 	mem_oom(0);
 
 	proj_free(&proj);
@@ -170,11 +170,11 @@ TEST(proj_get_target)
 	uint id;
 	target_t *target = proj_add_target(&proj, pkg, &id);
 
-	EXPECT_EQ(proj_get_target(NULL, id), NULL);
+	EXPECT_NULL(proj_get_target(NULL, id));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_get_target(&proj, proj.targets.cnt), NULL);
+	EXPECT_NULL(proj_get_target(&proj, proj.targets.cnt));
 	log_set_quiet(0, 0);
-	EXPECT_EQ(proj_get_target(&proj, id), target);
+	EXPECT_PTR(proj_get_target(&proj, id), target);
 
 	proj_free(&proj);
 
@@ -192,20 +192,20 @@ TEST(proj_find_target)
 	proj_add_pkg(&proj, &pkg1);
 	proj_add_pkg(&proj, &pkg2);
 
-	EXPECT_EQ(proj_find_target(NULL, proj.pkgs.cnt, STRV_NULL, NULL), NULL);
+	EXPECT_NULL(proj_find_target(NULL, proj.pkgs.cnt, STRV_NULL, NULL));
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_find_target(&proj, proj.pkgs.cnt, STRV_NULL, NULL), NULL);
+	EXPECT_NULL(proj_find_target(&proj, proj.pkgs.cnt, STRV_NULL, NULL));
 	log_set_quiet(0, 0);
-	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV_NULL, NULL), NULL);
+	EXPECT_NULL(proj_find_target(&proj, pkg2, STRV_NULL, NULL));
 
 	proj_add_target(&proj, pkg1, NULL);
 
 	uint target, found;
 	target_t *data = proj_add_target(&proj, pkg2, &target);
 
-	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV_NULL, NULL), NULL);
-	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV("asd"), NULL), NULL);
-	EXPECT_EQ(proj_find_target(&proj, pkg2, STRV(""), &found), data);
+	EXPECT_NULL(proj_find_target(&proj, pkg2, STRV_NULL, NULL));
+	EXPECT_NULL(proj_find_target(&proj, pkg2, STRV("asd"), NULL));
+	EXPECT_PTR(proj_find_target(&proj, pkg2, STRV(""), &found), data);
 	EXPECT_EQ(found, target);
 
 	proj_free(&proj);
@@ -242,9 +242,9 @@ TEST(proj_get_str)
 
 	pkg_t *pkg = proj_add_pkg(&proj, NULL);
 
-	EXPECT_EQ(proj_get_str(NULL, proj.strs.off.cnt).data, NULL);
+	EXPECT_NULL(proj_get_str(NULL, proj.strs.off.cnt).data);
 	log_set_quiet(0, 1);
-	EXPECT_EQ(proj_get_str(&proj, proj.strs.off.cnt).data, NULL);
+	EXPECT_NULL(proj_get_str(&proj, proj.strs.off.cnt).data);
 	log_set_quiet(0, 0);
 	strv_t name = proj_get_str(&proj, pkg->strs + PKG_STR_NAME);
 	EXPECT_STRN(name.data, "", name.len);
@@ -283,7 +283,6 @@ TEST(proj_add_dep)
 
 	END;
 }
-
 
 TEST(proj_add_inc_priv)
 {

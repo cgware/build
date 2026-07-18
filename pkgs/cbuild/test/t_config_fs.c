@@ -286,12 +286,12 @@ TEST(config_sync_plan_helpers)
 {
 	START;
 
-	EXPECT_EQ(config_sync_plan_init(NULL, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(config_sync_plan_init(NULL, 1, ALLOC_STD));
 	config_sync_plan_free(NULL);
 	EXPECT_EQ(config_sync_plan_add_ext(NULL, STRV("uri"), STRV("name")), 1);
 
 	config_sync_plan_t plan = {0};
-	EXPECT_EQ(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
+	EXPECT_PTR(config_sync_plan_init(&plan, 1, ALLOC_STD), &plan);
 	EXPECT_EQ(config_sync_plan_add_ext(&plan, STRV("uri"), STRV("name")), 0);
 	EXPECT_EQ(config_sync_plan_add_dir(&plan, STRV("pkgs/p1"), STRV("p1")), 0);
 	EXPECT_EQ(config_sync_plan_add_dir(&plan, STRV("pkgs/p1"), STRV("p1")), 0);
@@ -299,7 +299,7 @@ TEST(config_sync_plan_helpers)
 	config_sync_plan_free(&plan);
 
 	config_sync_plan_t path_fail = {0};
-	EXPECT_EQ(config_sync_plan_init(&path_fail, 1, ALLOC_STD), &path_fail);
+	EXPECT_PTR(config_sync_plan_init(&path_fail, 1, ALLOC_STD), &path_fail);
 	path_fail.strs.off.cnt = path_fail.strs.off.cap;
 	mem_oom(1);
 	EXPECT_EQ(config_sync_plan_add_dir(&path_fail, STRV("0123456789abcdef0"), STRV("p1")), 1);
@@ -311,11 +311,11 @@ TEST(config_sync_plan_helpers)
 		       .alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &init_fail_ctx};
 	config_sync_plan_t init_fail = {0};
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_sync_plan_init(&init_fail, 1, init_fail_alloc), NULL);
+	EXPECT_NULL(config_sync_plan_init(&init_fail, 1, init_fail_alloc));
 	log_set_quiet(0, 0);
 
 	config_sync_plan_t uri_fail = {0};
-	EXPECT_EQ(config_sync_plan_init(&uri_fail, 1, ALLOC_STD), &uri_fail);
+	EXPECT_PTR(config_sync_plan_init(&uri_fail, 1, ALLOC_STD), &uri_fail);
 	uri_fail.strs.off.cnt = uri_fail.strs.off.cap;
 	mem_oom(1);
 	EXPECT_EQ(config_sync_plan_add_ext(&uri_fail, STRV("0123456789abcdef0"), STRV("repo")), 1);
@@ -323,7 +323,7 @@ TEST(config_sync_plan_helpers)
 	config_sync_plan_free(&uri_fail);
 
 	config_sync_plan_t name_fail = {0};
-	EXPECT_EQ(config_sync_plan_init(&name_fail, 1, ALLOC_STD), &name_fail);
+	EXPECT_PTR(config_sync_plan_init(&name_fail, 1, ALLOC_STD), &name_fail);
 	name_fail.strs.off.cnt = name_fail.strs.off.cap - 1;
 	mem_oom(1);
 	EXPECT_EQ(config_sync_plan_add_ext(&name_fail, STRV("uri"), STRV("repo")), 1);
@@ -331,7 +331,7 @@ TEST(config_sync_plan_helpers)
 	config_sync_plan_free(&name_fail);
 
 	config_sync_plan_t item_fail = {0};
-	EXPECT_EQ(config_sync_plan_init(&item_fail, 2, ALLOC_STD), &item_fail);
+	EXPECT_PTR(config_sync_plan_init(&item_fail, 2, ALLOC_STD), &item_fail);
 	EXPECT_EQ(config_sync_plan_add_ext(&item_fail, STRV("u"), STRV("n")), 0);
 	item_fail.items.cnt = item_fail.items.cap;
 	mem_oom(1);
@@ -680,7 +680,7 @@ TEST(config_fs_ext_sync_dir_ref_duplicate)
 	fs_init(&fs, 4, 1, ALLOC_STD);
 
 	mod_t *mod = find_mod(STRV("mod_pkgs"));
-	EXPECT_NE(mod, NULL);
+	EXPECT_NOT_NULL(mod);
 	int (*config_fs_fn)(mod_t *,
 			    config_t *,
 			    config_t *,
@@ -736,7 +736,7 @@ TEST(config_fs_ext_sync_dir_ref_str_oom)
 	fs_init(&fs, 4, 1, ALLOC_STD);
 
 	mod_t *mod = find_mod(STRV("mod_pkgs"));
-	EXPECT_NE(mod, NULL);
+	EXPECT_NOT_NULL(mod);
 	int (*config_fs_fn)(mod_t *,
 			    config_t *,
 			    config_t *,
@@ -795,7 +795,7 @@ TEST(config_fs_ext_sync_dir_ref_item_oom)
 	fs_init(&fs, 4, 1, ALLOC_STD);
 
 	mod_t *mod = find_mod(STRV("mod_pkgs"));
-	EXPECT_NE(mod, NULL);
+	EXPECT_NOT_NULL(mod);
 	int (*config_fs_fn)(mod_t *,
 			    config_t *,
 			    config_t *,
@@ -917,7 +917,7 @@ TEST(config_fs_invalid_work_kind)
 	fs_init(&fs, 1, 1, ALLOC_STD);
 
 	mod_t *mod = find_mod(STRV("mod_pkgs"));
-	EXPECT_NE(mod, NULL);
+	EXPECT_NOT_NULL(mod);
 	int (*config_fs_fn)(mod_t *,
 			    config_t *,
 			    config_t *,

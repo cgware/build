@@ -336,7 +336,7 @@ TEST(proj_graph_alloc_failures)
 	int success = 0;
 	for (uint fail_at = 1; fail_at < 128; fail_at++) {
 		fail_alloc_ctx_t ctx = {.fail_at = fail_at};
-		alloc_t alloc = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
+		alloc_t alloc	     = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
 
 		arr_t deps = {0};
 		if (arr_init(&deps, 1, sizeof(uint), alloc) == NULL) {
@@ -353,7 +353,7 @@ TEST(proj_graph_alloc_failures)
 	success = 0;
 	for (uint fail_at = 1; fail_at < 128; fail_at++) {
 		fail_alloc_ctx_t ctx = {.fail_at = fail_at};
-		alloc_t alloc = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
+		alloc_t alloc	     = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
 
 		arr_t order = {0};
 		if (arr_init(&order, 1, sizeof(uint), alloc) == NULL) {
@@ -370,7 +370,7 @@ TEST(proj_graph_alloc_failures)
 	success = 0;
 	for (uint fail_at = 1; fail_at < 128; fail_at++) {
 		fail_alloc_ctx_t ctx = {.fail_at = fail_at};
-		alloc_t alloc = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
+		alloc_t alloc	     = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
 
 		arr_t order = {0};
 		if (arr_init(&order, 1, sizeof(uint), alloc) == NULL) {
@@ -416,11 +416,11 @@ TEST(proj_graph_alloc_failures_expand)
 
 	log_set_quiet(0, 1);
 
-	int fail = 0;
+	int fail    = 0;
 	int success = 0;
 	for (uint fail_at = 1; fail_at < 256; fail_at++) {
 		fail_alloc_ctx_t ctx = {.fail_at = fail_at};
-		alloc_t alloc = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
+		alloc_t alloc	     = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
 
 		arr_t deps = {0};
 		if (arr_init(&deps, 1, sizeof(uint), alloc) == NULL) {
@@ -437,11 +437,11 @@ TEST(proj_graph_alloc_failures_expand)
 	EXPECT_EQ(fail, 1);
 	EXPECT_EQ(success, 1);
 
-	fail = 0;
+	fail	= 0;
 	success = 0;
 	for (uint fail_at = 1; fail_at < 256; fail_at++) {
 		fail_alloc_ctx_t ctx = {.fail_at = fail_at};
-		alloc_t alloc = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
+		alloc_t alloc	     = {.alloc = fail_alloc_alloc, .realloc = fail_alloc_realloc, .free = fail_alloc_free, .priv = &ctx};
 
 		arr_t order = {0};
 		if (arr_init(&order, 1, sizeof(uint), alloc) == NULL) {

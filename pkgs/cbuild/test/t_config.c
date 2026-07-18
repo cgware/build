@@ -11,12 +11,12 @@ TEST(config_init_free)
 	config_t config = {0};
 
 	log_set_quiet(0, 1);
-	EXPECT_EQ(config_init(NULL, 0, ALLOC_STD), NULL);
+	EXPECT_NULL(config_init(NULL, 0, ALLOC_STD));
 	log_set_quiet(0, 0);
 	mem_oom(1);
-	EXPECT_EQ(config_init(&config, 1, ALLOC_STD), NULL);
+	EXPECT_NULL(config_init(&config, 1, ALLOC_STD));
 	mem_oom(0);
-	EXPECT_EQ(config_init(&config, 1, ALLOC_STD), &config);
+	EXPECT_PTR(config_init(&config, 1, ALLOC_STD), &config);
 
 	config_free(&config);
 	config_free(NULL);
@@ -430,7 +430,7 @@ TEST(config_merge_diff_str_list_set)
 	cnt		 = config.lists.cnt;
 	config.lists.cnt = config.lists.cap;
 	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 1);
-	config.lists.cnt = cnt;
+	config.lists.cnt = (uint)cnt;
 	mem_oom(0);
 	EXPECT_EQ(config_merge(&config, &other, CONFIG_STATE_NULL, &schema, NULL), 0);
 

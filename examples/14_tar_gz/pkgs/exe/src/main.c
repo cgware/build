@@ -1,6 +1,7 @@
 #include "ctime.h"
 
-int main() {
+int main()
+{
 	c_time();
 	return 0;
 }

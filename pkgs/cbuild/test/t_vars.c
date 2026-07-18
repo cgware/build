@@ -11,11 +11,11 @@ TEST(vars_init)
 
 	vars_t vars = {0};
 
-	EXPECT_EQ(vars_init(NULL), NULL);
-	EXPECT_EQ(vars_init(&vars), &vars);
+	EXPECT_NULL(vars_init(NULL));
+	EXPECT_PTR(vars_init(&vars), &vars);
 
 	EXPECT_EQ(vars.vars[PKG_DIR].deps, (1ULL << PN));
-	EXPECT_EQ(vars.vars[TGT_PREP].deps, (1 << PN) | (1 << TN));
+	EXPECT_EQ(vars.vars[TGT_PREP].deps, (1ULL << PN) | (1ULL << TN));
 
 	END;
 }
