@@ -263,10 +263,6 @@ int main(int argc, const char **argv)
 
 	c_print_init();
 
-	log_t log = {0};
-	log_set(&log);
-	log_add_callback(log_std_cb, DST_STD(), LOG_INFO, 1, 1);
-
 	strv_t proj_dir	 = STRV(".");
 	strv_t build_dir = STRV("tmp/build");
 	strv_t target	 = STRV("all");

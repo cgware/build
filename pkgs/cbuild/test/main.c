@@ -53,15 +53,11 @@ TEST(cbuild)
 	SEND;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	c_print_init();
 
-	log_t log = {0};
-	log_set(&log);
-	log_add_callback(log_std_cb, DST_STD(), LOG_WARN, 1, 1);
-
-	t_init();
+	t_init(argc, argv);
 
 	t_run(test_cbuild, 1);
 
